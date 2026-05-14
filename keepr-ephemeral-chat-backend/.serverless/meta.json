@@ -1,0 +1,2819 @@
+{
+  "C:\\Users\\ANSH\\Downloads\\keepr. new\\keepr-ephemeral-chat-backend\\serverless.yml": {
+    "versionFramework": "4.36.0",
+    "servicePath": "C:\\Users\\ANSH\\Downloads\\keepr. new\\keepr-ephemeral-chat-backend\\serverless.yml",
+    "serviceConfigFileName": "serverless.yml",
+    "service": {
+      "service": "keepr-ephemeral-chat",
+      "custom": {
+        "vaultBucketName": "keepr-vault-storage-anshul",
+        "detonatorBucketName": "keepr-detonator-storage",
+        "detonatorFunctionName": "KeeprLinkDetonator",
+        "detonatorMemoryMB": 1600,
+        "detonatorTimeoutSec": 60,
+        "connectionsTable": "keepr-ephemeral-chat-connections-prod"
+      },
+      "provider": {
+        "name": "aws",
+        "runtime": "nodejs20.x",
+        "region": "ap-south-1",
+        "websocketsApiName": "keepr-chat-api",
+        "websocketsApiRouteSelectionExpression": "$request.body.action",
+        "environment": {
+          "CONNECTIONS_TABLE": "keepr-ephemeral-chat-connections-prod"
+        },
+        "iam": {
+          "role": {
+            "statements": [
+              {
+                "Effect": "Allow",
+                "Action": [
+                  "execute-api:ManageConnections"
+                ],
+                "Resource": "arn:aws:execute-api:*:*:**/@connections/*"
+              },
+              {
+                "Effect": "Allow",
+                "Action": [
+                  "dynamodb:PutItem",
+                  "dynamodb:DeleteItem",
+                  "dynamodb:Query",
+                  "dynamodb:Scan"
+                ],
+                "Resource": [
+                  {
+                    "Fn::GetAtt": [
+                      "ConnectionsTable",
+                      "Arn"
+                    ]
+                  },
+                  {
+                    "Fn::Join": [
+                      "/",
+                      [
+                        {
+                          "Fn::GetAtt": [
+                            "ConnectionsTable",
+                            "Arn"
+                          ]
+                        },
+                        "index/*"
+                      ]
+                    ]
+                  }
+                ]
+              }
+            ]
+          }
+        },
+        "stage": "prod",
+        "versionFunctions": true,
+        "compiledCloudFormationTemplate": {
+          "AWSTemplateFormatVersion": "2010-09-09",
+          "Description": "The AWS CloudFormation template for this Serverless application",
+          "Resources": {
+            "ConnectionHandlerLogGroup": {
+              "Type": "AWS::Logs::LogGroup",
+              "Properties": {
+                "LogGroupName": "/aws/lambda/keepr-ephemeral-chat-prod-connectionHandler"
+              }
+            },
+            "DefaultHandlerLogGroup": {
+              "Type": "AWS::Logs::LogGroup",
+              "Properties": {
+                "LogGroupName": "/aws/lambda/keepr-ephemeral-chat-prod-defaultHandler"
+              }
+            },
+            "SendMessageHandlerLogGroup": {
+              "Type": "AWS::Logs::LogGroup",
+              "Properties": {
+                "LogGroupName": "/aws/lambda/keepr-ephemeral-chat-prod-sendMessageHandler"
+              }
+            },
+            "IamRoleLambdaExecution": {
+              "Type": "AWS::IAM::Role",
+              "Properties": {
+                "AssumeRolePolicyDocument": {
+                  "Version": "2012-10-17",
+                  "Statement": [
+                    {
+                      "Effect": "Allow",
+                      "Principal": {
+                        "Service": [
+                          "lambda.amazonaws.com"
+                        ]
+                      },
+                      "Action": [
+                        "sts:AssumeRole"
+                      ]
+                    }
+                  ]
+                },
+                "Policies": [
+                  {
+                    "PolicyName": {
+                      "Fn::Join": [
+                        "-",
+                        [
+                          "keepr-ephemeral-chat",
+                          "prod",
+                          "lambda"
+                        ]
+                      ]
+                    },
+                    "PolicyDocument": {
+                      "Version": "2012-10-17",
+                      "Statement": [
+                        {
+                          "Effect": "Allow",
+                          "Action": [
+                            "logs:CreateLogStream",
+                            "logs:CreateLogGroup",
+                            "logs:TagResource"
+                          ],
+                          "Resource": [
+                            {
+                              "Fn::Sub": "arn:${AWS::Partition}:logs:${AWS::Region}:${AWS::AccountId}:log-group:/aws/lambda/keepr-ephemeral-chat-prod*:*"
+                            }
+                          ]
+                        },
+                        {
+                          "Effect": "Allow",
+                          "Action": [
+                            "logs:PutLogEvents"
+                          ],
+                          "Resource": [
+                            {
+                              "Fn::Sub": "arn:${AWS::Partition}:logs:${AWS::Region}:${AWS::AccountId}:log-group:/aws/lambda/keepr-ephemeral-chat-prod*:*:*"
+                            }
+                          ]
+                        },
+                        {
+                          "Effect": "Allow",
+                          "Action": [
+                            "execute-api:ManageConnections"
+                          ],
+                          "Resource": "arn:aws:execute-api:*:*:**/@connections/*"
+                        },
+                        {
+                          "Effect": "Allow",
+                          "Action": [
+                            "dynamodb:PutItem",
+                            "dynamodb:DeleteItem",
+                            "dynamodb:Query",
+                            "dynamodb:Scan"
+                          ],
+                          "Resource": [
+                            {
+                              "Fn::GetAtt": [
+                                "ConnectionsTable",
+                                "Arn"
+                              ]
+                            },
+                            {
+                              "Fn::Join": [
+                                "/",
+                                [
+                                  {
+                                    "Fn::GetAtt": [
+                                      "ConnectionsTable",
+                                      "Arn"
+                                    ]
+                                  },
+                                  "index/*"
+                                ]
+                              ]
+                            }
+                          ]
+                        },
+                        {
+                          "Effect": "Allow",
+                          "Action": [
+                            "execute-api:ManageConnections"
+                          ],
+                          "Resource": [
+                            {
+                              "Fn::Sub": "arn:${AWS::Partition}:execute-api:*:*:*/@connections/*"
+                            }
+                          ]
+                        }
+                      ]
+                    }
+                  }
+                ],
+                "Path": "/",
+                "RoleName": {
+                  "Fn::Join": [
+                    "-",
+                    [
+                      "keepr-ephemeral-chat",
+                      "prod",
+                      {
+                        "Ref": "AWS::Region"
+                      },
+                      "lambdaRole"
+                    ]
+                  ]
+                }
+              }
+            },
+            "ConnectionHandlerLambdaFunction": {
+              "Type": "AWS::Lambda::Function",
+              "Properties": {
+                "Code": {
+                  "S3Bucket": "serverless-framework-deployments-ap-south-1-d979e78e-4638",
+                  "S3Key": "serverless/keepr-ephemeral-chat/prod/1778768045471-2026-05-14T14:14:05.471Z/keepr-ephemeral-chat.zip"
+                },
+                "Handler": "handler.connectionHandler",
+                "Runtime": "nodejs20.x",
+                "FunctionName": "keepr-ephemeral-chat-prod-connectionHandler",
+                "MemorySize": 1024,
+                "Timeout": 6,
+                "Environment": {
+                  "Variables": {
+                    "CONNECTIONS_TABLE": "keepr-ephemeral-chat-connections-prod"
+                  }
+                },
+                "Role": {
+                  "Fn::GetAtt": [
+                    "IamRoleLambdaExecution",
+                    "Arn"
+                  ]
+                }
+              },
+              "DependsOn": [
+                "ConnectionHandlerLogGroup"
+              ]
+            },
+            "DefaultHandlerLambdaFunction": {
+              "Type": "AWS::Lambda::Function",
+              "Properties": {
+                "Code": {
+                  "S3Bucket": "serverless-framework-deployments-ap-south-1-d979e78e-4638",
+                  "S3Key": "serverless/keepr-ephemeral-chat/prod/1778768045471-2026-05-14T14:14:05.471Z/keepr-ephemeral-chat.zip"
+                },
+                "Handler": "handler.defaultHandler",
+                "Runtime": "nodejs20.x",
+                "FunctionName": "keepr-ephemeral-chat-prod-defaultHandler",
+                "MemorySize": 1024,
+                "Timeout": 6,
+                "Environment": {
+                  "Variables": {
+                    "CONNECTIONS_TABLE": "keepr-ephemeral-chat-connections-prod"
+                  }
+                },
+                "Role": {
+                  "Fn::GetAtt": [
+                    "IamRoleLambdaExecution",
+                    "Arn"
+                  ]
+                }
+              },
+              "DependsOn": [
+                "DefaultHandlerLogGroup"
+              ]
+            },
+            "SendMessageHandlerLambdaFunction": {
+              "Type": "AWS::Lambda::Function",
+              "Properties": {
+                "Code": {
+                  "S3Bucket": "serverless-framework-deployments-ap-south-1-d979e78e-4638",
+                  "S3Key": "serverless/keepr-ephemeral-chat/prod/1778768045471-2026-05-14T14:14:05.471Z/keepr-ephemeral-chat.zip"
+                },
+                "Handler": "handler.sendMessageHandler",
+                "Runtime": "nodejs20.x",
+                "FunctionName": "keepr-ephemeral-chat-prod-sendMessageHandler",
+                "MemorySize": 1024,
+                "Timeout": 6,
+                "Environment": {
+                  "Variables": {
+                    "CONNECTIONS_TABLE": "keepr-ephemeral-chat-connections-prod"
+                  }
+                },
+                "Role": {
+                  "Fn::GetAtt": [
+                    "IamRoleLambdaExecution",
+                    "Arn"
+                  ]
+                }
+              },
+              "DependsOn": [
+                "SendMessageHandlerLogGroup"
+              ]
+            },
+            "ConnectionHandlerLambdaVersionB4Vz8Z0vU5WZU9qDv7k2vVQXFC4ZRcxbMi56ddyFQ": {
+              "Type": "AWS::Lambda::Version",
+              "DeletionPolicy": "Retain",
+              "Properties": {
+                "FunctionName": {
+                  "Ref": "ConnectionHandlerLambdaFunction"
+                },
+                "CodeSha256": "N3EotecBdhoSiTqz8YxMb1vtjuY4dUhpRU/Nr9HbL/I="
+              }
+            },
+            "DefaultHandlerLambdaVersionpoDVRmY4dH6CjW77NK3pcq5kTwGjjUL4eUkv1l3E": {
+              "Type": "AWS::Lambda::Version",
+              "DeletionPolicy": "Retain",
+              "Properties": {
+                "FunctionName": {
+                  "Ref": "DefaultHandlerLambdaFunction"
+                },
+                "CodeSha256": "N3EotecBdhoSiTqz8YxMb1vtjuY4dUhpRU/Nr9HbL/I="
+              }
+            },
+            "SendMessageHandlerLambdaVersionIdXtjWihwxuIW6Sx5FEGCjd6kumhroAiM8yhzvADw": {
+              "Type": "AWS::Lambda::Version",
+              "DeletionPolicy": "Retain",
+              "Properties": {
+                "FunctionName": {
+                  "Ref": "SendMessageHandlerLambdaFunction"
+                },
+                "CodeSha256": "N3EotecBdhoSiTqz8YxMb1vtjuY4dUhpRU/Nr9HbL/I="
+              }
+            },
+            "WebsocketsApi": {
+              "Type": "AWS::ApiGatewayV2::Api",
+              "Properties": {
+                "Name": "keepr-chat-api",
+                "RouteSelectionExpression": "$request.body.action",
+                "Description": "Serverless Websockets",
+                "ProtocolType": "WEBSOCKET"
+              }
+            },
+            "ConnectionHandlerWebsocketsIntegration": {
+              "Type": "AWS::ApiGatewayV2::Integration",
+              "Properties": {
+                "ApiId": {
+                  "Ref": "WebsocketsApi"
+                },
+                "IntegrationType": "AWS_PROXY",
+                "IntegrationUri": {
+                  "Fn::Join": [
+                    "",
+                    [
+                      "arn:",
+                      {
+                        "Ref": "AWS::Partition"
+                      },
+                      ":apigateway:",
+                      {
+                        "Ref": "AWS::Region"
+                      },
+                      ":lambda:path/2015-03-31/functions/",
+                      {
+                        "Fn::GetAtt": [
+                          "ConnectionHandlerLambdaFunction",
+                          "Arn"
+                        ]
+                      },
+                      "/invocations"
+                    ]
+                  ]
+                }
+              }
+            },
+            "DefaultHandlerWebsocketsIntegration": {
+              "Type": "AWS::ApiGatewayV2::Integration",
+              "Properties": {
+                "ApiId": {
+                  "Ref": "WebsocketsApi"
+                },
+                "IntegrationType": "AWS_PROXY",
+                "IntegrationUri": {
+                  "Fn::Join": [
+                    "",
+                    [
+                      "arn:",
+                      {
+                        "Ref": "AWS::Partition"
+                      },
+                      ":apigateway:",
+                      {
+                        "Ref": "AWS::Region"
+                      },
+                      ":lambda:path/2015-03-31/functions/",
+                      {
+                        "Fn::GetAtt": [
+                          "DefaultHandlerLambdaFunction",
+                          "Arn"
+                        ]
+                      },
+                      "/invocations"
+                    ]
+                  ]
+                }
+              }
+            },
+            "SendMessageHandlerWebsocketsIntegration": {
+              "Type": "AWS::ApiGatewayV2::Integration",
+              "Properties": {
+                "ApiId": {
+                  "Ref": "WebsocketsApi"
+                },
+                "IntegrationType": "AWS_PROXY",
+                "IntegrationUri": {
+                  "Fn::Join": [
+                    "",
+                    [
+                      "arn:",
+                      {
+                        "Ref": "AWS::Partition"
+                      },
+                      ":apigateway:",
+                      {
+                        "Ref": "AWS::Region"
+                      },
+                      ":lambda:path/2015-03-31/functions/",
+                      {
+                        "Fn::GetAtt": [
+                          "SendMessageHandlerLambdaFunction",
+                          "Arn"
+                        ]
+                      },
+                      "/invocations"
+                    ]
+                  ]
+                }
+              }
+            },
+            "ConnectionHandlerLambdaPermissionWebsockets": {
+              "Type": "AWS::Lambda::Permission",
+              "DependsOn": [
+                "WebsocketsApi",
+                "ConnectionHandlerLambdaFunction"
+              ],
+              "Properties": {
+                "FunctionName": {
+                  "Fn::GetAtt": [
+                    "ConnectionHandlerLambdaFunction",
+                    "Arn"
+                  ]
+                },
+                "Action": "lambda:InvokeFunction",
+                "Principal": "apigateway.amazonaws.com"
+              }
+            },
+            "DefaultHandlerLambdaPermissionWebsockets": {
+              "Type": "AWS::Lambda::Permission",
+              "DependsOn": [
+                "WebsocketsApi",
+                "DefaultHandlerLambdaFunction"
+              ],
+              "Properties": {
+                "FunctionName": {
+                  "Fn::GetAtt": [
+                    "DefaultHandlerLambdaFunction",
+                    "Arn"
+                  ]
+                },
+                "Action": "lambda:InvokeFunction",
+                "Principal": "apigateway.amazonaws.com"
+              }
+            },
+            "SendMessageHandlerLambdaPermissionWebsockets": {
+              "Type": "AWS::Lambda::Permission",
+              "DependsOn": [
+                "WebsocketsApi",
+                "SendMessageHandlerLambdaFunction"
+              ],
+              "Properties": {
+                "FunctionName": {
+                  "Fn::GetAtt": [
+                    "SendMessageHandlerLambdaFunction",
+                    "Arn"
+                  ]
+                },
+                "Action": "lambda:InvokeFunction",
+                "Principal": "apigateway.amazonaws.com"
+              }
+            },
+            "SconnectWebsocketsRoute": {
+              "Type": "AWS::ApiGatewayV2::Route",
+              "Properties": {
+                "ApiId": {
+                  "Ref": "WebsocketsApi"
+                },
+                "RouteKey": "$connect",
+                "AuthorizationType": "NONE",
+                "Target": {
+                  "Fn::Join": [
+                    "/",
+                    [
+                      "integrations",
+                      {
+                        "Ref": "ConnectionHandlerWebsocketsIntegration"
+                      }
+                    ]
+                  ]
+                }
+              }
+            },
+            "SdisconnectWebsocketsRoute": {
+              "Type": "AWS::ApiGatewayV2::Route",
+              "Properties": {
+                "ApiId": {
+                  "Ref": "WebsocketsApi"
+                },
+                "RouteKey": "$disconnect",
+                "AuthorizationType": "NONE",
+                "Target": {
+                  "Fn::Join": [
+                    "/",
+                    [
+                      "integrations",
+                      {
+                        "Ref": "ConnectionHandlerWebsocketsIntegration"
+                      }
+                    ]
+                  ]
+                }
+              }
+            },
+            "SdefaultWebsocketsRoute": {
+              "Type": "AWS::ApiGatewayV2::Route",
+              "Properties": {
+                "ApiId": {
+                  "Ref": "WebsocketsApi"
+                },
+                "RouteKey": "$default",
+                "AuthorizationType": "NONE",
+                "Target": {
+                  "Fn::Join": [
+                    "/",
+                    [
+                      "integrations",
+                      {
+                        "Ref": "DefaultHandlerWebsocketsIntegration"
+                      }
+                    ]
+                  ]
+                }
+              }
+            },
+            "sendMessageWebsocketsRoute": {
+              "Type": "AWS::ApiGatewayV2::Route",
+              "Properties": {
+                "ApiId": {
+                  "Ref": "WebsocketsApi"
+                },
+                "RouteKey": "sendMessage",
+                "AuthorizationType": "NONE",
+                "Target": {
+                  "Fn::Join": [
+                    "/",
+                    [
+                      "integrations",
+                      {
+                        "Ref": "SendMessageHandlerWebsocketsIntegration"
+                      }
+                    ]
+                  ]
+                }
+              }
+            },
+            "WebsocketsDeploymentStage": {
+              "Type": "AWS::ApiGatewayV2::Stage",
+              "Properties": {
+                "ApiId": {
+                  "Ref": "WebsocketsApi"
+                },
+                "StageName": "prod",
+                "Description": "Serverless Websockets",
+                "DeploymentId": {
+                  "Ref": "WebsocketsDeploymentdfkBOvRw02KaJldrbrU89ifghfsTNShxminqUajyUY"
+                }
+              }
+            },
+            "WebsocketsDeploymentdfkBOvRw02KaJldrbrU89ifghfsTNShxminqUajyUY": {
+              "Type": "AWS::ApiGatewayV2::Deployment",
+              "DependsOn": [
+                "SconnectWebsocketsRoute",
+                "SdisconnectWebsocketsRoute",
+                "SdefaultWebsocketsRoute",
+                "sendMessageWebsocketsRoute"
+              ],
+              "Properties": {
+                "ApiId": {
+                  "Ref": "WebsocketsApi"
+                },
+                "Description": "Serverless Websockets"
+              }
+            },
+            "VaultBucket": {
+              "Type": "AWS::S3::Bucket",
+              "Properties": {
+                "BucketName": "keepr-vault-storage-anshul",
+                "PublicAccessBlockConfiguration": {
+                  "BlockPublicAcls": true,
+                  "BlockPublicPolicy": true,
+                  "IgnorePublicAcls": true,
+                  "RestrictPublicBuckets": true
+                },
+                "BucketEncryption": {
+                  "ServerSideEncryptionConfiguration": [
+                    {
+                      "ServerSideEncryptionByDefault": {
+                        "SSEAlgorithm": "AES256"
+                      }
+                    }
+                  ]
+                },
+                "CorsConfiguration": {
+                  "CorsRules": [
+                    {
+                      "AllowedHeaders": [
+                        "*"
+                      ],
+                      "AllowedMethods": [
+                        "PUT",
+                        "GET",
+                        "POST",
+                        "DELETE"
+                      ],
+                      "AllowedOrigins": [
+                        "http://localhost:3000",
+                        "http://localhost:3001",
+                        "http://localhost:5173"
+                      ],
+                      "ExposedHeaders": [],
+                      "MaxAge": 3000
+                    }
+                  ]
+                },
+                "LifecycleConfiguration": {
+                  "Rules": [
+                    {
+                      "Id": "AutoExpireVaultObjects",
+                      "Status": "Enabled",
+                      "ExpirationInDays": 7
+                    }
+                  ]
+                }
+              }
+            },
+            "DetonatorLambdaRole": {
+              "Type": "AWS::IAM::Role",
+              "Properties": {
+                "RoleName": "KeeprDetonatorLambdaRole",
+                "AssumeRolePolicyDocument": {
+                  "Version": "2012-10-17",
+                  "Statement": [
+                    {
+                      "Effect": "Allow",
+                      "Principal": {
+                        "Service": "lambda.amazonaws.com"
+                      },
+                      "Action": "sts:AssumeRole"
+                    }
+                  ]
+                },
+                "ManagedPolicyArns": [
+                  "arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole"
+                ],
+                "Policies": [
+                  {
+                    "PolicyName": "DetonatorReadStagingBucket",
+                    "PolicyDocument": {
+                      "Version": "2012-10-17",
+                      "Statement": [
+                        {
+                          "Effect": "Allow",
+                          "Action": [
+                            "s3:GetObject"
+                          ],
+                          "Resource": {
+                            "Fn::Sub": "arn:aws:s3:::keepr-detonator-storage/*"
+                          }
+                        }
+                      ]
+                    }
+                  }
+                ]
+              }
+            },
+            "DetonatorLambdaFunction": {
+              "Type": "AWS::Lambda::Function",
+              "DependsOn": [
+                "DetonatorLambdaRole"
+              ],
+              "Properties": {
+                "FunctionName": "KeeprLinkDetonator",
+                "Runtime": "nodejs20.x",
+                "Role": {
+                  "Fn::GetAtt": [
+                    "DetonatorLambdaRole",
+                    "Arn"
+                  ]
+                },
+                "Handler": "index.handler",
+                "MemorySize": 1600,
+                "Timeout": 60,
+                "Code": {
+                  "S3Bucket": "keepr-detonator-storage",
+                  "S3Key": "lambda-detonator.zip"
+                }
+              }
+            },
+            "ConnectionsTable": {
+              "Type": "AWS::DynamoDB::Table",
+              "Properties": {
+                "TableName": "keepr-ephemeral-chat-connections-prod",
+                "AttributeDefinitions": [
+                  {
+                    "AttributeName": "connectionId",
+                    "AttributeType": "S"
+                  },
+                  {
+                    "AttributeName": "roomId",
+                    "AttributeType": "S"
+                  }
+                ],
+                "KeySchema": [
+                  {
+                    "AttributeName": "connectionId",
+                    "KeyType": "HASH"
+                  }
+                ],
+                "GlobalSecondaryIndexes": [
+                  {
+                    "IndexName": "RoomIndex",
+                    "KeySchema": [
+                      {
+                        "AttributeName": "roomId",
+                        "KeyType": "HASH"
+                      }
+                    ],
+                    "Projection": {
+                      "ProjectionType": "ALL"
+                    },
+                    "ProvisionedThroughput": {
+                      "ReadCapacityUnits": 5,
+                      "WriteCapacityUnits": 5
+                    }
+                  }
+                ],
+                "BillingMode": "PROVISIONED",
+                "ProvisionedThroughput": {
+                  "ReadCapacityUnits": 5,
+                  "WriteCapacityUnits": 5
+                },
+                "TimeToLiveSpecification": {
+                  "AttributeName": "ttl",
+                  "Enabled": true
+                }
+              }
+            }
+          },
+          "Outputs": {
+            "ServerlessDeploymentBucketName": {
+              "Value": "serverless-framework-deployments-ap-south-1-d979e78e-4638",
+              "Export": {
+                "Name": "sls-keepr-ephemeral-chat-prod-ServerlessDeploymentBucketName"
+              }
+            },
+            "ConnectionHandlerLambdaFunctionQualifiedArn": {
+              "Description": "Current Lambda function version",
+              "Value": {
+                "Ref": "ConnectionHandlerLambdaVersionB4Vz8Z0vU5WZU9qDv7k2vVQXFC4ZRcxbMi56ddyFQ"
+              },
+              "Export": {
+                "Name": "sls-keepr-ephemeral-chat-prod-ConnectionHandlerLambdaFunctionQualifiedArn"
+              }
+            },
+            "DefaultHandlerLambdaFunctionQualifiedArn": {
+              "Description": "Current Lambda function version",
+              "Value": {
+                "Ref": "DefaultHandlerLambdaVersionpoDVRmY4dH6CjW77NK3pcq5kTwGjjUL4eUkv1l3E"
+              },
+              "Export": {
+                "Name": "sls-keepr-ephemeral-chat-prod-DefaultHandlerLambdaFunctionQualifiedArn"
+              }
+            },
+            "SendMessageHandlerLambdaFunctionQualifiedArn": {
+              "Description": "Current Lambda function version",
+              "Value": {
+                "Ref": "SendMessageHandlerLambdaVersionIdXtjWihwxuIW6Sx5FEGCjd6kumhroAiM8yhzvADw"
+              },
+              "Export": {
+                "Name": "sls-keepr-ephemeral-chat-prod-SendMessageHandlerLambdaFunctionQualifiedArn"
+              }
+            },
+            "ServiceEndpointWebsocket": {
+              "Description": "URL of the service endpoint",
+              "Value": {
+                "Fn::Join": [
+                  "",
+                  [
+                    "wss://",
+                    {
+                      "Ref": "WebsocketsApi"
+                    },
+                    ".execute-api.",
+                    {
+                      "Ref": "AWS::Region"
+                    },
+                    ".",
+                    {
+                      "Ref": "AWS::URLSuffix"
+                    },
+                    "/prod"
+                  ]
+                ]
+              },
+              "Export": {
+                "Name": "sls-keepr-ephemeral-chat-prod-ServiceEndpointWebsocket"
+              }
+            },
+            "VaultBucketName": {
+              "Description": "Set this as AWS_BUCKET_NAME in your .env",
+              "Value": {
+                "Ref": "VaultBucket"
+              }
+            },
+            "DetonatorLambdaArn": {
+              "Description": "Set LAMBDA_FUNCTION_NAME=KeeprLinkDetonator in your .env",
+              "Value": {
+                "Fn::GetAtt": [
+                  "DetonatorLambdaFunction",
+                  "Arn"
+                ]
+              }
+            },
+            "ChatConnectionsTableName": {
+              "Description": "DynamoDB table for ephemeral chat WebSocket connections",
+              "Value": {
+                "Ref": "ConnectionsTable"
+              }
+            },
+            "WebSocketUrl": {
+              "Description": "Paste this as VITE_WEBSOCKET_URL in your .env",
+              "Value": {
+                "Fn::Sub": "wss://${WebsocketsApi}.execute-api.${AWS::Region}.amazonaws.com/prod"
+              }
+            }
+          }
+        },
+        "vpc": {}
+      },
+      "functions": {
+        "connectionHandler": {
+          "handler": "handler.connectionHandler",
+          "events": [
+            {
+              "websocket": {
+                "route": "$connect"
+              }
+            },
+            {
+              "websocket": {
+                "route": "$disconnect"
+              }
+            }
+          ],
+          "name": "keepr-ephemeral-chat-prod-connectionHandler",
+          "package": {},
+          "memory": 1024,
+          "timeout": 6,
+          "runtime": "nodejs20.x",
+          "vpc": {},
+          "versionLogicalId": "ConnectionHandlerLambdaVersionB4Vz8Z0vU5WZU9qDv7k2vVQXFC4ZRcxbMi56ddyFQ"
+        },
+        "defaultHandler": {
+          "handler": "handler.defaultHandler",
+          "events": [
+            {
+              "websocket": {
+                "route": "$default"
+              }
+            }
+          ],
+          "name": "keepr-ephemeral-chat-prod-defaultHandler",
+          "package": {},
+          "memory": 1024,
+          "timeout": 6,
+          "runtime": "nodejs20.x",
+          "vpc": {},
+          "versionLogicalId": "DefaultHandlerLambdaVersionpoDVRmY4dH6CjW77NK3pcq5kTwGjjUL4eUkv1l3E"
+        },
+        "sendMessageHandler": {
+          "handler": "handler.sendMessageHandler",
+          "events": [
+            {
+              "websocket": {
+                "route": "sendMessage"
+              }
+            }
+          ],
+          "name": "keepr-ephemeral-chat-prod-sendMessageHandler",
+          "package": {},
+          "memory": 1024,
+          "timeout": 6,
+          "runtime": "nodejs20.x",
+          "vpc": {},
+          "versionLogicalId": "SendMessageHandlerLambdaVersionIdXtjWihwxuIW6Sx5FEGCjd6kumhroAiM8yhzvADw"
+        }
+      },
+      "resources": {
+        "Resources": {
+          "VaultBucket": {
+            "Type": "AWS::S3::Bucket",
+            "Properties": {
+              "BucketName": "keepr-vault-storage-anshul",
+              "PublicAccessBlockConfiguration": {
+                "BlockPublicAcls": true,
+                "BlockPublicPolicy": true,
+                "IgnorePublicAcls": true,
+                "RestrictPublicBuckets": true
+              },
+              "BucketEncryption": {
+                "ServerSideEncryptionConfiguration": [
+                  {
+                    "ServerSideEncryptionByDefault": {
+                      "SSEAlgorithm": "AES256"
+                    }
+                  }
+                ]
+              },
+              "CorsConfiguration": {
+                "CorsRules": [
+                  {
+                    "AllowedHeaders": [
+                      "*"
+                    ],
+                    "AllowedMethods": [
+                      "PUT",
+                      "GET",
+                      "POST",
+                      "DELETE"
+                    ],
+                    "AllowedOrigins": [
+                      "http://localhost:3000",
+                      "http://localhost:3001",
+                      "http://localhost:5173"
+                    ],
+                    "ExposedHeaders": [],
+                    "MaxAge": 3000
+                  }
+                ]
+              },
+              "LifecycleConfiguration": {
+                "Rules": [
+                  {
+                    "Id": "AutoExpireVaultObjects",
+                    "Status": "Enabled",
+                    "ExpirationInDays": 7
+                  }
+                ]
+              }
+            }
+          },
+          "DetonatorLambdaRole": {
+            "Type": "AWS::IAM::Role",
+            "Properties": {
+              "RoleName": "KeeprDetonatorLambdaRole",
+              "AssumeRolePolicyDocument": {
+                "Version": "2012-10-17",
+                "Statement": [
+                  {
+                    "Effect": "Allow",
+                    "Principal": {
+                      "Service": "lambda.amazonaws.com"
+                    },
+                    "Action": "sts:AssumeRole"
+                  }
+                ]
+              },
+              "ManagedPolicyArns": [
+                "arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole"
+              ],
+              "Policies": [
+                {
+                  "PolicyName": "DetonatorReadStagingBucket",
+                  "PolicyDocument": {
+                    "Version": "2012-10-17",
+                    "Statement": [
+                      {
+                        "Effect": "Allow",
+                        "Action": [
+                          "s3:GetObject"
+                        ],
+                        "Resource": {
+                          "Fn::Sub": "arn:aws:s3:::keepr-detonator-storage/*"
+                        }
+                      }
+                    ]
+                  }
+                }
+              ]
+            }
+          },
+          "DetonatorLambdaFunction": {
+            "Type": "AWS::Lambda::Function",
+            "DependsOn": [
+              "DetonatorLambdaRole"
+            ],
+            "Properties": {
+              "FunctionName": "KeeprLinkDetonator",
+              "Runtime": "nodejs20.x",
+              "Role": {
+                "Fn::GetAtt": [
+                  "DetonatorLambdaRole",
+                  "Arn"
+                ]
+              },
+              "Handler": "index.handler",
+              "MemorySize": 1600,
+              "Timeout": 60,
+              "Code": {
+                "S3Bucket": "keepr-detonator-storage",
+                "S3Key": "lambda-detonator.zip"
+              }
+            }
+          },
+          "ConnectionsTable": {
+            "Type": "AWS::DynamoDB::Table",
+            "Properties": {
+              "TableName": "keepr-ephemeral-chat-connections-prod",
+              "AttributeDefinitions": [
+                {
+                  "AttributeName": "connectionId",
+                  "AttributeType": "S"
+                },
+                {
+                  "AttributeName": "roomId",
+                  "AttributeType": "S"
+                }
+              ],
+              "KeySchema": [
+                {
+                  "AttributeName": "connectionId",
+                  "KeyType": "HASH"
+                }
+              ],
+              "GlobalSecondaryIndexes": [
+                {
+                  "IndexName": "RoomIndex",
+                  "KeySchema": [
+                    {
+                      "AttributeName": "roomId",
+                      "KeyType": "HASH"
+                    }
+                  ],
+                  "Projection": {
+                    "ProjectionType": "ALL"
+                  },
+                  "ProvisionedThroughput": {
+                    "ReadCapacityUnits": 5,
+                    "WriteCapacityUnits": 5
+                  }
+                }
+              ],
+              "BillingMode": "PROVISIONED",
+              "ProvisionedThroughput": {
+                "ReadCapacityUnits": 5,
+                "WriteCapacityUnits": 5
+              },
+              "TimeToLiveSpecification": {
+                "AttributeName": "ttl",
+                "Enabled": true
+              }
+            }
+          }
+        },
+        "Outputs": {
+          "VaultBucketName": {
+            "Description": "Set this as AWS_BUCKET_NAME in your .env",
+            "Value": {
+              "Ref": "VaultBucket"
+            }
+          },
+          "DetonatorLambdaArn": {
+            "Description": "Set LAMBDA_FUNCTION_NAME=KeeprLinkDetonator in your .env",
+            "Value": {
+              "Fn::GetAtt": [
+                "DetonatorLambdaFunction",
+                "Arn"
+              ]
+            }
+          },
+          "ChatConnectionsTableName": {
+            "Description": "DynamoDB table for ephemeral chat WebSocket connections",
+            "Value": {
+              "Ref": "ConnectionsTable"
+            }
+          },
+          "WebSocketUrl": {
+            "Description": "Paste this as VITE_WEBSOCKET_URL in your .env",
+            "Value": {
+              "Fn::Sub": "wss://${WebsocketsApi}.execute-api.${AWS::Region}.amazonaws.com/prod"
+            }
+          }
+        }
+      }
+    },
+    "provider": {
+      "name": "aws",
+      "runtime": "nodejs20.x",
+      "region": "ap-south-1",
+      "websocketsApiName": "keepr-chat-api",
+      "websocketsApiRouteSelectionExpression": "$request.body.action",
+      "environment": {
+        "CONNECTIONS_TABLE": "keepr-ephemeral-chat-connections-prod"
+      },
+      "iam": {
+        "role": {
+          "statements": [
+            {
+              "Effect": "Allow",
+              "Action": [
+                "execute-api:ManageConnections"
+              ],
+              "Resource": "arn:aws:execute-api:*:*:**/@connections/*"
+            },
+            {
+              "Effect": "Allow",
+              "Action": [
+                "dynamodb:PutItem",
+                "dynamodb:DeleteItem",
+                "dynamodb:Query",
+                "dynamodb:Scan"
+              ],
+              "Resource": [
+                {
+                  "Fn::GetAtt": [
+                    "ConnectionsTable",
+                    "Arn"
+                  ]
+                },
+                {
+                  "Fn::Join": [
+                    "/",
+                    [
+                      {
+                        "Fn::GetAtt": [
+                          "ConnectionsTable",
+                          "Arn"
+                        ]
+                      },
+                      "index/*"
+                    ]
+                  ]
+                }
+              ]
+            }
+          ]
+        }
+      },
+      "stage": "prod",
+      "versionFunctions": true,
+      "compiledCloudFormationTemplate": {
+        "AWSTemplateFormatVersion": "2010-09-09",
+        "Description": "The AWS CloudFormation template for this Serverless application",
+        "Resources": {
+          "ConnectionHandlerLogGroup": {
+            "Type": "AWS::Logs::LogGroup",
+            "Properties": {
+              "LogGroupName": "/aws/lambda/keepr-ephemeral-chat-prod-connectionHandler"
+            }
+          },
+          "DefaultHandlerLogGroup": {
+            "Type": "AWS::Logs::LogGroup",
+            "Properties": {
+              "LogGroupName": "/aws/lambda/keepr-ephemeral-chat-prod-defaultHandler"
+            }
+          },
+          "SendMessageHandlerLogGroup": {
+            "Type": "AWS::Logs::LogGroup",
+            "Properties": {
+              "LogGroupName": "/aws/lambda/keepr-ephemeral-chat-prod-sendMessageHandler"
+            }
+          },
+          "IamRoleLambdaExecution": {
+            "Type": "AWS::IAM::Role",
+            "Properties": {
+              "AssumeRolePolicyDocument": {
+                "Version": "2012-10-17",
+                "Statement": [
+                  {
+                    "Effect": "Allow",
+                    "Principal": {
+                      "Service": [
+                        "lambda.amazonaws.com"
+                      ]
+                    },
+                    "Action": [
+                      "sts:AssumeRole"
+                    ]
+                  }
+                ]
+              },
+              "Policies": [
+                {
+                  "PolicyName": {
+                    "Fn::Join": [
+                      "-",
+                      [
+                        "keepr-ephemeral-chat",
+                        "prod",
+                        "lambda"
+                      ]
+                    ]
+                  },
+                  "PolicyDocument": {
+                    "Version": "2012-10-17",
+                    "Statement": [
+                      {
+                        "Effect": "Allow",
+                        "Action": [
+                          "logs:CreateLogStream",
+                          "logs:CreateLogGroup",
+                          "logs:TagResource"
+                        ],
+                        "Resource": [
+                          {
+                            "Fn::Sub": "arn:${AWS::Partition}:logs:${AWS::Region}:${AWS::AccountId}:log-group:/aws/lambda/keepr-ephemeral-chat-prod*:*"
+                          }
+                        ]
+                      },
+                      {
+                        "Effect": "Allow",
+                        "Action": [
+                          "logs:PutLogEvents"
+                        ],
+                        "Resource": [
+                          {
+                            "Fn::Sub": "arn:${AWS::Partition}:logs:${AWS::Region}:${AWS::AccountId}:log-group:/aws/lambda/keepr-ephemeral-chat-prod*:*:*"
+                          }
+                        ]
+                      },
+                      {
+                        "Effect": "Allow",
+                        "Action": [
+                          "execute-api:ManageConnections"
+                        ],
+                        "Resource": "arn:aws:execute-api:*:*:**/@connections/*"
+                      },
+                      {
+                        "Effect": "Allow",
+                        "Action": [
+                          "dynamodb:PutItem",
+                          "dynamodb:DeleteItem",
+                          "dynamodb:Query",
+                          "dynamodb:Scan"
+                        ],
+                        "Resource": [
+                          {
+                            "Fn::GetAtt": [
+                              "ConnectionsTable",
+                              "Arn"
+                            ]
+                          },
+                          {
+                            "Fn::Join": [
+                              "/",
+                              [
+                                {
+                                  "Fn::GetAtt": [
+                                    "ConnectionsTable",
+                                    "Arn"
+                                  ]
+                                },
+                                "index/*"
+                              ]
+                            ]
+                          }
+                        ]
+                      },
+                      {
+                        "Effect": "Allow",
+                        "Action": [
+                          "execute-api:ManageConnections"
+                        ],
+                        "Resource": [
+                          {
+                            "Fn::Sub": "arn:${AWS::Partition}:execute-api:*:*:*/@connections/*"
+                          }
+                        ]
+                      }
+                    ]
+                  }
+                }
+              ],
+              "Path": "/",
+              "RoleName": {
+                "Fn::Join": [
+                  "-",
+                  [
+                    "keepr-ephemeral-chat",
+                    "prod",
+                    {
+                      "Ref": "AWS::Region"
+                    },
+                    "lambdaRole"
+                  ]
+                ]
+              }
+            }
+          },
+          "ConnectionHandlerLambdaFunction": {
+            "Type": "AWS::Lambda::Function",
+            "Properties": {
+              "Code": {
+                "S3Bucket": "serverless-framework-deployments-ap-south-1-d979e78e-4638",
+                "S3Key": "serverless/keepr-ephemeral-chat/prod/1778768045471-2026-05-14T14:14:05.471Z/keepr-ephemeral-chat.zip"
+              },
+              "Handler": "handler.connectionHandler",
+              "Runtime": "nodejs20.x",
+              "FunctionName": "keepr-ephemeral-chat-prod-connectionHandler",
+              "MemorySize": 1024,
+              "Timeout": 6,
+              "Environment": {
+                "Variables": {
+                  "CONNECTIONS_TABLE": "keepr-ephemeral-chat-connections-prod"
+                }
+              },
+              "Role": {
+                "Fn::GetAtt": [
+                  "IamRoleLambdaExecution",
+                  "Arn"
+                ]
+              }
+            },
+            "DependsOn": [
+              "ConnectionHandlerLogGroup"
+            ]
+          },
+          "DefaultHandlerLambdaFunction": {
+            "Type": "AWS::Lambda::Function",
+            "Properties": {
+              "Code": {
+                "S3Bucket": "serverless-framework-deployments-ap-south-1-d979e78e-4638",
+                "S3Key": "serverless/keepr-ephemeral-chat/prod/1778768045471-2026-05-14T14:14:05.471Z/keepr-ephemeral-chat.zip"
+              },
+              "Handler": "handler.defaultHandler",
+              "Runtime": "nodejs20.x",
+              "FunctionName": "keepr-ephemeral-chat-prod-defaultHandler",
+              "MemorySize": 1024,
+              "Timeout": 6,
+              "Environment": {
+                "Variables": {
+                  "CONNECTIONS_TABLE": "keepr-ephemeral-chat-connections-prod"
+                }
+              },
+              "Role": {
+                "Fn::GetAtt": [
+                  "IamRoleLambdaExecution",
+                  "Arn"
+                ]
+              }
+            },
+            "DependsOn": [
+              "DefaultHandlerLogGroup"
+            ]
+          },
+          "SendMessageHandlerLambdaFunction": {
+            "Type": "AWS::Lambda::Function",
+            "Properties": {
+              "Code": {
+                "S3Bucket": "serverless-framework-deployments-ap-south-1-d979e78e-4638",
+                "S3Key": "serverless/keepr-ephemeral-chat/prod/1778768045471-2026-05-14T14:14:05.471Z/keepr-ephemeral-chat.zip"
+              },
+              "Handler": "handler.sendMessageHandler",
+              "Runtime": "nodejs20.x",
+              "FunctionName": "keepr-ephemeral-chat-prod-sendMessageHandler",
+              "MemorySize": 1024,
+              "Timeout": 6,
+              "Environment": {
+                "Variables": {
+                  "CONNECTIONS_TABLE": "keepr-ephemeral-chat-connections-prod"
+                }
+              },
+              "Role": {
+                "Fn::GetAtt": [
+                  "IamRoleLambdaExecution",
+                  "Arn"
+                ]
+              }
+            },
+            "DependsOn": [
+              "SendMessageHandlerLogGroup"
+            ]
+          },
+          "ConnectionHandlerLambdaVersionB4Vz8Z0vU5WZU9qDv7k2vVQXFC4ZRcxbMi56ddyFQ": {
+            "Type": "AWS::Lambda::Version",
+            "DeletionPolicy": "Retain",
+            "Properties": {
+              "FunctionName": {
+                "Ref": "ConnectionHandlerLambdaFunction"
+              },
+              "CodeSha256": "N3EotecBdhoSiTqz8YxMb1vtjuY4dUhpRU/Nr9HbL/I="
+            }
+          },
+          "DefaultHandlerLambdaVersionpoDVRmY4dH6CjW77NK3pcq5kTwGjjUL4eUkv1l3E": {
+            "Type": "AWS::Lambda::Version",
+            "DeletionPolicy": "Retain",
+            "Properties": {
+              "FunctionName": {
+                "Ref": "DefaultHandlerLambdaFunction"
+              },
+              "CodeSha256": "N3EotecBdhoSiTqz8YxMb1vtjuY4dUhpRU/Nr9HbL/I="
+            }
+          },
+          "SendMessageHandlerLambdaVersionIdXtjWihwxuIW6Sx5FEGCjd6kumhroAiM8yhzvADw": {
+            "Type": "AWS::Lambda::Version",
+            "DeletionPolicy": "Retain",
+            "Properties": {
+              "FunctionName": {
+                "Ref": "SendMessageHandlerLambdaFunction"
+              },
+              "CodeSha256": "N3EotecBdhoSiTqz8YxMb1vtjuY4dUhpRU/Nr9HbL/I="
+            }
+          },
+          "WebsocketsApi": {
+            "Type": "AWS::ApiGatewayV2::Api",
+            "Properties": {
+              "Name": "keepr-chat-api",
+              "RouteSelectionExpression": "$request.body.action",
+              "Description": "Serverless Websockets",
+              "ProtocolType": "WEBSOCKET"
+            }
+          },
+          "ConnectionHandlerWebsocketsIntegration": {
+            "Type": "AWS::ApiGatewayV2::Integration",
+            "Properties": {
+              "ApiId": {
+                "Ref": "WebsocketsApi"
+              },
+              "IntegrationType": "AWS_PROXY",
+              "IntegrationUri": {
+                "Fn::Join": [
+                  "",
+                  [
+                    "arn:",
+                    {
+                      "Ref": "AWS::Partition"
+                    },
+                    ":apigateway:",
+                    {
+                      "Ref": "AWS::Region"
+                    },
+                    ":lambda:path/2015-03-31/functions/",
+                    {
+                      "Fn::GetAtt": [
+                        "ConnectionHandlerLambdaFunction",
+                        "Arn"
+                      ]
+                    },
+                    "/invocations"
+                  ]
+                ]
+              }
+            }
+          },
+          "DefaultHandlerWebsocketsIntegration": {
+            "Type": "AWS::ApiGatewayV2::Integration",
+            "Properties": {
+              "ApiId": {
+                "Ref": "WebsocketsApi"
+              },
+              "IntegrationType": "AWS_PROXY",
+              "IntegrationUri": {
+                "Fn::Join": [
+                  "",
+                  [
+                    "arn:",
+                    {
+                      "Ref": "AWS::Partition"
+                    },
+                    ":apigateway:",
+                    {
+                      "Ref": "AWS::Region"
+                    },
+                    ":lambda:path/2015-03-31/functions/",
+                    {
+                      "Fn::GetAtt": [
+                        "DefaultHandlerLambdaFunction",
+                        "Arn"
+                      ]
+                    },
+                    "/invocations"
+                  ]
+                ]
+              }
+            }
+          },
+          "SendMessageHandlerWebsocketsIntegration": {
+            "Type": "AWS::ApiGatewayV2::Integration",
+            "Properties": {
+              "ApiId": {
+                "Ref": "WebsocketsApi"
+              },
+              "IntegrationType": "AWS_PROXY",
+              "IntegrationUri": {
+                "Fn::Join": [
+                  "",
+                  [
+                    "arn:",
+                    {
+                      "Ref": "AWS::Partition"
+                    },
+                    ":apigateway:",
+                    {
+                      "Ref": "AWS::Region"
+                    },
+                    ":lambda:path/2015-03-31/functions/",
+                    {
+                      "Fn::GetAtt": [
+                        "SendMessageHandlerLambdaFunction",
+                        "Arn"
+                      ]
+                    },
+                    "/invocations"
+                  ]
+                ]
+              }
+            }
+          },
+          "ConnectionHandlerLambdaPermissionWebsockets": {
+            "Type": "AWS::Lambda::Permission",
+            "DependsOn": [
+              "WebsocketsApi",
+              "ConnectionHandlerLambdaFunction"
+            ],
+            "Properties": {
+              "FunctionName": {
+                "Fn::GetAtt": [
+                  "ConnectionHandlerLambdaFunction",
+                  "Arn"
+                ]
+              },
+              "Action": "lambda:InvokeFunction",
+              "Principal": "apigateway.amazonaws.com"
+            }
+          },
+          "DefaultHandlerLambdaPermissionWebsockets": {
+            "Type": "AWS::Lambda::Permission",
+            "DependsOn": [
+              "WebsocketsApi",
+              "DefaultHandlerLambdaFunction"
+            ],
+            "Properties": {
+              "FunctionName": {
+                "Fn::GetAtt": [
+                  "DefaultHandlerLambdaFunction",
+                  "Arn"
+                ]
+              },
+              "Action": "lambda:InvokeFunction",
+              "Principal": "apigateway.amazonaws.com"
+            }
+          },
+          "SendMessageHandlerLambdaPermissionWebsockets": {
+            "Type": "AWS::Lambda::Permission",
+            "DependsOn": [
+              "WebsocketsApi",
+              "SendMessageHandlerLambdaFunction"
+            ],
+            "Properties": {
+              "FunctionName": {
+                "Fn::GetAtt": [
+                  "SendMessageHandlerLambdaFunction",
+                  "Arn"
+                ]
+              },
+              "Action": "lambda:InvokeFunction",
+              "Principal": "apigateway.amazonaws.com"
+            }
+          },
+          "SconnectWebsocketsRoute": {
+            "Type": "AWS::ApiGatewayV2::Route",
+            "Properties": {
+              "ApiId": {
+                "Ref": "WebsocketsApi"
+              },
+              "RouteKey": "$connect",
+              "AuthorizationType": "NONE",
+              "Target": {
+                "Fn::Join": [
+                  "/",
+                  [
+                    "integrations",
+                    {
+                      "Ref": "ConnectionHandlerWebsocketsIntegration"
+                    }
+                  ]
+                ]
+              }
+            }
+          },
+          "SdisconnectWebsocketsRoute": {
+            "Type": "AWS::ApiGatewayV2::Route",
+            "Properties": {
+              "ApiId": {
+                "Ref": "WebsocketsApi"
+              },
+              "RouteKey": "$disconnect",
+              "AuthorizationType": "NONE",
+              "Target": {
+                "Fn::Join": [
+                  "/",
+                  [
+                    "integrations",
+                    {
+                      "Ref": "ConnectionHandlerWebsocketsIntegration"
+                    }
+                  ]
+                ]
+              }
+            }
+          },
+          "SdefaultWebsocketsRoute": {
+            "Type": "AWS::ApiGatewayV2::Route",
+            "Properties": {
+              "ApiId": {
+                "Ref": "WebsocketsApi"
+              },
+              "RouteKey": "$default",
+              "AuthorizationType": "NONE",
+              "Target": {
+                "Fn::Join": [
+                  "/",
+                  [
+                    "integrations",
+                    {
+                      "Ref": "DefaultHandlerWebsocketsIntegration"
+                    }
+                  ]
+                ]
+              }
+            }
+          },
+          "sendMessageWebsocketsRoute": {
+            "Type": "AWS::ApiGatewayV2::Route",
+            "Properties": {
+              "ApiId": {
+                "Ref": "WebsocketsApi"
+              },
+              "RouteKey": "sendMessage",
+              "AuthorizationType": "NONE",
+              "Target": {
+                "Fn::Join": [
+                  "/",
+                  [
+                    "integrations",
+                    {
+                      "Ref": "SendMessageHandlerWebsocketsIntegration"
+                    }
+                  ]
+                ]
+              }
+            }
+          },
+          "WebsocketsDeploymentStage": {
+            "Type": "AWS::ApiGatewayV2::Stage",
+            "Properties": {
+              "ApiId": {
+                "Ref": "WebsocketsApi"
+              },
+              "StageName": "prod",
+              "Description": "Serverless Websockets",
+              "DeploymentId": {
+                "Ref": "WebsocketsDeploymentdfkBOvRw02KaJldrbrU89ifghfsTNShxminqUajyUY"
+              }
+            }
+          },
+          "WebsocketsDeploymentdfkBOvRw02KaJldrbrU89ifghfsTNShxminqUajyUY": {
+            "Type": "AWS::ApiGatewayV2::Deployment",
+            "DependsOn": [
+              "SconnectWebsocketsRoute",
+              "SdisconnectWebsocketsRoute",
+              "SdefaultWebsocketsRoute",
+              "sendMessageWebsocketsRoute"
+            ],
+            "Properties": {
+              "ApiId": {
+                "Ref": "WebsocketsApi"
+              },
+              "Description": "Serverless Websockets"
+            }
+          },
+          "VaultBucket": {
+            "Type": "AWS::S3::Bucket",
+            "Properties": {
+              "BucketName": "keepr-vault-storage-anshul",
+              "PublicAccessBlockConfiguration": {
+                "BlockPublicAcls": true,
+                "BlockPublicPolicy": true,
+                "IgnorePublicAcls": true,
+                "RestrictPublicBuckets": true
+              },
+              "BucketEncryption": {
+                "ServerSideEncryptionConfiguration": [
+                  {
+                    "ServerSideEncryptionByDefault": {
+                      "SSEAlgorithm": "AES256"
+                    }
+                  }
+                ]
+              },
+              "CorsConfiguration": {
+                "CorsRules": [
+                  {
+                    "AllowedHeaders": [
+                      "*"
+                    ],
+                    "AllowedMethods": [
+                      "PUT",
+                      "GET",
+                      "POST",
+                      "DELETE"
+                    ],
+                    "AllowedOrigins": [
+                      "http://localhost:3000",
+                      "http://localhost:3001",
+                      "http://localhost:5173"
+                    ],
+                    "ExposedHeaders": [],
+                    "MaxAge": 3000
+                  }
+                ]
+              },
+              "LifecycleConfiguration": {
+                "Rules": [
+                  {
+                    "Id": "AutoExpireVaultObjects",
+                    "Status": "Enabled",
+                    "ExpirationInDays": 7
+                  }
+                ]
+              }
+            }
+          },
+          "DetonatorLambdaRole": {
+            "Type": "AWS::IAM::Role",
+            "Properties": {
+              "RoleName": "KeeprDetonatorLambdaRole",
+              "AssumeRolePolicyDocument": {
+                "Version": "2012-10-17",
+                "Statement": [
+                  {
+                    "Effect": "Allow",
+                    "Principal": {
+                      "Service": "lambda.amazonaws.com"
+                    },
+                    "Action": "sts:AssumeRole"
+                  }
+                ]
+              },
+              "ManagedPolicyArns": [
+                "arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole"
+              ],
+              "Policies": [
+                {
+                  "PolicyName": "DetonatorReadStagingBucket",
+                  "PolicyDocument": {
+                    "Version": "2012-10-17",
+                    "Statement": [
+                      {
+                        "Effect": "Allow",
+                        "Action": [
+                          "s3:GetObject"
+                        ],
+                        "Resource": {
+                          "Fn::Sub": "arn:aws:s3:::keepr-detonator-storage/*"
+                        }
+                      }
+                    ]
+                  }
+                }
+              ]
+            }
+          },
+          "DetonatorLambdaFunction": {
+            "Type": "AWS::Lambda::Function",
+            "DependsOn": [
+              "DetonatorLambdaRole"
+            ],
+            "Properties": {
+              "FunctionName": "KeeprLinkDetonator",
+              "Runtime": "nodejs20.x",
+              "Role": {
+                "Fn::GetAtt": [
+                  "DetonatorLambdaRole",
+                  "Arn"
+                ]
+              },
+              "Handler": "index.handler",
+              "MemorySize": 1600,
+              "Timeout": 60,
+              "Code": {
+                "S3Bucket": "keepr-detonator-storage",
+                "S3Key": "lambda-detonator.zip"
+              }
+            }
+          },
+          "ConnectionsTable": {
+            "Type": "AWS::DynamoDB::Table",
+            "Properties": {
+              "TableName": "keepr-ephemeral-chat-connections-prod",
+              "AttributeDefinitions": [
+                {
+                  "AttributeName": "connectionId",
+                  "AttributeType": "S"
+                },
+                {
+                  "AttributeName": "roomId",
+                  "AttributeType": "S"
+                }
+              ],
+              "KeySchema": [
+                {
+                  "AttributeName": "connectionId",
+                  "KeyType": "HASH"
+                }
+              ],
+              "GlobalSecondaryIndexes": [
+                {
+                  "IndexName": "RoomIndex",
+                  "KeySchema": [
+                    {
+                      "AttributeName": "roomId",
+                      "KeyType": "HASH"
+                    }
+                  ],
+                  "Projection": {
+                    "ProjectionType": "ALL"
+                  },
+                  "ProvisionedThroughput": {
+                    "ReadCapacityUnits": 5,
+                    "WriteCapacityUnits": 5
+                  }
+                }
+              ],
+              "BillingMode": "PROVISIONED",
+              "ProvisionedThroughput": {
+                "ReadCapacityUnits": 5,
+                "WriteCapacityUnits": 5
+              },
+              "TimeToLiveSpecification": {
+                "AttributeName": "ttl",
+                "Enabled": true
+              }
+            }
+          }
+        },
+        "Outputs": {
+          "ServerlessDeploymentBucketName": {
+            "Value": "serverless-framework-deployments-ap-south-1-d979e78e-4638",
+            "Export": {
+              "Name": "sls-keepr-ephemeral-chat-prod-ServerlessDeploymentBucketName"
+            }
+          },
+          "ConnectionHandlerLambdaFunctionQualifiedArn": {
+            "Description": "Current Lambda function version",
+            "Value": {
+              "Ref": "ConnectionHandlerLambdaVersionB4Vz8Z0vU5WZU9qDv7k2vVQXFC4ZRcxbMi56ddyFQ"
+            },
+            "Export": {
+              "Name": "sls-keepr-ephemeral-chat-prod-ConnectionHandlerLambdaFunctionQualifiedArn"
+            }
+          },
+          "DefaultHandlerLambdaFunctionQualifiedArn": {
+            "Description": "Current Lambda function version",
+            "Value": {
+              "Ref": "DefaultHandlerLambdaVersionpoDVRmY4dH6CjW77NK3pcq5kTwGjjUL4eUkv1l3E"
+            },
+            "Export": {
+              "Name": "sls-keepr-ephemeral-chat-prod-DefaultHandlerLambdaFunctionQualifiedArn"
+            }
+          },
+          "SendMessageHandlerLambdaFunctionQualifiedArn": {
+            "Description": "Current Lambda function version",
+            "Value": {
+              "Ref": "SendMessageHandlerLambdaVersionIdXtjWihwxuIW6Sx5FEGCjd6kumhroAiM8yhzvADw"
+            },
+            "Export": {
+              "Name": "sls-keepr-ephemeral-chat-prod-SendMessageHandlerLambdaFunctionQualifiedArn"
+            }
+          },
+          "ServiceEndpointWebsocket": {
+            "Description": "URL of the service endpoint",
+            "Value": {
+              "Fn::Join": [
+                "",
+                [
+                  "wss://",
+                  {
+                    "Ref": "WebsocketsApi"
+                  },
+                  ".execute-api.",
+                  {
+                    "Ref": "AWS::Region"
+                  },
+                  ".",
+                  {
+                    "Ref": "AWS::URLSuffix"
+                  },
+                  "/prod"
+                ]
+              ]
+            },
+            "Export": {
+              "Name": "sls-keepr-ephemeral-chat-prod-ServiceEndpointWebsocket"
+            }
+          },
+          "VaultBucketName": {
+            "Description": "Set this as AWS_BUCKET_NAME in your .env",
+            "Value": {
+              "Ref": "VaultBucket"
+            }
+          },
+          "DetonatorLambdaArn": {
+            "Description": "Set LAMBDA_FUNCTION_NAME=KeeprLinkDetonator in your .env",
+            "Value": {
+              "Fn::GetAtt": [
+                "DetonatorLambdaFunction",
+                "Arn"
+              ]
+            }
+          },
+          "ChatConnectionsTableName": {
+            "Description": "DynamoDB table for ephemeral chat WebSocket connections",
+            "Value": {
+              "Ref": "ConnectionsTable"
+            }
+          },
+          "WebSocketUrl": {
+            "Description": "Paste this as VITE_WEBSOCKET_URL in your .env",
+            "Value": {
+              "Fn::Sub": "wss://${WebsocketsApi}.execute-api.${AWS::Region}.amazonaws.com/prod"
+            }
+          }
+        }
+      },
+      "vpc": {}
+    },
+    "dashboard": {
+      "isEnabledForService": false,
+      "requiredAuthentication": false,
+      "orgFeaturesInUse": null,
+      "orgObservabilityIntegrations": null,
+      "serviceAppId": null,
+      "serviceProvider": null,
+      "instanceParameters": null
+    },
+    "serviceRawFile": "\n#  Keepr – Unified AWS Infrastructure (Serverless Framework)\n#\n#  Covers all three features in one deploy command:\n#    Feature 1 – Zero-Trust Vault       (S3 bucket + IAM)\n#    Feature 2 – Link Detonator         (S3 staging bucket + Lambda + IAM)\n#    Feature 3 – Ephemeral Chat         (API Gateway WebSocket + Lambda + DynamoDB)\n#\n#  Deploy:\n#    cd keepr-ephemeral-chat-backend\n#    serverless deploy --stage prod\n#\n#  The \"resources\" section is pure CloudFormation, so every block works\n#  exactly the same as a standalone CloudFormation template would.\n\n\nservice: keepr-ephemeral-chat\n\n\n# CUSTOM  – change these values if you need different names\n\ncustom:\n  # Feature 1 – Vault\n  vaultBucketName: keepr-vault-storage-anshul\n\n  # Feature 2 – Link Detonator\n  detonatorBucketName: keepr-detonator-storage\n  detonatorFunctionName: KeeprLinkDetonator\n  detonatorMemoryMB: 1600       # Chromium needs extra RAM\n  detonatorTimeoutSec: 60\n\n  # Feature 3 – Chat (keep original pattern)\n  connectionsTable: ${self:service}-connections-${sls:stage}\n\n# PROVIDER\n\nprovider:\n  name: aws\n  runtime: nodejs20.x\n  region: ap-south-1\n\n  # WebSocket API for Feature 3\n  websocketsApiName: keepr-chat-api\n  websocketsApiRouteSelectionExpression: $request.body.action\n\n  environment:\n    # Feature 3 – chat Lambda functions need this env var\n    CONNECTIONS_TABLE: ${self:custom.connectionsTable}\n\n  # IAM role for the chat Lambda functions\n  # This role is ONLY for the three WebSocket Lambda handlers below.\n  # The backend server uses the separate KeeprMasterUser / KeeprMasterPolicy.\n  iam:\n    role:\n      statements:\n        # Feature 3: send messages back over WebSocket\n        - Effect: Allow\n          Action:\n            - \"execute-api:ManageConnections\"\n          Resource:\n            - \"arn:aws:execute-api:*:*:**/@connections/*\"\n\n        # Feature 3: read/write connection records in DynamoDB\n        - Effect: Allow\n          Action:\n            - dynamodb:PutItem\n            - dynamodb:DeleteItem\n            - dynamodb:Query\n            - dynamodb:Scan\n          Resource:\n            - Fn::GetAtt: [ConnectionsTable, Arn]\n            - Fn::Join:\n                - \"/\"\n                - - Fn::GetAtt: [ConnectionsTable, Arn]\n                  - \"index/*\"\n\n# ─────────────────────────────────────────────────────────────────────────────\n# FUNCTIONS  –  Feature 3: Ephemeral Chat WebSocket handlers\n#               (unchanged from original working setup)\n# ─────────────────────────────────────────────────────────────────────────────\nfunctions:\n  connectionHandler:\n    handler: handler.connectionHandler\n    events:\n      - websocket:\n          route: $connect\n      - websocket:\n          route: $disconnect\n\n  defaultHandler:\n    handler: handler.defaultHandler\n    events:\n      - websocket:\n          route: $default\n\n  sendMessageHandler:\n    handler: handler.sendMessageHandler\n    events:\n      - websocket:\n          route: sendMessage\n\n# ─────────────────────────────────────────────────────────────────────────────\n# RESOURCES  –  Pure CloudFormation for Features 1, 2, and 3\n# ─────────────────────────────────────────────────────────────────────────────\nresources:\n  Resources:\n\n    # ══════════════════════════════════════════════════════════════════════════\n    # FEATURE 1 – ZERO-TRUST VAULT\n    # S3 bucket that stores AES-256 encrypted user files.\n    # Files are only accessible via short-lived pre-signed URLs generated by\n    # the Node.js backend (server.ts). No public access ever.\n    # ══════════════════════════════════════════════════════════════════════════\n    VaultBucket:\n      Type: AWS::S3::Bucket\n      Properties:\n        BucketName: ${self:custom.vaultBucketName}\n        # Block all public access – objects reachable only via pre-signed URLs\n        PublicAccessBlockConfiguration:\n          BlockPublicAcls: true\n          BlockPublicPolicy: true\n          IgnorePublicAcls: true\n          RestrictPublicBuckets: true\n        # Encrypt all objects at rest\n        BucketEncryption:\n          ServerSideEncryptionConfiguration:\n            - ServerSideEncryptionByDefault:\n                SSEAlgorithm: AES256\n        # CORS – allow pre-signed PUT/GET from local dev servers\n        CorsConfiguration:\n          CorsRules:\n            - AllowedHeaders:\n                - \"*\"\n              AllowedMethods:\n                - PUT\n                - GET\n                - POST\n                - DELETE\n              AllowedOrigins:\n                - \"http://localhost:3000\"\n                - \"http://localhost:3001\"\n                - \"http://localhost:5173\"\n                # Add your production domain here once live, e.g.:\n                # - \"https://keepr.yourdomain.com\"\n              ExposedHeaders: []\n              MaxAge: 3000\n        # Auto-expire encrypted blobs after 7 days (adjust as needed)\n        LifecycleConfiguration:\n          Rules:\n            - Id: AutoExpireVaultObjects\n              Status: Enabled\n              ExpirationInDays: 7\n\n    # ══════════════════════════════════════════════════════════════════════════\n    # FEATURE 2 – LINK DETONATOR\n    # NOTE: keepr-detonator-storage bucket was created manually in AWS Console.\n    #       It is NOT managed here to avoid conflicts.\n    # ══════════════════════════════════════════════════════════════════════════\n\n\n    # Execution role for the KeeprLinkDetonator Lambda\n    # (separate from the chat Lambda execution role managed by Serverless)\n    DetonatorLambdaRole:\n      Type: AWS::IAM::Role\n      Properties:\n        RoleName: KeeprDetonatorLambdaRole\n        AssumeRolePolicyDocument:\n          Version: \"2012-10-17\"\n          Statement:\n            - Effect: Allow\n              Principal:\n                Service: lambda.amazonaws.com\n              Action: \"sts:AssumeRole\"\n        ManagedPolicyArns:\n          # Basic CloudWatch Logs write access\n          - arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole\n        Policies:\n          - PolicyName: DetonatorReadStagingBucket\n            PolicyDocument:\n              Version: \"2012-10-17\"\n              Statement:\n                - Effect: Allow\n                  Action:\n                    - \"s3:GetObject\"\n                  Resource: !Sub \"arn:aws:s3:::${self:custom.detonatorBucketName}/*\"\n\n    # The headless-browser Lambda (Puppeteer/Chromium).\n    # Serverless Framework doesn't \"own\" this function (no events wired to it).\n    # The Node.js backend invokes it directly via the AWS SDK:\n    #   lambda.invoke({ FunctionName: 'KeeprLinkDetonator', ... })\n    # NOTE: Deploy this stack AFTER uploading lambda-detonator.zip to the\n    #       DetonatorStagingBucket, or update-stack after uploading the zip.\n    DetonatorLambdaFunction:\n      Type: AWS::Lambda::Function\n      DependsOn:\n        - DetonatorLambdaRole\n      Properties:\n        FunctionName: ${self:custom.detonatorFunctionName}\n        Runtime: nodejs20.x\n        Role: !GetAtt DetonatorLambdaRole.Arn\n        Handler: index.handler\n        MemorySize: ${self:custom.detonatorMemoryMB}\n        Timeout: ${self:custom.detonatorTimeoutSec}\n        Code:\n          # This references the zip you uploaded manually (or via CI) above\n          S3Bucket: ${self:custom.detonatorBucketName}\n          S3Key: lambda-detonator.zip\n\n    # ══════════════════════════════════════════════════════════════════════════\n    # FEATURE 3 – EPHEMERAL CHAT\n    # DynamoDB table for live WebSocket connection IDs.\n    # This is identical to the original serverless.yml table definition.\n    # ══════════════════════════════════════════════════════════════════════════\n    ConnectionsTable:\n      Type: AWS::DynamoDB::Table\n      Properties:\n        TableName: ${self:custom.connectionsTable}\n        AttributeDefinitions:\n          - AttributeName: connectionId\n            AttributeType: S\n          - AttributeName: roomId\n            AttributeType: S\n        KeySchema:\n          - AttributeName: connectionId\n            KeyType: HASH\n        GlobalSecondaryIndexes:\n          - IndexName: RoomIndex\n            KeySchema:\n              - AttributeName: roomId\n                KeyType: HASH\n            Projection:\n              ProjectionType: ALL\n            ProvisionedThroughput:\n              ReadCapacityUnits: 5\n              WriteCapacityUnits: 5\n        BillingMode: PROVISIONED\n        ProvisionedThroughput:\n          ReadCapacityUnits: 5\n          WriteCapacityUnits: 5\n        # Auto-expire stale connections (handler sets ttl = now + 3600 s)\n        TimeToLiveSpecification:\n          AttributeName: ttl\n          Enabled: true\n\n    # NOTE: KeeprMasterPolicy and keepr-master-server IAM user were created\n    #       manually in AWS Console. Not managed here to avoid conflicts.\n\n\n  # ─────────────────────────────────────────────────────────────────────────\n  # OUTPUTS  – printed by `serverless deploy` and visible in CloudFormation\n  # ─────────────────────────────────────────────────────────────────────────\n  Outputs:\n    VaultBucketName:\n      Description: \"Set this as AWS_BUCKET_NAME in your .env\"\n      Value: !Ref VaultBucket\n\n    DetonatorLambdaArn:\n      Description: \"Set LAMBDA_FUNCTION_NAME=KeeprLinkDetonator in your .env\"\n      Value: !GetAtt DetonatorLambdaFunction.Arn\n\n    ChatConnectionsTableName:\n      Description: \"DynamoDB table for ephemeral chat WebSocket connections\"\n      Value: !Ref ConnectionsTable\n\n    WebSocketUrl:\n      Description: \"Paste this as VITE_WEBSOCKET_URL in your .env\"\n      Value: !Sub \"wss://${WebsocketsApi}.execute-api.${AWS::Region}.amazonaws.com/${sls:stage}\"",
+    "command": [
+      "deploy"
+    ],
+    "options": {
+      "stage": "prod"
+    },
+    "orgId": "20297c2c-5bdc-433a-b328-c7cedaf46983",
+    "orgName": "anshul91",
+    "userId": "RnLFFmvRPGc2YRMd19",
+    "userName": "anshul91",
+    "serviceProviderAwsAccountId": "675361793564",
+    "serviceProviderAwsCfStackName": "keepr-ephemeral-chat-prod",
+    "serviceProviderAwsCfStackId": "arn:aws:cloudformation:ap-south-1:675361793564:stack/keepr-ephemeral-chat-prod/2f8a8e80-4f9f-11f1-bdb3-02c90a388cb3",
+    "serviceProviderAwsCfStackCreated": "2026-05-14T14:14:14.858Z",
+    "serviceProviderAwsCfStackUpdated": null,
+    "serviceProviderAwsCfStackStatus": "CREATE_COMPLETE",
+    "serviceProviderAwsCfStackOutputs": [
+      {
+        "OutputKey": "ConnectionHandlerLambdaFunctionQualifiedArn",
+        "OutputValue": "arn:aws:lambda:ap-south-1:675361793564:function:keepr-ephemeral-chat-prod-connectionHandler:1",
+        "Description": "Current Lambda function version",
+        "ExportName": "sls-keepr-ephemeral-chat-prod-ConnectionHandlerLambdaFunctionQualifiedArn"
+      },
+      {
+        "OutputKey": "DefaultHandlerLambdaFunctionQualifiedArn",
+        "OutputValue": "arn:aws:lambda:ap-south-1:675361793564:function:keepr-ephemeral-chat-prod-defaultHandler:1",
+        "Description": "Current Lambda function version",
+        "ExportName": "sls-keepr-ephemeral-chat-prod-DefaultHandlerLambdaFunctionQualifiedArn"
+      },
+      {
+        "OutputKey": "WebSocketUrl",
+        "OutputValue": "wss://9zo03fcqe5.execute-api.ap-south-1.amazonaws.com/prod",
+        "Description": "Paste this as VITE_WEBSOCKET_URL in your .env"
+      },
+      {
+        "OutputKey": "ChatConnectionsTableName",
+        "OutputValue": "keepr-ephemeral-chat-connections-prod",
+        "Description": "DynamoDB table for ephemeral chat WebSocket connections"
+      },
+      {
+        "OutputKey": "DetonatorLambdaArn",
+        "OutputValue": "arn:aws:lambda:ap-south-1:675361793564:function:KeeprLinkDetonator",
+        "Description": "Set LAMBDA_FUNCTION_NAME=KeeprLinkDetonator in your .env"
+      },
+      {
+        "OutputKey": "ServiceEndpointWebsocket",
+        "OutputValue": "wss://9zo03fcqe5.execute-api.ap-south-1.amazonaws.com/prod",
+        "Description": "URL of the service endpoint",
+        "ExportName": "sls-keepr-ephemeral-chat-prod-ServiceEndpointWebsocket"
+      },
+      {
+        "OutputKey": "VaultBucketName",
+        "OutputValue": "keepr-vault-storage-anshul",
+        "Description": "Set this as AWS_BUCKET_NAME in your .env"
+      },
+      {
+        "OutputKey": "ServerlessDeploymentBucketName",
+        "OutputValue": "serverless-framework-deployments-ap-south-1-d979e78e-4638",
+        "ExportName": "sls-keepr-ephemeral-chat-prod-ServerlessDeploymentBucketName"
+      },
+      {
+        "OutputKey": "SendMessageHandlerLambdaFunctionQualifiedArn",
+        "OutputValue": "arn:aws:lambda:ap-south-1:675361793564:function:keepr-ephemeral-chat-prod-sendMessageHandler:1",
+        "Description": "Current Lambda function version",
+        "ExportName": "sls-keepr-ephemeral-chat-prod-SendMessageHandlerLambdaFunctionQualifiedArn"
+      }
+    ],
+    "compiledCloudFormationTemplate": {
+      "AWSTemplateFormatVersion": "2010-09-09",
+      "Description": "The AWS CloudFormation template for this Serverless application",
+      "Resources": {
+        "ConnectionHandlerLogGroup": {
+          "Type": "AWS::Logs::LogGroup",
+          "Properties": {
+            "LogGroupName": "/aws/lambda/keepr-ephemeral-chat-prod-connectionHandler"
+          }
+        },
+        "DefaultHandlerLogGroup": {
+          "Type": "AWS::Logs::LogGroup",
+          "Properties": {
+            "LogGroupName": "/aws/lambda/keepr-ephemeral-chat-prod-defaultHandler"
+          }
+        },
+        "SendMessageHandlerLogGroup": {
+          "Type": "AWS::Logs::LogGroup",
+          "Properties": {
+            "LogGroupName": "/aws/lambda/keepr-ephemeral-chat-prod-sendMessageHandler"
+          }
+        },
+        "IamRoleLambdaExecution": {
+          "Type": "AWS::IAM::Role",
+          "Properties": {
+            "AssumeRolePolicyDocument": {
+              "Version": "2012-10-17",
+              "Statement": [
+                {
+                  "Effect": "Allow",
+                  "Principal": {
+                    "Service": [
+                      "lambda.amazonaws.com"
+                    ]
+                  },
+                  "Action": [
+                    "sts:AssumeRole"
+                  ]
+                }
+              ]
+            },
+            "Policies": [
+              {
+                "PolicyName": {
+                  "Fn::Join": [
+                    "-",
+                    [
+                      "keepr-ephemeral-chat",
+                      "prod",
+                      "lambda"
+                    ]
+                  ]
+                },
+                "PolicyDocument": {
+                  "Version": "2012-10-17",
+                  "Statement": [
+                    {
+                      "Effect": "Allow",
+                      "Action": [
+                        "logs:CreateLogStream",
+                        "logs:CreateLogGroup",
+                        "logs:TagResource"
+                      ],
+                      "Resource": [
+                        {
+                          "Fn::Sub": "arn:${AWS::Partition}:logs:${AWS::Region}:${AWS::AccountId}:log-group:/aws/lambda/keepr-ephemeral-chat-prod*:*"
+                        }
+                      ]
+                    },
+                    {
+                      "Effect": "Allow",
+                      "Action": [
+                        "logs:PutLogEvents"
+                      ],
+                      "Resource": [
+                        {
+                          "Fn::Sub": "arn:${AWS::Partition}:logs:${AWS::Region}:${AWS::AccountId}:log-group:/aws/lambda/keepr-ephemeral-chat-prod*:*:*"
+                        }
+                      ]
+                    },
+                    {
+                      "Effect": "Allow",
+                      "Action": [
+                        "execute-api:ManageConnections"
+                      ],
+                      "Resource": "arn:aws:execute-api:*:*:**/@connections/*"
+                    },
+                    {
+                      "Effect": "Allow",
+                      "Action": [
+                        "dynamodb:PutItem",
+                        "dynamodb:DeleteItem",
+                        "dynamodb:Query",
+                        "dynamodb:Scan"
+                      ],
+                      "Resource": [
+                        {
+                          "Fn::GetAtt": [
+                            "ConnectionsTable",
+                            "Arn"
+                          ]
+                        },
+                        {
+                          "Fn::Join": [
+                            "/",
+                            [
+                              {
+                                "Fn::GetAtt": [
+                                  "ConnectionsTable",
+                                  "Arn"
+                                ]
+                              },
+                              "index/*"
+                            ]
+                          ]
+                        }
+                      ]
+                    },
+                    {
+                      "Effect": "Allow",
+                      "Action": [
+                        "execute-api:ManageConnections"
+                      ],
+                      "Resource": [
+                        {
+                          "Fn::Sub": "arn:${AWS::Partition}:execute-api:*:*:*/@connections/*"
+                        }
+                      ]
+                    }
+                  ]
+                }
+              }
+            ],
+            "Path": "/",
+            "RoleName": {
+              "Fn::Join": [
+                "-",
+                [
+                  "keepr-ephemeral-chat",
+                  "prod",
+                  {
+                    "Ref": "AWS::Region"
+                  },
+                  "lambdaRole"
+                ]
+              ]
+            }
+          }
+        },
+        "ConnectionHandlerLambdaFunction": {
+          "Type": "AWS::Lambda::Function",
+          "Properties": {
+            "Code": {
+              "S3Bucket": "serverless-framework-deployments-ap-south-1-d979e78e-4638",
+              "S3Key": "serverless/keepr-ephemeral-chat/prod/1778768045471-2026-05-14T14:14:05.471Z/keepr-ephemeral-chat.zip"
+            },
+            "Handler": "handler.connectionHandler",
+            "Runtime": "nodejs20.x",
+            "FunctionName": "keepr-ephemeral-chat-prod-connectionHandler",
+            "MemorySize": 1024,
+            "Timeout": 6,
+            "Environment": {
+              "Variables": {
+                "CONNECTIONS_TABLE": "keepr-ephemeral-chat-connections-prod"
+              }
+            },
+            "Role": {
+              "Fn::GetAtt": [
+                "IamRoleLambdaExecution",
+                "Arn"
+              ]
+            }
+          },
+          "DependsOn": [
+            "ConnectionHandlerLogGroup"
+          ]
+        },
+        "DefaultHandlerLambdaFunction": {
+          "Type": "AWS::Lambda::Function",
+          "Properties": {
+            "Code": {
+              "S3Bucket": "serverless-framework-deployments-ap-south-1-d979e78e-4638",
+              "S3Key": "serverless/keepr-ephemeral-chat/prod/1778768045471-2026-05-14T14:14:05.471Z/keepr-ephemeral-chat.zip"
+            },
+            "Handler": "handler.defaultHandler",
+            "Runtime": "nodejs20.x",
+            "FunctionName": "keepr-ephemeral-chat-prod-defaultHandler",
+            "MemorySize": 1024,
+            "Timeout": 6,
+            "Environment": {
+              "Variables": {
+                "CONNECTIONS_TABLE": "keepr-ephemeral-chat-connections-prod"
+              }
+            },
+            "Role": {
+              "Fn::GetAtt": [
+                "IamRoleLambdaExecution",
+                "Arn"
+              ]
+            }
+          },
+          "DependsOn": [
+            "DefaultHandlerLogGroup"
+          ]
+        },
+        "SendMessageHandlerLambdaFunction": {
+          "Type": "AWS::Lambda::Function",
+          "Properties": {
+            "Code": {
+              "S3Bucket": "serverless-framework-deployments-ap-south-1-d979e78e-4638",
+              "S3Key": "serverless/keepr-ephemeral-chat/prod/1778768045471-2026-05-14T14:14:05.471Z/keepr-ephemeral-chat.zip"
+            },
+            "Handler": "handler.sendMessageHandler",
+            "Runtime": "nodejs20.x",
+            "FunctionName": "keepr-ephemeral-chat-prod-sendMessageHandler",
+            "MemorySize": 1024,
+            "Timeout": 6,
+            "Environment": {
+              "Variables": {
+                "CONNECTIONS_TABLE": "keepr-ephemeral-chat-connections-prod"
+              }
+            },
+            "Role": {
+              "Fn::GetAtt": [
+                "IamRoleLambdaExecution",
+                "Arn"
+              ]
+            }
+          },
+          "DependsOn": [
+            "SendMessageHandlerLogGroup"
+          ]
+        },
+        "ConnectionHandlerLambdaVersionB4Vz8Z0vU5WZU9qDv7k2vVQXFC4ZRcxbMi56ddyFQ": {
+          "Type": "AWS::Lambda::Version",
+          "DeletionPolicy": "Retain",
+          "Properties": {
+            "FunctionName": {
+              "Ref": "ConnectionHandlerLambdaFunction"
+            },
+            "CodeSha256": "N3EotecBdhoSiTqz8YxMb1vtjuY4dUhpRU/Nr9HbL/I="
+          }
+        },
+        "DefaultHandlerLambdaVersionpoDVRmY4dH6CjW77NK3pcq5kTwGjjUL4eUkv1l3E": {
+          "Type": "AWS::Lambda::Version",
+          "DeletionPolicy": "Retain",
+          "Properties": {
+            "FunctionName": {
+              "Ref": "DefaultHandlerLambdaFunction"
+            },
+            "CodeSha256": "N3EotecBdhoSiTqz8YxMb1vtjuY4dUhpRU/Nr9HbL/I="
+          }
+        },
+        "SendMessageHandlerLambdaVersionIdXtjWihwxuIW6Sx5FEGCjd6kumhroAiM8yhzvADw": {
+          "Type": "AWS::Lambda::Version",
+          "DeletionPolicy": "Retain",
+          "Properties": {
+            "FunctionName": {
+              "Ref": "SendMessageHandlerLambdaFunction"
+            },
+            "CodeSha256": "N3EotecBdhoSiTqz8YxMb1vtjuY4dUhpRU/Nr9HbL/I="
+          }
+        },
+        "WebsocketsApi": {
+          "Type": "AWS::ApiGatewayV2::Api",
+          "Properties": {
+            "Name": "keepr-chat-api",
+            "RouteSelectionExpression": "$request.body.action",
+            "Description": "Serverless Websockets",
+            "ProtocolType": "WEBSOCKET"
+          }
+        },
+        "ConnectionHandlerWebsocketsIntegration": {
+          "Type": "AWS::ApiGatewayV2::Integration",
+          "Properties": {
+            "ApiId": {
+              "Ref": "WebsocketsApi"
+            },
+            "IntegrationType": "AWS_PROXY",
+            "IntegrationUri": {
+              "Fn::Join": [
+                "",
+                [
+                  "arn:",
+                  {
+                    "Ref": "AWS::Partition"
+                  },
+                  ":apigateway:",
+                  {
+                    "Ref": "AWS::Region"
+                  },
+                  ":lambda:path/2015-03-31/functions/",
+                  {
+                    "Fn::GetAtt": [
+                      "ConnectionHandlerLambdaFunction",
+                      "Arn"
+                    ]
+                  },
+                  "/invocations"
+                ]
+              ]
+            }
+          }
+        },
+        "DefaultHandlerWebsocketsIntegration": {
+          "Type": "AWS::ApiGatewayV2::Integration",
+          "Properties": {
+            "ApiId": {
+              "Ref": "WebsocketsApi"
+            },
+            "IntegrationType": "AWS_PROXY",
+            "IntegrationUri": {
+              "Fn::Join": [
+                "",
+                [
+                  "arn:",
+                  {
+                    "Ref": "AWS::Partition"
+                  },
+                  ":apigateway:",
+                  {
+                    "Ref": "AWS::Region"
+                  },
+                  ":lambda:path/2015-03-31/functions/",
+                  {
+                    "Fn::GetAtt": [
+                      "DefaultHandlerLambdaFunction",
+                      "Arn"
+                    ]
+                  },
+                  "/invocations"
+                ]
+              ]
+            }
+          }
+        },
+        "SendMessageHandlerWebsocketsIntegration": {
+          "Type": "AWS::ApiGatewayV2::Integration",
+          "Properties": {
+            "ApiId": {
+              "Ref": "WebsocketsApi"
+            },
+            "IntegrationType": "AWS_PROXY",
+            "IntegrationUri": {
+              "Fn::Join": [
+                "",
+                [
+                  "arn:",
+                  {
+                    "Ref": "AWS::Partition"
+                  },
+                  ":apigateway:",
+                  {
+                    "Ref": "AWS::Region"
+                  },
+                  ":lambda:path/2015-03-31/functions/",
+                  {
+                    "Fn::GetAtt": [
+                      "SendMessageHandlerLambdaFunction",
+                      "Arn"
+                    ]
+                  },
+                  "/invocations"
+                ]
+              ]
+            }
+          }
+        },
+        "ConnectionHandlerLambdaPermissionWebsockets": {
+          "Type": "AWS::Lambda::Permission",
+          "DependsOn": [
+            "WebsocketsApi",
+            "ConnectionHandlerLambdaFunction"
+          ],
+          "Properties": {
+            "FunctionName": {
+              "Fn::GetAtt": [
+                "ConnectionHandlerLambdaFunction",
+                "Arn"
+              ]
+            },
+            "Action": "lambda:InvokeFunction",
+            "Principal": "apigateway.amazonaws.com"
+          }
+        },
+        "DefaultHandlerLambdaPermissionWebsockets": {
+          "Type": "AWS::Lambda::Permission",
+          "DependsOn": [
+            "WebsocketsApi",
+            "DefaultHandlerLambdaFunction"
+          ],
+          "Properties": {
+            "FunctionName": {
+              "Fn::GetAtt": [
+                "DefaultHandlerLambdaFunction",
+                "Arn"
+              ]
+            },
+            "Action": "lambda:InvokeFunction",
+            "Principal": "apigateway.amazonaws.com"
+          }
+        },
+        "SendMessageHandlerLambdaPermissionWebsockets": {
+          "Type": "AWS::Lambda::Permission",
+          "DependsOn": [
+            "WebsocketsApi",
+            "SendMessageHandlerLambdaFunction"
+          ],
+          "Properties": {
+            "FunctionName": {
+              "Fn::GetAtt": [
+                "SendMessageHandlerLambdaFunction",
+                "Arn"
+              ]
+            },
+            "Action": "lambda:InvokeFunction",
+            "Principal": "apigateway.amazonaws.com"
+          }
+        },
+        "SconnectWebsocketsRoute": {
+          "Type": "AWS::ApiGatewayV2::Route",
+          "Properties": {
+            "ApiId": {
+              "Ref": "WebsocketsApi"
+            },
+            "RouteKey": "$connect",
+            "AuthorizationType": "NONE",
+            "Target": {
+              "Fn::Join": [
+                "/",
+                [
+                  "integrations",
+                  {
+                    "Ref": "ConnectionHandlerWebsocketsIntegration"
+                  }
+                ]
+              ]
+            }
+          }
+        },
+        "SdisconnectWebsocketsRoute": {
+          "Type": "AWS::ApiGatewayV2::Route",
+          "Properties": {
+            "ApiId": {
+              "Ref": "WebsocketsApi"
+            },
+            "RouteKey": "$disconnect",
+            "AuthorizationType": "NONE",
+            "Target": {
+              "Fn::Join": [
+                "/",
+                [
+                  "integrations",
+                  {
+                    "Ref": "ConnectionHandlerWebsocketsIntegration"
+                  }
+                ]
+              ]
+            }
+          }
+        },
+        "SdefaultWebsocketsRoute": {
+          "Type": "AWS::ApiGatewayV2::Route",
+          "Properties": {
+            "ApiId": {
+              "Ref": "WebsocketsApi"
+            },
+            "RouteKey": "$default",
+            "AuthorizationType": "NONE",
+            "Target": {
+              "Fn::Join": [
+                "/",
+                [
+                  "integrations",
+                  {
+                    "Ref": "DefaultHandlerWebsocketsIntegration"
+                  }
+                ]
+              ]
+            }
+          }
+        },
+        "sendMessageWebsocketsRoute": {
+          "Type": "AWS::ApiGatewayV2::Route",
+          "Properties": {
+            "ApiId": {
+              "Ref": "WebsocketsApi"
+            },
+            "RouteKey": "sendMessage",
+            "AuthorizationType": "NONE",
+            "Target": {
+              "Fn::Join": [
+                "/",
+                [
+                  "integrations",
+                  {
+                    "Ref": "SendMessageHandlerWebsocketsIntegration"
+                  }
+                ]
+              ]
+            }
+          }
+        },
+        "WebsocketsDeploymentStage": {
+          "Type": "AWS::ApiGatewayV2::Stage",
+          "Properties": {
+            "ApiId": {
+              "Ref": "WebsocketsApi"
+            },
+            "StageName": "prod",
+            "Description": "Serverless Websockets",
+            "DeploymentId": {
+              "Ref": "WebsocketsDeploymentdfkBOvRw02KaJldrbrU89ifghfsTNShxminqUajyUY"
+            }
+          }
+        },
+        "WebsocketsDeploymentdfkBOvRw02KaJldrbrU89ifghfsTNShxminqUajyUY": {
+          "Type": "AWS::ApiGatewayV2::Deployment",
+          "DependsOn": [
+            "SconnectWebsocketsRoute",
+            "SdisconnectWebsocketsRoute",
+            "SdefaultWebsocketsRoute",
+            "sendMessageWebsocketsRoute"
+          ],
+          "Properties": {
+            "ApiId": {
+              "Ref": "WebsocketsApi"
+            },
+            "Description": "Serverless Websockets"
+          }
+        },
+        "VaultBucket": {
+          "Type": "AWS::S3::Bucket",
+          "Properties": {
+            "BucketName": "keepr-vault-storage-anshul",
+            "PublicAccessBlockConfiguration": {
+              "BlockPublicAcls": true,
+              "BlockPublicPolicy": true,
+              "IgnorePublicAcls": true,
+              "RestrictPublicBuckets": true
+            },
+            "BucketEncryption": {
+              "ServerSideEncryptionConfiguration": [
+                {
+                  "ServerSideEncryptionByDefault": {
+                    "SSEAlgorithm": "AES256"
+                  }
+                }
+              ]
+            },
+            "CorsConfiguration": {
+              "CorsRules": [
+                {
+                  "AllowedHeaders": [
+                    "*"
+                  ],
+                  "AllowedMethods": [
+                    "PUT",
+                    "GET",
+                    "POST",
+                    "DELETE"
+                  ],
+                  "AllowedOrigins": [
+                    "http://localhost:3000",
+                    "http://localhost:3001",
+                    "http://localhost:5173"
+                  ],
+                  "ExposedHeaders": [],
+                  "MaxAge": 3000
+                }
+              ]
+            },
+            "LifecycleConfiguration": {
+              "Rules": [
+                {
+                  "Id": "AutoExpireVaultObjects",
+                  "Status": "Enabled",
+                  "ExpirationInDays": 7
+                }
+              ]
+            }
+          }
+        },
+        "DetonatorLambdaRole": {
+          "Type": "AWS::IAM::Role",
+          "Properties": {
+            "RoleName": "KeeprDetonatorLambdaRole",
+            "AssumeRolePolicyDocument": {
+              "Version": "2012-10-17",
+              "Statement": [
+                {
+                  "Effect": "Allow",
+                  "Principal": {
+                    "Service": "lambda.amazonaws.com"
+                  },
+                  "Action": "sts:AssumeRole"
+                }
+              ]
+            },
+            "ManagedPolicyArns": [
+              "arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole"
+            ],
+            "Policies": [
+              {
+                "PolicyName": "DetonatorReadStagingBucket",
+                "PolicyDocument": {
+                  "Version": "2012-10-17",
+                  "Statement": [
+                    {
+                      "Effect": "Allow",
+                      "Action": [
+                        "s3:GetObject"
+                      ],
+                      "Resource": {
+                        "Fn::Sub": "arn:aws:s3:::keepr-detonator-storage/*"
+                      }
+                    }
+                  ]
+                }
+              }
+            ]
+          }
+        },
+        "DetonatorLambdaFunction": {
+          "Type": "AWS::Lambda::Function",
+          "DependsOn": [
+            "DetonatorLambdaRole"
+          ],
+          "Properties": {
+            "FunctionName": "KeeprLinkDetonator",
+            "Runtime": "nodejs20.x",
+            "Role": {
+              "Fn::GetAtt": [
+                "DetonatorLambdaRole",
+                "Arn"
+              ]
+            },
+            "Handler": "index.handler",
+            "MemorySize": 1600,
+            "Timeout": 60,
+            "Code": {
+              "S3Bucket": "keepr-detonator-storage",
+              "S3Key": "lambda-detonator.zip"
+            }
+          }
+        },
+        "ConnectionsTable": {
+          "Type": "AWS::DynamoDB::Table",
+          "Properties": {
+            "TableName": "keepr-ephemeral-chat-connections-prod",
+            "AttributeDefinitions": [
+              {
+                "AttributeName": "connectionId",
+                "AttributeType": "S"
+              },
+              {
+                "AttributeName": "roomId",
+                "AttributeType": "S"
+              }
+            ],
+            "KeySchema": [
+              {
+                "AttributeName": "connectionId",
+                "KeyType": "HASH"
+              }
+            ],
+            "GlobalSecondaryIndexes": [
+              {
+                "IndexName": "RoomIndex",
+                "KeySchema": [
+                  {
+                    "AttributeName": "roomId",
+                    "KeyType": "HASH"
+                  }
+                ],
+                "Projection": {
+                  "ProjectionType": "ALL"
+                },
+                "ProvisionedThroughput": {
+                  "ReadCapacityUnits": 5,
+                  "WriteCapacityUnits": 5
+                }
+              }
+            ],
+            "BillingMode": "PROVISIONED",
+            "ProvisionedThroughput": {
+              "ReadCapacityUnits": 5,
+              "WriteCapacityUnits": 5
+            },
+            "TimeToLiveSpecification": {
+              "AttributeName": "ttl",
+              "Enabled": true
+            }
+          }
+        }
+      },
+      "Outputs": {
+        "ServerlessDeploymentBucketName": {
+          "Value": "serverless-framework-deployments-ap-south-1-d979e78e-4638",
+          "Export": {
+            "Name": "sls-keepr-ephemeral-chat-prod-ServerlessDeploymentBucketName"
+          }
+        },
+        "ConnectionHandlerLambdaFunctionQualifiedArn": {
+          "Description": "Current Lambda function version",
+          "Value": {
+            "Ref": "ConnectionHandlerLambdaVersionB4Vz8Z0vU5WZU9qDv7k2vVQXFC4ZRcxbMi56ddyFQ"
+          },
+          "Export": {
+            "Name": "sls-keepr-ephemeral-chat-prod-ConnectionHandlerLambdaFunctionQualifiedArn"
+          }
+        },
+        "DefaultHandlerLambdaFunctionQualifiedArn": {
+          "Description": "Current Lambda function version",
+          "Value": {
+            "Ref": "DefaultHandlerLambdaVersionpoDVRmY4dH6CjW77NK3pcq5kTwGjjUL4eUkv1l3E"
+          },
+          "Export": {
+            "Name": "sls-keepr-ephemeral-chat-prod-DefaultHandlerLambdaFunctionQualifiedArn"
+          }
+        },
+        "SendMessageHandlerLambdaFunctionQualifiedArn": {
+          "Description": "Current Lambda function version",
+          "Value": {
+            "Ref": "SendMessageHandlerLambdaVersionIdXtjWihwxuIW6Sx5FEGCjd6kumhroAiM8yhzvADw"
+          },
+          "Export": {
+            "Name": "sls-keepr-ephemeral-chat-prod-SendMessageHandlerLambdaFunctionQualifiedArn"
+          }
+        },
+        "ServiceEndpointWebsocket": {
+          "Description": "URL of the service endpoint",
+          "Value": {
+            "Fn::Join": [
+              "",
+              [
+                "wss://",
+                {
+                  "Ref": "WebsocketsApi"
+                },
+                ".execute-api.",
+                {
+                  "Ref": "AWS::Region"
+                },
+                ".",
+                {
+                  "Ref": "AWS::URLSuffix"
+                },
+                "/prod"
+              ]
+            ]
+          },
+          "Export": {
+            "Name": "sls-keepr-ephemeral-chat-prod-ServiceEndpointWebsocket"
+          }
+        },
+        "VaultBucketName": {
+          "Description": "Set this as AWS_BUCKET_NAME in your .env",
+          "Value": {
+            "Ref": "VaultBucket"
+          }
+        },
+        "DetonatorLambdaArn": {
+          "Description": "Set LAMBDA_FUNCTION_NAME=KeeprLinkDetonator in your .env",
+          "Value": {
+            "Fn::GetAtt": [
+              "DetonatorLambdaFunction",
+              "Arn"
+            ]
+          }
+        },
+        "ChatConnectionsTableName": {
+          "Description": "DynamoDB table for ephemeral chat WebSocket connections",
+          "Value": {
+            "Ref": "ConnectionsTable"
+          }
+        },
+        "WebSocketUrl": {
+          "Description": "Paste this as VITE_WEBSOCKET_URL in your .env",
+          "Value": {
+            "Fn::Sub": "wss://${WebsocketsApi}.execute-api.${AWS::Region}.amazonaws.com/prod"
+          }
+        }
+      }
+    }
+  }
+}
