@@ -40,9 +40,9 @@ async function startServer() {
     res.json({ status: 'ok', domain: req.hostname });
   });
 
-  // ==========================================
+ 
   // FEATURE 1: ZERO-TRUST VAULT (AWS S3)
-  // ==========================================
+  
 
   const s3Client = new S3Client({
     region: process.env.AWS_REGION!,
@@ -318,9 +318,9 @@ async function startServer() {
     });
   });
 
-  // ==========================================
+
   // FEATURE 3: VIRUSTOTAL SCANNER
-  // ==========================================
+ 
 
   async function pollVtAnalysis(id: string, apiKey: string) {
     const maxRetries = 20; // 1 min max (3s interval)

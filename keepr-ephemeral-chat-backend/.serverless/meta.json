@@ -221,8 +221,8 @@
               "Type": "AWS::Lambda::Function",
               "Properties": {
                 "Code": {
-                  "S3Bucket": "serverless-framework-deployments-ap-south-1-d979e78e-4638",
-                  "S3Key": "serverless/keepr-ephemeral-chat/prod/1778768045471-2026-05-14T14:14:05.471Z/keepr-ephemeral-chat.zip"
+                  "S3Bucket": "serverless-framework-deployments-ap-south-1-29248533-0672",
+                  "S3Key": "serverless/keepr-ephemeral-chat/prod/1778833547388-2026-05-15T08:25:47.388Z/keepr-ephemeral-chat.zip"
                 },
                 "Handler": "handler.connectionHandler",
                 "Runtime": "nodejs20.x",
@@ -249,8 +249,8 @@
               "Type": "AWS::Lambda::Function",
               "Properties": {
                 "Code": {
-                  "S3Bucket": "serverless-framework-deployments-ap-south-1-d979e78e-4638",
-                  "S3Key": "serverless/keepr-ephemeral-chat/prod/1778768045471-2026-05-14T14:14:05.471Z/keepr-ephemeral-chat.zip"
+                  "S3Bucket": "serverless-framework-deployments-ap-south-1-29248533-0672",
+                  "S3Key": "serverless/keepr-ephemeral-chat/prod/1778833547388-2026-05-15T08:25:47.388Z/keepr-ephemeral-chat.zip"
                 },
                 "Handler": "handler.defaultHandler",
                 "Runtime": "nodejs20.x",
@@ -277,8 +277,8 @@
               "Type": "AWS::Lambda::Function",
               "Properties": {
                 "Code": {
-                  "S3Bucket": "serverless-framework-deployments-ap-south-1-d979e78e-4638",
-                  "S3Key": "serverless/keepr-ephemeral-chat/prod/1778768045471-2026-05-14T14:14:05.471Z/keepr-ephemeral-chat.zip"
+                  "S3Bucket": "serverless-framework-deployments-ap-south-1-29248533-0672",
+                  "S3Key": "serverless/keepr-ephemeral-chat/prod/1778833547388-2026-05-15T08:25:47.388Z/keepr-ephemeral-chat.zip"
                 },
                 "Handler": "handler.sendMessageHandler",
                 "Runtime": "nodejs20.x",
@@ -766,7 +766,7 @@
           },
           "Outputs": {
             "ServerlessDeploymentBucketName": {
-              "Value": "serverless-framework-deployments-ap-south-1-d979e78e-4638",
+              "Value": "serverless-framework-deployments-ap-south-1-29248533-0672",
               "Export": {
                 "Name": "sls-keepr-ephemeral-chat-prod-ServerlessDeploymentBucketName"
               }
@@ -1319,8 +1319,8 @@
             "Type": "AWS::Lambda::Function",
             "Properties": {
               "Code": {
-                "S3Bucket": "serverless-framework-deployments-ap-south-1-d979e78e-4638",
-                "S3Key": "serverless/keepr-ephemeral-chat/prod/1778768045471-2026-05-14T14:14:05.471Z/keepr-ephemeral-chat.zip"
+                "S3Bucket": "serverless-framework-deployments-ap-south-1-29248533-0672",
+                "S3Key": "serverless/keepr-ephemeral-chat/prod/1778833547388-2026-05-15T08:25:47.388Z/keepr-ephemeral-chat.zip"
               },
               "Handler": "handler.connectionHandler",
               "Runtime": "nodejs20.x",
@@ -1347,8 +1347,8 @@
             "Type": "AWS::Lambda::Function",
             "Properties": {
               "Code": {
-                "S3Bucket": "serverless-framework-deployments-ap-south-1-d979e78e-4638",
-                "S3Key": "serverless/keepr-ephemeral-chat/prod/1778768045471-2026-05-14T14:14:05.471Z/keepr-ephemeral-chat.zip"
+                "S3Bucket": "serverless-framework-deployments-ap-south-1-29248533-0672",
+                "S3Key": "serverless/keepr-ephemeral-chat/prod/1778833547388-2026-05-15T08:25:47.388Z/keepr-ephemeral-chat.zip"
               },
               "Handler": "handler.defaultHandler",
               "Runtime": "nodejs20.x",
@@ -1375,8 +1375,8 @@
             "Type": "AWS::Lambda::Function",
             "Properties": {
               "Code": {
-                "S3Bucket": "serverless-framework-deployments-ap-south-1-d979e78e-4638",
-                "S3Key": "serverless/keepr-ephemeral-chat/prod/1778768045471-2026-05-14T14:14:05.471Z/keepr-ephemeral-chat.zip"
+                "S3Bucket": "serverless-framework-deployments-ap-south-1-29248533-0672",
+                "S3Key": "serverless/keepr-ephemeral-chat/prod/1778833547388-2026-05-15T08:25:47.388Z/keepr-ephemeral-chat.zip"
               },
               "Handler": "handler.sendMessageHandler",
               "Runtime": "nodejs20.x",
@@ -1864,7 +1864,7 @@
         },
         "Outputs": {
           "ServerlessDeploymentBucketName": {
-            "Value": "serverless-framework-deployments-ap-south-1-d979e78e-4638",
+            "Value": "serverless-framework-deployments-ap-south-1-29248533-0672",
             "Export": {
               "Name": "sls-keepr-ephemeral-chat-prod-ServerlessDeploymentBucketName"
             }
@@ -1975,26 +1975,26 @@
     "userName": "anshul91",
     "serviceProviderAwsAccountId": "675361793564",
     "serviceProviderAwsCfStackName": "keepr-ephemeral-chat-prod",
-    "serviceProviderAwsCfStackId": "arn:aws:cloudformation:ap-south-1:675361793564:stack/keepr-ephemeral-chat-prod/2f8a8e80-4f9f-11f1-bdb3-02c90a388cb3",
-    "serviceProviderAwsCfStackCreated": "2026-05-14T14:14:14.858Z",
+    "serviceProviderAwsCfStackId": "arn:aws:cloudformation:ap-south-1:675361793564:stack/keepr-ephemeral-chat-prod/b0dfdb00-5037-11f1-9ff5-06483bdaff43",
+    "serviceProviderAwsCfStackCreated": "2026-05-15T08:25:55.409Z",
     "serviceProviderAwsCfStackUpdated": null,
     "serviceProviderAwsCfStackStatus": "CREATE_COMPLETE",
     "serviceProviderAwsCfStackOutputs": [
       {
         "OutputKey": "ConnectionHandlerLambdaFunctionQualifiedArn",
-        "OutputValue": "arn:aws:lambda:ap-south-1:675361793564:function:keepr-ephemeral-chat-prod-connectionHandler:1",
+        "OutputValue": "arn:aws:lambda:ap-south-1:675361793564:function:keepr-ephemeral-chat-prod-connectionHandler:2",
         "Description": "Current Lambda function version",
         "ExportName": "sls-keepr-ephemeral-chat-prod-ConnectionHandlerLambdaFunctionQualifiedArn"
       },
       {
         "OutputKey": "DefaultHandlerLambdaFunctionQualifiedArn",
-        "OutputValue": "arn:aws:lambda:ap-south-1:675361793564:function:keepr-ephemeral-chat-prod-defaultHandler:1",
+        "OutputValue": "arn:aws:lambda:ap-south-1:675361793564:function:keepr-ephemeral-chat-prod-defaultHandler:2",
         "Description": "Current Lambda function version",
         "ExportName": "sls-keepr-ephemeral-chat-prod-DefaultHandlerLambdaFunctionQualifiedArn"
       },
       {
         "OutputKey": "WebSocketUrl",
-        "OutputValue": "wss://9zo03fcqe5.execute-api.ap-south-1.amazonaws.com/prod",
+        "OutputValue": "wss://r8a6nl3p9j.execute-api.ap-south-1.amazonaws.com/prod",
         "Description": "Paste this as VITE_WEBSOCKET_URL in your .env"
       },
       {
@@ -2009,7 +2009,7 @@
       },
       {
         "OutputKey": "ServiceEndpointWebsocket",
-        "OutputValue": "wss://9zo03fcqe5.execute-api.ap-south-1.amazonaws.com/prod",
+        "OutputValue": "wss://r8a6nl3p9j.execute-api.ap-south-1.amazonaws.com/prod",
         "Description": "URL of the service endpoint",
         "ExportName": "sls-keepr-ephemeral-chat-prod-ServiceEndpointWebsocket"
       },
@@ -2020,12 +2020,12 @@
       },
       {
         "OutputKey": "ServerlessDeploymentBucketName",
-        "OutputValue": "serverless-framework-deployments-ap-south-1-d979e78e-4638",
+        "OutputValue": "serverless-framework-deployments-ap-south-1-29248533-0672",
         "ExportName": "sls-keepr-ephemeral-chat-prod-ServerlessDeploymentBucketName"
       },
       {
         "OutputKey": "SendMessageHandlerLambdaFunctionQualifiedArn",
-        "OutputValue": "arn:aws:lambda:ap-south-1:675361793564:function:keepr-ephemeral-chat-prod-sendMessageHandler:1",
+        "OutputValue": "arn:aws:lambda:ap-south-1:675361793564:function:keepr-ephemeral-chat-prod-sendMessageHandler:2",
         "Description": "Current Lambda function version",
         "ExportName": "sls-keepr-ephemeral-chat-prod-SendMessageHandlerLambdaFunctionQualifiedArn"
       }
@@ -2183,8 +2183,8 @@
           "Type": "AWS::Lambda::Function",
           "Properties": {
             "Code": {
-              "S3Bucket": "serverless-framework-deployments-ap-south-1-d979e78e-4638",
-              "S3Key": "serverless/keepr-ephemeral-chat/prod/1778768045471-2026-05-14T14:14:05.471Z/keepr-ephemeral-chat.zip"
+              "S3Bucket": "serverless-framework-deployments-ap-south-1-29248533-0672",
+              "S3Key": "serverless/keepr-ephemeral-chat/prod/1778833547388-2026-05-15T08:25:47.388Z/keepr-ephemeral-chat.zip"
             },
             "Handler": "handler.connectionHandler",
             "Runtime": "nodejs20.x",
@@ -2211,8 +2211,8 @@
           "Type": "AWS::Lambda::Function",
           "Properties": {
             "Code": {
-              "S3Bucket": "serverless-framework-deployments-ap-south-1-d979e78e-4638",
-              "S3Key": "serverless/keepr-ephemeral-chat/prod/1778768045471-2026-05-14T14:14:05.471Z/keepr-ephemeral-chat.zip"
+              "S3Bucket": "serverless-framework-deployments-ap-south-1-29248533-0672",
+              "S3Key": "serverless/keepr-ephemeral-chat/prod/1778833547388-2026-05-15T08:25:47.388Z/keepr-ephemeral-chat.zip"
             },
             "Handler": "handler.defaultHandler",
             "Runtime": "nodejs20.x",
@@ -2239,8 +2239,8 @@
           "Type": "AWS::Lambda::Function",
           "Properties": {
             "Code": {
-              "S3Bucket": "serverless-framework-deployments-ap-south-1-d979e78e-4638",
-              "S3Key": "serverless/keepr-ephemeral-chat/prod/1778768045471-2026-05-14T14:14:05.471Z/keepr-ephemeral-chat.zip"
+              "S3Bucket": "serverless-framework-deployments-ap-south-1-29248533-0672",
+              "S3Key": "serverless/keepr-ephemeral-chat/prod/1778833547388-2026-05-15T08:25:47.388Z/keepr-ephemeral-chat.zip"
             },
             "Handler": "handler.sendMessageHandler",
             "Runtime": "nodejs20.x",
@@ -2728,7 +2728,7 @@
       },
       "Outputs": {
         "ServerlessDeploymentBucketName": {
-          "Value": "serverless-framework-deployments-ap-south-1-d979e78e-4638",
+          "Value": "serverless-framework-deployments-ap-south-1-29248533-0672",
           "Export": {
             "Name": "sls-keepr-ephemeral-chat-prod-ServerlessDeploymentBucketName"
           }

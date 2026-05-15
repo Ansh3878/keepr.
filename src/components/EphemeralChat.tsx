@@ -167,17 +167,8 @@ export const EphemeralChat = ({ initialRoomId, initialKey }: EphemeralChatProps)
     let rawKey: string;
     let key: CryptoKey;
 
-    if (initialRoomId && initialKey) {
-      room = initialRoomId;
-      rawKey = initialKey;
-      try {
-        key = await importRawKey(initialKey);
-      } catch {
-        room = Math.random().toString(36).substring(2, 8).toUpperCase();
-        rawKey = await generateRawKey();
-        key = await importRawKey(rawKey);
-      }
-    } else if (urlRoom && urlKey) {
+    // PRIORITY 1: Explicit URL/Hash override (Crucial for joining a new room while already in one)
+    if (urlRoom && urlKey) {
       room   = urlRoom;
       rawKey = urlKey;
       try {
@@ -188,7 +179,21 @@ export const EphemeralChat = ({ initialRoomId, initialKey }: EphemeralChatProps)
         rawKey = await generateRawKey();
         key    = await importRawKey(rawKey);
       }
-    } else {
+    } 
+    // PRIORITY 2: Props from parent (e.g. joining from Vault link)
+    else if (initialRoomId && initialKey) {
+      room = initialRoomId;
+      rawKey = initialKey;
+      try {
+        key = await importRawKey(initialKey);
+      } catch {
+        room = Math.random().toString(36).substring(2, 8).toUpperCase();
+        rawKey = await generateRawKey();
+        key = await importRawKey(rawKey);
+      }
+    } 
+    // PRIORITY 3: Fresh Random Room
+    else {
       room   = Math.random().toString(36).substring(2, 8).toUpperCase();
       rawKey = await generateRawKey();
       key    = await importRawKey(rawKey);
