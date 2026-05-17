@@ -180,8 +180,8 @@
             "Type": "AWS::Lambda::Function",
             "Properties": {
               "Code": {
-                "S3Bucket": "serverless-framework-deployments-ap-south-1-29248533-0672",
-                "S3Key": "serverless/keepr-ephemeral-chat/prod/1778837501635-2026-05-15T09:31:41.635Z/keepr-ephemeral-chat.zip"
+                "S3Bucket": "serverless-framework-deployments-ap-south-1-05160953-0162",
+                "S3Key": "serverless/keepr-ephemeral-chat/prod/1778994267035-2026-05-17T05:04:27.035Z/keepr-ephemeral-chat.zip"
               },
               "Handler": "handler.connectionHandler",
               "Runtime": "nodejs20.x",
@@ -208,8 +208,8 @@
             "Type": "AWS::Lambda::Function",
             "Properties": {
               "Code": {
-                "S3Bucket": "serverless-framework-deployments-ap-south-1-29248533-0672",
-                "S3Key": "serverless/keepr-ephemeral-chat/prod/1778837501635-2026-05-15T09:31:41.635Z/keepr-ephemeral-chat.zip"
+                "S3Bucket": "serverless-framework-deployments-ap-south-1-05160953-0162",
+                "S3Key": "serverless/keepr-ephemeral-chat/prod/1778994267035-2026-05-17T05:04:27.035Z/keepr-ephemeral-chat.zip"
               },
               "Handler": "handler.defaultHandler",
               "Runtime": "nodejs20.x",
@@ -236,8 +236,8 @@
             "Type": "AWS::Lambda::Function",
             "Properties": {
               "Code": {
-                "S3Bucket": "serverless-framework-deployments-ap-south-1-29248533-0672",
-                "S3Key": "serverless/keepr-ephemeral-chat/prod/1778837501635-2026-05-15T09:31:41.635Z/keepr-ephemeral-chat.zip"
+                "S3Bucket": "serverless-framework-deployments-ap-south-1-05160953-0162",
+                "S3Key": "serverless/keepr-ephemeral-chat/prod/1778994267035-2026-05-17T05:04:27.035Z/keepr-ephemeral-chat.zip"
               },
               "Handler": "handler.sendMessageHandler",
               "Runtime": "nodejs20.x",
@@ -726,7 +726,7 @@
         },
         "Outputs": {
           "ServerlessDeploymentBucketName": {
-            "Value": "serverless-framework-deployments-ap-south-1-29248533-0672",
+            "Value": "serverless-framework-deployments-ap-south-1-05160953-0162",
             "Export": {
               "Name": "sls-keepr-ephemeral-chat-prod-ServerlessDeploymentBucketName"
             }
@@ -1103,7 +1103,7 @@
     "artifact": "C:\\Users\\ANSH\\Downloads\\keepr. new\\keepr-ephemeral-chat-backend\\.serverless\\keepr-ephemeral-chat.zip"
   },
   "package": {
-    "artifactDirectoryName": "serverless/keepr-ephemeral-chat/prod/1778837501635-2026-05-15T09:31:41.635Z",
+    "artifactDirectoryName": "serverless/keepr-ephemeral-chat/prod/1778994267035-2026-05-17T05:04:27.035Z",
     "artifact": "keepr-ephemeral-chat.zip"
   }
 }
