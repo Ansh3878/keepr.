@@ -64,6 +64,7 @@ export const EphemeralChat = ({ initialRoomId, initialKey }: EphemeralChatProps)
   const MAX_RETRIES = 3;
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const chatContainerRef = useRef<HTMLDivElement>(null);
+  const lastWipeTime = useRef<number>(0);
 
   // ── WebSocket connection (with silent auto-retry for cold starts) ─────────
   const openSocket = useCallback((key: CryptoKey, room: string, attempt = 0) => {
@@ -122,10 +123,30 @@ export const EphemeralChat = ({ initialRoomId, initialKey }: EphemeralChatProps)
       } catch { /* wrong key or corrupt message – ignore */ }
     });
 
-    socket.on('peer-disconnected', () => {
+    socket.on('peer-joined', () => {
       setMessages(prev => [...prev, {
         id: `${Date.now()}-${Math.random()}`,
-        text: '⚠️ Peer has disconnected and wiped their session.',
+        text: '✅ A peer has established a secure connection to the session.',
+        sender: 'system',
+        timestamp: new Date()
+      }]);
+    });
+
+    socket.on('peer-wiped', () => {
+      lastWipeTime.current = Date.now();
+      setMessages(prev => [...prev, {
+        id: `${Date.now()}-${Math.random()}`,
+        text: '⚠️ A peer has permanently destroyed their session data.',
+        sender: 'system',
+        timestamp: new Date()
+      }]);
+    });
+
+    socket.on('peer-disconnected', () => {
+      if (Date.now() - lastWipeTime.current < 2000) return;
+      setMessages(prev => [...prev, {
+        id: `${Date.now()}-${Math.random()}`,
+        text: 'ℹ️ A peer has disconnected from the secure session.',
         sender: 'system',
         timestamp: new Date()
       }]);
@@ -260,6 +281,7 @@ export const EphemeralChat = ({ initialRoomId, initialKey }: EphemeralChatProps)
   // ── Self-destruct ─────────────────────────────────────────────────────────
   const wipeSession = () => {
     if (!confirm('Wipe all messages and close this session?')) return;
+    socketRef.current?.emit('wipe-session');
     socketRef.current?.disconnect();
     setMessages([]);
     history.replaceState(null, '', location.pathname);

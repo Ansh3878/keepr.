@@ -211,8 +211,13 @@ async function startServer() {
     const room = socket.handshake.query.room as string;
     if (room) {
       socket.join(room);
+      socket.to(room).emit('peer-joined');
+      
       socket.on('sendMessage', (payload) => {
         socket.to(payload.roomId).emit('chat-message', payload.data);
+      });
+      socket.on('wipe-session', () => {
+        socket.to(room).emit('peer-wiped');
       });
       socket.on('disconnect', () => {
         socket.to(room).emit('peer-disconnected');
