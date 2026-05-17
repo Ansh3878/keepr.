@@ -5,19 +5,19 @@
     "ConnectionHandlerLogGroup": {
       "Type": "AWS::Logs::LogGroup",
       "Properties": {
-        "LogGroupName": "/aws/lambda/keepr-ephemeral-chat-prod-connectionHandler"
+        "LogGroupName": "/aws/lambda/keepr-ephemeral-chat-dev-connectionHandler"
       }
     },
     "DefaultHandlerLogGroup": {
       "Type": "AWS::Logs::LogGroup",
       "Properties": {
-        "LogGroupName": "/aws/lambda/keepr-ephemeral-chat-prod-defaultHandler"
+        "LogGroupName": "/aws/lambda/keepr-ephemeral-chat-dev-defaultHandler"
       }
     },
     "SendMessageHandlerLogGroup": {
       "Type": "AWS::Logs::LogGroup",
       "Properties": {
-        "LogGroupName": "/aws/lambda/keepr-ephemeral-chat-prod-sendMessageHandler"
+        "LogGroupName": "/aws/lambda/keepr-ephemeral-chat-dev-sendMessageHandler"
       }
     },
     "IamRoleLambdaExecution": {
@@ -46,7 +46,7 @@
                 "-",
                 [
                   "keepr-ephemeral-chat",
-                  "prod",
+                  "dev",
                   "lambda"
                 ]
               ]
@@ -63,7 +63,7 @@
                   ],
                   "Resource": [
                     {
-                      "Fn::Sub": "arn:${AWS::Partition}:logs:${AWS::Region}:${AWS::AccountId}:log-group:/aws/lambda/keepr-ephemeral-chat-prod*:*"
+                      "Fn::Sub": "arn:${AWS::Partition}:logs:${AWS::Region}:${AWS::AccountId}:log-group:/aws/lambda/keepr-ephemeral-chat-dev*:*"
                     }
                   ]
                 },
@@ -74,7 +74,7 @@
                   ],
                   "Resource": [
                     {
-                      "Fn::Sub": "arn:${AWS::Partition}:logs:${AWS::Region}:${AWS::AccountId}:log-group:/aws/lambda/keepr-ephemeral-chat-prod*:*:*"
+                      "Fn::Sub": "arn:${AWS::Partition}:logs:${AWS::Region}:${AWS::AccountId}:log-group:/aws/lambda/keepr-ephemeral-chat-dev*:*:*"
                     }
                   ]
                 },
@@ -137,7 +137,7 @@
             "-",
             [
               "keepr-ephemeral-chat",
-              "prod",
+              "dev",
               {
                 "Ref": "AWS::Region"
               },
@@ -151,17 +151,17 @@
       "Type": "AWS::Lambda::Function",
       "Properties": {
         "Code": {
-          "S3Bucket": "serverless-framework-deployments-ap-south-1-05160953-0162",
-          "S3Key": "serverless/keepr-ephemeral-chat/prod/1778994267035-2026-05-17T05:04:27.035Z/keepr-ephemeral-chat.zip"
+          "S3Bucket": "serverless-framework-deployments-ap-south-1-ed5464da-282c",
+          "S3Key": "serverless/keepr-ephemeral-chat/dev/1779009734216-2026-05-17T09:22:14.216Z/keepr-ephemeral-chat.zip"
         },
         "Handler": "handler.connectionHandler",
         "Runtime": "nodejs20.x",
-        "FunctionName": "keepr-ephemeral-chat-prod-connectionHandler",
+        "FunctionName": "keepr-ephemeral-chat-dev-connectionHandler",
         "MemorySize": 1024,
         "Timeout": 6,
         "Environment": {
           "Variables": {
-            "CONNECTIONS_TABLE": "keepr-ephemeral-chat-connections-prod"
+            "CONNECTIONS_TABLE": "keepr-ephemeral-chat-connections-dev"
           }
         },
         "Role": {
@@ -179,17 +179,17 @@
       "Type": "AWS::Lambda::Function",
       "Properties": {
         "Code": {
-          "S3Bucket": "serverless-framework-deployments-ap-south-1-05160953-0162",
-          "S3Key": "serverless/keepr-ephemeral-chat/prod/1778994267035-2026-05-17T05:04:27.035Z/keepr-ephemeral-chat.zip"
+          "S3Bucket": "serverless-framework-deployments-ap-south-1-ed5464da-282c",
+          "S3Key": "serverless/keepr-ephemeral-chat/dev/1779009734216-2026-05-17T09:22:14.216Z/keepr-ephemeral-chat.zip"
         },
         "Handler": "handler.defaultHandler",
         "Runtime": "nodejs20.x",
-        "FunctionName": "keepr-ephemeral-chat-prod-defaultHandler",
+        "FunctionName": "keepr-ephemeral-chat-dev-defaultHandler",
         "MemorySize": 1024,
         "Timeout": 6,
         "Environment": {
           "Variables": {
-            "CONNECTIONS_TABLE": "keepr-ephemeral-chat-connections-prod"
+            "CONNECTIONS_TABLE": "keepr-ephemeral-chat-connections-dev"
           }
         },
         "Role": {
@@ -207,17 +207,17 @@
       "Type": "AWS::Lambda::Function",
       "Properties": {
         "Code": {
-          "S3Bucket": "serverless-framework-deployments-ap-south-1-05160953-0162",
-          "S3Key": "serverless/keepr-ephemeral-chat/prod/1778994267035-2026-05-17T05:04:27.035Z/keepr-ephemeral-chat.zip"
+          "S3Bucket": "serverless-framework-deployments-ap-south-1-ed5464da-282c",
+          "S3Key": "serverless/keepr-ephemeral-chat/dev/1779009734216-2026-05-17T09:22:14.216Z/keepr-ephemeral-chat.zip"
         },
         "Handler": "handler.sendMessageHandler",
         "Runtime": "nodejs20.x",
-        "FunctionName": "keepr-ephemeral-chat-prod-sendMessageHandler",
+        "FunctionName": "keepr-ephemeral-chat-dev-sendMessageHandler",
         "MemorySize": 1024,
         "Timeout": 6,
         "Environment": {
           "Variables": {
-            "CONNECTIONS_TABLE": "keepr-ephemeral-chat-connections-prod"
+            "CONNECTIONS_TABLE": "keepr-ephemeral-chat-connections-dev"
           }
         },
         "Role": {
@@ -231,34 +231,34 @@
         "SendMessageHandlerLogGroup"
       ]
     },
-    "ConnectionHandlerLambdaVersion0CyqJNgflDBVmMcLHRtH2O1gQsoYar5FsQNwSPceNXk": {
+    "ConnectionHandlerLambdaVersionRYJXK1fOopfwbwTdNAIcJhh2qevmyIrjl9eyDYenOg": {
       "Type": "AWS::Lambda::Version",
       "DeletionPolicy": "Retain",
       "Properties": {
         "FunctionName": {
           "Ref": "ConnectionHandlerLambdaFunction"
         },
-        "CodeSha256": "9fzT9xqdjAMLy9w8U8BgVK8o4IVrguv0c4nD4cU4Wl0="
+        "CodeSha256": "4gLpI7rirjX/RNQ81+N7Vxy1M0rG8EBZYEownH3mass="
       }
     },
-    "DefaultHandlerLambdaVersioniTbMtkAunHbBsFtEjoah3jVrW9ErVvyjjM0iBLFno": {
+    "DefaultHandlerLambdaVersionmZwpwbZH5FWm7CgbSO0YsOTOkRhbXIaJXE4hyR1PLw": {
       "Type": "AWS::Lambda::Version",
       "DeletionPolicy": "Retain",
       "Properties": {
         "FunctionName": {
           "Ref": "DefaultHandlerLambdaFunction"
         },
-        "CodeSha256": "9fzT9xqdjAMLy9w8U8BgVK8o4IVrguv0c4nD4cU4Wl0="
+        "CodeSha256": "4gLpI7rirjX/RNQ81+N7Vxy1M0rG8EBZYEownH3mass="
       }
     },
-    "SendMessageHandlerLambdaVersionB08uvGFI4vJRFO7Sqp4Hm2U3L1htxW4s8FiIJLbRZ8g": {
+    "SendMessageHandlerLambdaVersionyBmN6teXuYDuTuZC7nu6tRZpsvmhMLENZDs7MA5aoc": {
       "Type": "AWS::Lambda::Version",
       "DeletionPolicy": "Retain",
       "Properties": {
         "FunctionName": {
           "Ref": "SendMessageHandlerLambdaFunction"
         },
-        "CodeSha256": "9fzT9xqdjAMLy9w8U8BgVK8o4IVrguv0c4nD4cU4Wl0="
+        "CodeSha256": "4gLpI7rirjX/RNQ81+N7Vxy1M0rG8EBZYEownH3mass="
       }
     },
     "WebsocketsApi": {
@@ -507,14 +507,14 @@
         "ApiId": {
           "Ref": "WebsocketsApi"
         },
-        "StageName": "prod",
+        "StageName": "dev",
         "Description": "Serverless Websockets",
         "DeploymentId": {
-          "Ref": "WebsocketsDeploymentdfkBOvRw02KaJldrbrU89ifghfsTNShxminqUajyUY"
+          "Ref": "WebsocketsDeploymenteNIK3aqIDFl2b0WvMoCNVCkaVYGTWg01Zfsl6KSDI"
         }
       }
     },
-    "WebsocketsDeploymentdfkBOvRw02KaJldrbrU89ifghfsTNShxminqUajyUY": {
+    "WebsocketsDeploymenteNIK3aqIDFl2b0WvMoCNVCkaVYGTWg01Zfsl6KSDI": {
       "Type": "AWS::ApiGatewayV2::Deployment",
       "DependsOn": [
         "SconnectWebsocketsRoute",
@@ -562,7 +562,7 @@
               ],
               "AllowedOrigins": [
                 "http://localhost:3000",
-                "http://localhost:3001",
+                "http://localhost:8080",
                 "http://localhost:5173",
                 "https://keepr-app-gold.vercel.app"
               ],
@@ -648,7 +648,7 @@
     "ConnectionsTable": {
       "Type": "AWS::DynamoDB::Table",
       "Properties": {
-        "TableName": "keepr-ephemeral-chat-connections-prod",
+        "TableName": "keepr-ephemeral-chat-connections-dev",
         "AttributeDefinitions": [
           {
             "AttributeName": "connectionId",
@@ -697,36 +697,36 @@
   },
   "Outputs": {
     "ServerlessDeploymentBucketName": {
-      "Value": "serverless-framework-deployments-ap-south-1-05160953-0162",
+      "Value": "serverless-framework-deployments-ap-south-1-ed5464da-282c",
       "Export": {
-        "Name": "sls-keepr-ephemeral-chat-prod-ServerlessDeploymentBucketName"
+        "Name": "sls-keepr-ephemeral-chat-dev-ServerlessDeploymentBucketName"
       }
     },
     "ConnectionHandlerLambdaFunctionQualifiedArn": {
       "Description": "Current Lambda function version",
       "Value": {
-        "Ref": "ConnectionHandlerLambdaVersion0CyqJNgflDBVmMcLHRtH2O1gQsoYar5FsQNwSPceNXk"
+        "Ref": "ConnectionHandlerLambdaVersionRYJXK1fOopfwbwTdNAIcJhh2qevmyIrjl9eyDYenOg"
       },
       "Export": {
-        "Name": "sls-keepr-ephemeral-chat-prod-ConnectionHandlerLambdaFunctionQualifiedArn"
+        "Name": "sls-keepr-ephemeral-chat-dev-ConnectionHandlerLambdaFunctionQualifiedArn"
       }
     },
     "DefaultHandlerLambdaFunctionQualifiedArn": {
       "Description": "Current Lambda function version",
       "Value": {
-        "Ref": "DefaultHandlerLambdaVersioniTbMtkAunHbBsFtEjoah3jVrW9ErVvyjjM0iBLFno"
+        "Ref": "DefaultHandlerLambdaVersionmZwpwbZH5FWm7CgbSO0YsOTOkRhbXIaJXE4hyR1PLw"
       },
       "Export": {
-        "Name": "sls-keepr-ephemeral-chat-prod-DefaultHandlerLambdaFunctionQualifiedArn"
+        "Name": "sls-keepr-ephemeral-chat-dev-DefaultHandlerLambdaFunctionQualifiedArn"
       }
     },
     "SendMessageHandlerLambdaFunctionQualifiedArn": {
       "Description": "Current Lambda function version",
       "Value": {
-        "Ref": "SendMessageHandlerLambdaVersionB08uvGFI4vJRFO7Sqp4Hm2U3L1htxW4s8FiIJLbRZ8g"
+        "Ref": "SendMessageHandlerLambdaVersionyBmN6teXuYDuTuZC7nu6tRZpsvmhMLENZDs7MA5aoc"
       },
       "Export": {
-        "Name": "sls-keepr-ephemeral-chat-prod-SendMessageHandlerLambdaFunctionQualifiedArn"
+        "Name": "sls-keepr-ephemeral-chat-dev-SendMessageHandlerLambdaFunctionQualifiedArn"
       }
     },
     "ServiceEndpointWebsocket": {
@@ -747,12 +747,12 @@
             {
               "Ref": "AWS::URLSuffix"
             },
-            "/prod"
+            "/dev"
           ]
         ]
       },
       "Export": {
-        "Name": "sls-keepr-ephemeral-chat-prod-ServiceEndpointWebsocket"
+        "Name": "sls-keepr-ephemeral-chat-dev-ServiceEndpointWebsocket"
       }
     },
     "VaultBucketName": {
@@ -779,7 +779,7 @@
     "WebSocketUrl": {
       "Description": "Paste this as VITE_WEBSOCKET_URL in your .env",
       "Value": {
-        "Fn::Sub": "wss://${WebsocketsApi}.execute-api.${AWS::Region}.amazonaws.com/prod"
+        "Fn::Sub": "wss://${WebsocketsApi}.execute-api.${AWS::Region}.amazonaws.com/dev"
       }
     }
   }
