@@ -507,6 +507,7 @@ const SendView = ({
                       Send Another File
                     </button>
                   </div>
+                </div>
               ) : (
                 <>
                   <div
