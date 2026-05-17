@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { Send, Trash2, Lock, MessageSquare, ShieldCheck, Loader2, Copy, Link as LinkIcon, RefreshCcw, AlertTriangle, LogIn } from 'lucide-react';
-
+import { io, Socket } from 'socket.io-client';
 interface Message {
   id: string;
   text: string;
