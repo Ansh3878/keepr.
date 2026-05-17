@@ -226,18 +226,18 @@ export const DetonatorView = () => {
                     onClick={() => !isAnalysisExpanded && setIsAnalysisExpanded(true)}
                     className={`absolute ${isAnalysisExpanded ? 'inset-4 p-8 flex flex-col z-40 bg-black/95' : 'inset-x-4 bottom-4 p-6 z-20 cursor-pointer bg-black/90'} border border-white/10 rounded-2xl backdrop-blur-2xl shadow-2xl transition-colors hover:bg-black/100 overflow-hidden`}
                   >
-                    <motion.div layout className="flex items-start justify-between mb-4">
-                       <motion.div layout>
-                          <motion.div layout className={`inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full text-[9px] font-black uppercase tracking-widest mb-1 ${analysis.riskScore > 50 ? 'bg-red-500/20 text-red-400' : 'bg-cyan-500/20 text-cyan-400'}`}>
+                    <motion.div layout className="flex flex-col sm:flex-row sm:items-end justify-between gap-4 sm:gap-6 mb-6">
+                       <motion.div layout className="flex flex-col items-start">
+                          <motion.div layout className={`inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full text-[9px] font-black uppercase tracking-widest mb-2 ${analysis.riskScore > 50 ? 'bg-red-500/20 text-red-400' : 'bg-cyan-500/20 text-cyan-400'}`}>
                              {analysis.riskScore > 50 ? <ShieldAlert className="w-2.5 h-2.5" /> : <ShieldCheck className="w-2.5 h-2.5" />}
                              {analysis.verdict}
                           </motion.div>
-                          <motion.h4 layout className={`text-white font-black uppercase tracking-tighter transition-all duration-500 ${isAnalysisExpanded ? 'text-3xl mb-4' : 'text-xl'}`}>PHISHING ANALYSIS</motion.h4>
+                          <motion.h4 layout className={`text-white font-black uppercase tracking-tighter leading-none transition-all duration-500 ${isAnalysisExpanded ? 'text-3xl' : 'text-xl'}`}>PHISHING ANALYSIS</motion.h4>
                        </motion.div>
-                       <motion.div layout className="flex items-start gap-6">
-                         <motion.div layout className="text-right">
-                            <motion.div layout className={`font-black text-white transition-all duration-500 ${isAnalysisExpanded ? 'text-4xl' : 'text-2xl'}`}>{analysis.riskScore}</motion.div>
-                            <motion.div layout className="text-[8px] font-black text-zinc-600 uppercase tracking-widest leading-none">Risk Score</motion.div>
+                       <motion.div layout className="flex items-end justify-between w-full sm:w-auto sm:justify-end gap-6">
+                         <motion.div layout className="text-left sm:text-right">
+                            <motion.div layout className={`font-black text-white leading-none mb-1 transition-all duration-500 ${isAnalysisExpanded ? 'text-5xl' : 'text-3xl'}`}>{analysis.riskScore}</motion.div>
+                            <motion.div layout className="text-[9px] font-black text-zinc-500 uppercase tracking-widest leading-none">Risk Score</motion.div>
                          </motion.div>
                          <AnimatePresence>
                            {isAnalysisExpanded && (
@@ -249,7 +249,7 @@ export const DetonatorView = () => {
                                  e.stopPropagation();
                                  setIsAnalysisExpanded(false);
                                }}
-                               className="p-2 bg-white/5 hover:bg-white/10 rounded-full transition-colors"
+                               className="p-2.5 bg-white/5 hover:bg-white/10 rounded-full transition-colors self-center sm:self-end"
                              >
                                <X className="w-5 h-5 text-zinc-400 hover:text-white" />
                              </motion.button>

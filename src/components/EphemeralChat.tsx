@@ -5,7 +5,7 @@ import { io, Socket } from 'socket.io-client';
 interface Message {
   id: string;
   text: string;
-  sender: 'me' | 'other';
+  sender: 'me' | 'other' | 'system';
   timestamp: Date;
 }
 
@@ -120,6 +120,15 @@ export const EphemeralChat = ({ initialRoomId, initialKey }: EphemeralChatProps)
           timestamp: new Date()
         }]);
       } catch { /* wrong key or corrupt message – ignore */ }
+    });
+
+    socket.on('peer-disconnected', () => {
+      setMessages(prev => [...prev, {
+        id: `${Date.now()}-${Math.random()}`,
+        text: '⚠️ Peer has disconnected and wiped their session.',
+        sender: 'system',
+        timestamp: new Date()
+      }]);
     });
 
     socket.on('disconnect', (reason) => {
@@ -418,18 +427,24 @@ export const EphemeralChat = ({ initialRoomId, initialKey }: EphemeralChatProps)
                 key={msg.id}
                 initial={{ opacity: 0, y: 8, scale: 0.96 }}
                 animate={{ opacity: 1, y: 0, scale: 1 }}
-                className={`flex ${msg.sender === 'me' ? 'justify-end' : 'justify-start'}`}
+                className={`flex ${msg.sender === 'system' ? 'justify-center' : msg.sender === 'me' ? 'justify-end' : 'justify-start'}`}
               >
-                <div className="max-w-[78%] space-y-1">
-                  <div className={`px-5 py-3 rounded-2xl text-sm font-medium ${msg.sender === 'me'
-                      ? 'bg-cyan-500 text-black rounded-tr-none'
-                      : 'bg-zinc-800 text-zinc-200 rounded-tl-none'}`}>
+                {msg.sender === 'system' ? (
+                  <div className="px-4 py-2 bg-red-500/10 border border-red-500/20 text-red-400 rounded-full text-[10px] uppercase tracking-widest font-bold my-2">
                     {msg.text}
                   </div>
-                  <p className={`text-[9px] font-mono uppercase tracking-tight text-zinc-600 ${msg.sender === 'me' ? 'text-right' : 'text-left'}`}>
-                    {msg.timestamp.toLocaleTimeString()} · AES-256-GCM
-                  </p>
-                </div>
+                ) : (
+                  <div className="max-w-[78%] space-y-1">
+                    <div className={`px-5 py-3 rounded-2xl text-sm font-medium ${msg.sender === 'me'
+                        ? 'bg-cyan-500 text-black rounded-tr-none'
+                        : 'bg-zinc-800 text-zinc-200 rounded-tl-none'}`}>
+                      {msg.text}
+                    </div>
+                    <p className={`text-[9px] font-mono uppercase tracking-tight text-zinc-600 ${msg.sender === 'me' ? 'text-right' : 'text-left'}`}>
+                      {msg.timestamp.toLocaleTimeString()} · AES-256-GCM
+                    </p>
+                  </div>
+                )}
               </motion.div>
             ))}
             <div ref={messagesEndRef} />
@@ -451,9 +466,9 @@ export const EphemeralChat = ({ initialRoomId, initialKey }: EphemeralChatProps)
             <button
               type="submit"
               disabled={status !== 'connected' || !inputText.trim()}
-              className="bg-white hover:bg-zinc-200 disabled:opacity-40 text-black px-8 rounded-xl font-black text-[10px] uppercase tracking-widest transition-all flex items-center gap-2"
+              className="bg-white hover:bg-zinc-200 disabled:opacity-40 text-black px-4 sm:px-8 rounded-xl font-black text-[10px] uppercase tracking-widest transition-all flex items-center justify-center gap-2"
             >
-              <Send className="w-3.5 h-3.5" /> Transmit
+              <Send className="w-4 h-4 sm:w-3.5 sm:h-3.5" /> <span className="hidden sm:inline">Transmit</span>
             </button>
           </div>
         </form>

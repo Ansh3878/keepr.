@@ -425,9 +425,23 @@ const SendView = ({
             <div className="bg-zinc-950 rounded-[2.2rem] p-12 md:p-20 border border-black/50 relative z-10">
               {status === 'success' ? (
                 <div className="text-center space-y-8 py-10">
-                  <div className="w-20 h-20 bg-cyan-500/20 rounded-full flex items-center justify-center mx-auto border border-cyan-500/30">
-                    <Share2 className="w-10 h-10 text-cyan-400" />
-                  </div>
+                  <button 
+                    onClick={() => {
+                      if (navigator.share) {
+                        navigator.share({
+                          title: 'Keepr Secure Transfer',
+                          text: 'I sent you an encrypted file via Keepr.',
+                          url: shareLink
+                        }).catch(() => {});
+                      } else {
+                        alert('Native sharing is not supported on this browser.');
+                      }
+                    }}
+                    className="w-20 h-20 bg-cyan-500/20 hover:bg-cyan-500/30 active:scale-95 transition-all cursor-pointer rounded-full flex items-center justify-center mx-auto border border-cyan-500/30 group"
+                    title="Share via App"
+                  >
+                    <Share2 className="w-10 h-10 text-cyan-400 group-hover:scale-110 transition-transform" />
+                  </button>
                   <div className="space-y-2">
                     <h2 className="text-3xl font-bold text-white uppercase tracking-tighter">File Secured</h2>
                     <p className="text-zinc-500 font-serif italic">Share this zero-knowledge link with your recipient</p>
@@ -471,13 +485,28 @@ const SendView = ({
                       </AnimatePresence>
                     </button>
                   </div>
-                  <button
-                    onClick={onReset}
-                    className="text-zinc-500 hover:text-white text-xs uppercase tracking-widest transition-colors"
-                  >
-                    Send Another File
-                  </button>
-                </div>
+                  <div className="flex flex-col gap-4 pt-2">
+                    <button
+                      onClick={() => {
+                        if (navigator.share) {
+                          navigator.share({
+                            title: 'Keepr Secure Transfer',
+                            text: 'I sent you an encrypted file via Keepr.',
+                            url: shareLink
+                          }).catch(() => {});
+                        }
+                      }}
+                      className="bg-white text-black py-4 rounded-xl text-[10px] font-black uppercase tracking-widest hover:bg-zinc-200 transition-all shadow-[0_0_20px_rgba(255,255,255,0.1)] flex items-center justify-center gap-2"
+                    >
+                      <Share2 className="w-3.5 h-3.5" /> Share Link via App
+                    </button>
+                    <button
+                      onClick={onReset}
+                      className="text-zinc-500 hover:text-white text-xs uppercase tracking-widest transition-colors mt-2"
+                    >
+                      Send Another File
+                    </button>
+                  </div>
               ) : (
                 <>
                   <div
@@ -522,15 +551,7 @@ const SendView = ({
                     )}
                   </div>
 
-                  <div className="mt-12 flex flex-col sm:flex-row gap-6 items-center justify-between">
-                    <div className="flex gap-4 items-center">
-                      <div className="w-12 h-12 rounded-2xl bg-zinc-900 border border-zinc-800 flex items-center justify-center text-zinc-500 hover:text-cyan-400 transition-colors">
-                        <Lock className="w-5 h-5" />
-                      </div>
-                      <div className="w-12 h-12 rounded-2xl bg-zinc-900 border border-zinc-800 flex items-center justify-center text-zinc-500 hover:text-cyan-400 transition-colors">
-                        <Share2 className="w-5 h-5" />
-                      </div>
-                    </div>
+                  <div className="mt-12 flex justify-center">
                     <button
                       disabled={!file || status === 'processing'}
                       onClick={handleEncrypt}
@@ -721,12 +742,12 @@ const ScanView = ({
           <div className="bg-zinc-950 rounded-[2.8rem] p-8 md:p-16 border border-white/5 relative z-10">
             {scanResult ? (
               <div className="space-y-8">
-                <div className="flex items-center justify-between border-b border-zinc-800 pb-6">
+                <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between border-b border-zinc-800 pb-6 gap-4">
                   <div>
                     <h2 className="text-2xl font-bold text-white uppercase tracking-tighter">Analysis Complete</h2>
                     <p className="text-zinc-500 text-sm">Real-time scan results from 70+ antivirus engines</p>
                   </div>
-                  <div className={`px-4 py-2 rounded-xl text-xs font-black uppercase tracking-widest ${scanResult.data?.attributes?.stats?.malicious > 0 ? 'bg-red-500/20 text-red-400' : 'bg-green-500/20 text-green-400'
+                  <div className={`px-4 py-2 rounded-xl text-xs font-black uppercase tracking-widest whitespace-nowrap ${scanResult.data?.attributes?.stats?.malicious > 0 ? 'bg-red-500/20 text-red-400' : 'bg-green-500/20 text-green-400'
                     }`}>
                     {scanResult.data?.attributes?.stats?.malicious > 0 ? 'Threat Projected' : 'Clean'}
                   </div>
@@ -769,8 +790,8 @@ const ScanView = ({
                 )}
 
                 <div className="space-y-4 pt-4">
-                  <div className="text-zinc-600 text-[10px] uppercase tracking-widest font-black">Analysis ID: {scanResult.data?.id}</div>
-                  <div className="flex gap-4">
+                  <div className="text-zinc-600 text-[10px] uppercase tracking-widest font-black break-all">Analysis ID: {scanResult.data?.id}</div>
+                  <div className="flex flex-col sm:flex-row gap-4">
                     <button
                       onClick={onReset}
                       className="flex-1 bg-white text-black font-bold py-4 rounded-xl hover:bg-zinc-200 transition-all text-center tracking-widest text-[10px] uppercase shadow-lg"
@@ -1107,6 +1128,17 @@ export default function App() {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [activeView, setActiveView] = useState<ViewType>('home');
 
+  useEffect(() => {
+    if (isMenuOpen) {
+      document.body.style.overflow = 'hidden';
+    } else {
+      document.body.style.overflow = 'unset';
+    }
+    return () => {
+      document.body.style.overflow = 'unset';
+    };
+  }, [isMenuOpen]);
+
   // Logic states
   const [file, setFile] = useState<File | null>(null);
   const [status, setStatus] = useState<'idle' | 'processing' | 'success' | 'error'>('idle');
@@ -1356,7 +1388,7 @@ export default function App() {
             animate={{ opacity: 1, x: 0 }}
             exit={{ opacity: 0, x: '100%' }}
             transition={{ type: "spring", damping: 25, stiffness: 200 }}
-            className="fixed inset-0 z-40 pt-28 pb-10 px-6 bg-black backdrop-blur-3xl md:hidden overflow-y-auto custom-scrollbar"
+            className="fixed inset-0 min-h-[100dvh] z-40 pt-28 pb-10 px-6 bg-black backdrop-blur-3xl md:hidden overflow-y-auto custom-scrollbar"
           >
             <div className="flex flex-col gap-8">
               <div className="space-y-4">

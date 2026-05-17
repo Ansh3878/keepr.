@@ -214,6 +214,9 @@ async function startServer() {
       socket.on('sendMessage', (payload) => {
         socket.to(payload.roomId).emit('chat-message', payload.data);
       });
+      socket.on('disconnect', () => {
+        socket.to(room).emit('peer-disconnected');
+      });
     }
 
     socket.on('detonate-link', async ({ url }) => {
