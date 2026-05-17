@@ -152,7 +152,7 @@
       "Properties": {
         "Code": {
           "S3Bucket": "serverless-framework-deployments-ap-south-1-ed5464da-282c",
-          "S3Key": "serverless/keepr-ephemeral-chat/dev/1779009734216-2026-05-17T09:22:14.216Z/keepr-ephemeral-chat.zip"
+          "S3Key": "serverless/keepr-ephemeral-chat/dev/1779011077873-2026-05-17T09:44:37.873Z/keepr-ephemeral-chat.zip"
         },
         "Handler": "handler.connectionHandler",
         "Runtime": "nodejs20.x",
@@ -180,7 +180,7 @@
       "Properties": {
         "Code": {
           "S3Bucket": "serverless-framework-deployments-ap-south-1-ed5464da-282c",
-          "S3Key": "serverless/keepr-ephemeral-chat/dev/1779009734216-2026-05-17T09:22:14.216Z/keepr-ephemeral-chat.zip"
+          "S3Key": "serverless/keepr-ephemeral-chat/dev/1779011077873-2026-05-17T09:44:37.873Z/keepr-ephemeral-chat.zip"
         },
         "Handler": "handler.defaultHandler",
         "Runtime": "nodejs20.x",
@@ -208,7 +208,7 @@
       "Properties": {
         "Code": {
           "S3Bucket": "serverless-framework-deployments-ap-south-1-ed5464da-282c",
-          "S3Key": "serverless/keepr-ephemeral-chat/dev/1779009734216-2026-05-17T09:22:14.216Z/keepr-ephemeral-chat.zip"
+          "S3Key": "serverless/keepr-ephemeral-chat/dev/1779011077873-2026-05-17T09:44:37.873Z/keepr-ephemeral-chat.zip"
         },
         "Handler": "handler.sendMessageHandler",
         "Runtime": "nodejs20.x",
@@ -231,34 +231,34 @@
         "SendMessageHandlerLogGroup"
       ]
     },
-    "ConnectionHandlerLambdaVersionRYJXK1fOopfwbwTdNAIcJhh2qevmyIrjl9eyDYenOg": {
+    "ConnectionHandlerLambdaVersionLJw8khJLUY1QyEiho1GeGkDRJVTwRmICxDA08WNyV5Q": {
       "Type": "AWS::Lambda::Version",
       "DeletionPolicy": "Retain",
       "Properties": {
         "FunctionName": {
           "Ref": "ConnectionHandlerLambdaFunction"
         },
-        "CodeSha256": "4gLpI7rirjX/RNQ81+N7Vxy1M0rG8EBZYEownH3mass="
+        "CodeSha256": "Jpb2S4qawkHJfhrt2bDOQ7s11oON+zzgLO87G/dv3Eo="
       }
     },
-    "DefaultHandlerLambdaVersionmZwpwbZH5FWm7CgbSO0YsOTOkRhbXIaJXE4hyR1PLw": {
+    "DefaultHandlerLambdaVersionbi1man0Jcp4uIJ7iiOrBDjbsOrivTFM8RLHiGhjBUc": {
       "Type": "AWS::Lambda::Version",
       "DeletionPolicy": "Retain",
       "Properties": {
         "FunctionName": {
           "Ref": "DefaultHandlerLambdaFunction"
         },
-        "CodeSha256": "4gLpI7rirjX/RNQ81+N7Vxy1M0rG8EBZYEownH3mass="
+        "CodeSha256": "Jpb2S4qawkHJfhrt2bDOQ7s11oON+zzgLO87G/dv3Eo="
       }
     },
-    "SendMessageHandlerLambdaVersionyBmN6teXuYDuTuZC7nu6tRZpsvmhMLENZDs7MA5aoc": {
+    "SendMessageHandlerLambdaVersionN1EnsxDXLgJuQgCfdTlgh8DJrbzFkQ9oMH86evhKw3c": {
       "Type": "AWS::Lambda::Version",
       "DeletionPolicy": "Retain",
       "Properties": {
         "FunctionName": {
           "Ref": "SendMessageHandlerLambdaFunction"
         },
-        "CodeSha256": "4gLpI7rirjX/RNQ81+N7Vxy1M0rG8EBZYEownH3mass="
+        "CodeSha256": "Jpb2S4qawkHJfhrt2bDOQ7s11oON+zzgLO87G/dv3Eo="
       }
     },
     "WebsocketsApi": {
@@ -564,7 +564,8 @@
                 "http://localhost:3000",
                 "http://localhost:8080",
                 "http://localhost:5173",
-                "https://keepr-app-gold.vercel.app"
+                "https://keepr-app-gold.vercel.app",
+                "https://keepr-ggy0.onrender.com"
               ],
               "ExposedHeaders": [],
               "MaxAge": 3000
@@ -705,7 +706,7 @@
     "ConnectionHandlerLambdaFunctionQualifiedArn": {
       "Description": "Current Lambda function version",
       "Value": {
-        "Ref": "ConnectionHandlerLambdaVersionRYJXK1fOopfwbwTdNAIcJhh2qevmyIrjl9eyDYenOg"
+        "Ref": "ConnectionHandlerLambdaVersionLJw8khJLUY1QyEiho1GeGkDRJVTwRmICxDA08WNyV5Q"
       },
       "Export": {
         "Name": "sls-keepr-ephemeral-chat-dev-ConnectionHandlerLambdaFunctionQualifiedArn"
@@ -714,7 +715,7 @@
     "DefaultHandlerLambdaFunctionQualifiedArn": {
       "Description": "Current Lambda function version",
       "Value": {
-        "Ref": "DefaultHandlerLambdaVersionmZwpwbZH5FWm7CgbSO0YsOTOkRhbXIaJXE4hyR1PLw"
+        "Ref": "DefaultHandlerLambdaVersionbi1man0Jcp4uIJ7iiOrBDjbsOrivTFM8RLHiGhjBUc"
       },
       "Export": {
         "Name": "sls-keepr-ephemeral-chat-dev-DefaultHandlerLambdaFunctionQualifiedArn"
@@ -723,7 +724,7 @@
     "SendMessageHandlerLambdaFunctionQualifiedArn": {
       "Description": "Current Lambda function version",
       "Value": {
-        "Ref": "SendMessageHandlerLambdaVersionyBmN6teXuYDuTuZC7nu6tRZpsvmhMLENZDs7MA5aoc"
+        "Ref": "SendMessageHandlerLambdaVersionN1EnsxDXLgJuQgCfdTlgh8DJrbzFkQ9oMH86evhKw3c"
       },
       "Export": {
         "Name": "sls-keepr-ephemeral-chat-dev-SendMessageHandlerLambdaFunctionQualifiedArn"

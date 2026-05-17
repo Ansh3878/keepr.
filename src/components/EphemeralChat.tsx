@@ -56,7 +56,7 @@ export const EphemeralChat = ({ initialRoomId, initialKey }: EphemeralChatProps)
   const [joinInput, setJoinInput] = useState('');
   const [showJoin, setShowJoin] = useState(false);
 
-  const wsRef = useRef<WebSocket | null>(null);
+  const socketRef = useRef<Socket | null>(null);
   const keyRef = useRef<CryptoKey | null>(null);
   const roomIdRef = useRef('');
   const timeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -67,39 +67,23 @@ export const EphemeralChat = ({ initialRoomId, initialKey }: EphemeralChatProps)
 
   // ── WebSocket connection (with silent auto-retry for cold starts) ─────────
   const openSocket = useCallback((key: CryptoKey, room: string, attempt = 0) => {
-    if (wsRef.current) {
-      wsRef.current.onclose = null;   // prevent stale handler from firing
-      wsRef.current.close(1000, 'reconnecting');
+    if (socketRef.current) {
+      socketRef.current.disconnect();
     }
     if (timeoutRef.current) clearTimeout(timeoutRef.current);
 
-    // Only show the spinner on the very first attempt; keep current UI on retries
     if (attempt === 0) {
       retryCountRef.current = 0;
       setStatus('connecting');
       setErrorMsg('');
     }
 
-    let base = (import.meta.env.VITE_WEBSOCKET_URL || '').replace(/\/$/, '');
-    if (!base) base = 'wss://ijys4en6k5.execute-api.ap-south-1.amazonaws.com/dev';
-
-    const url = `${base}?room=${encodeURIComponent(room)}`;
-    console.log(`[WS] attempt ${attempt + 1} → ${url}`);
-
-    let ws: WebSocket;
-    try {
-      ws = new WebSocket(url);
-    } catch {
-      setStatus('error');
-      setErrorMsg('Invalid WebSocket URL. Check VITE_WEBSOCKET_URL in .env');
-      return;
-    }
+    const socket = io({ query: { room } });
 
     // 12-second per-attempt timeout
     timeoutRef.current = setTimeout(() => {
-      if (ws.readyState !== WebSocket.OPEN) {
-        ws.onclose = null;
-        ws.close();
+      if (!socket.connected) {
+        socket.disconnect();
         handleFailure(key, room, attempt, 'Connection timed out.');
       }
     }, 12000);
@@ -108,28 +92,25 @@ export const EphemeralChat = ({ initialRoomId, initialKey }: EphemeralChatProps)
       clearTimeout(timeoutRef.current!);
       retryCountRef.current = att + 1;
       if (att < MAX_RETRIES - 1) {
-        // Silent retry with exponential backoff (1 s, 2 s, 4 s)
         const delay = Math.pow(2, att) * 1000;
         console.log(`[WS] retrying in ${delay}ms (attempt ${att + 2}/${MAX_RETRIES})…`);
         timeoutRef.current = setTimeout(() => openSocket(k, r, att + 1), delay);
       } else {
-        // All retries exhausted – now show the error
         setStatus('error');
         setErrorMsg(`${reason} Press Retry.`);
       }
     };
 
-    ws.onopen = () => {
+    socket.on('connect', () => {
       clearTimeout(timeoutRef.current!);
-      console.log('[WS] open – room:', room);
+      console.log('[WS] connected to room:', room);
       retryCountRef.current = 0;
       setStatus('connected');
       setErrorMsg('');
-    };
+    });
 
-    ws.onmessage = async (evt) => {
+    socket.on('chat-message', async (data: string) => {
       try {
-        const { data } = JSON.parse(evt.data);
         if (!data) return;
         const text = await decrypt(key, data);
         setMessages(prev => [...prev, {
@@ -139,21 +120,17 @@ export const EphemeralChat = ({ initialRoomId, initialKey }: EphemeralChatProps)
           timestamp: new Date()
         }]);
       } catch { /* wrong key or corrupt message – ignore */ }
-    };
+    });
 
-    ws.onclose = (e) => {
-      if (e.code === 1000) return; // clean close – ignore
+    socket.on('disconnect', (reason) => {
       clearTimeout(timeoutRef.current!);
-      console.log('[WS] closed unexpectedly', e.code, e.reason);
-      handleFailure(key, room, attempt, `Tunnel closed (${e.code}).`);
-    };
+      console.log('[WS] disconnected:', reason);
+      if (reason === 'io server disconnect' || reason === 'transport close') {
+        handleFailure(key, room, attempt, `Tunnel closed.`);
+      }
+    });
 
-    ws.onerror = () => {
-      // onerror is always followed by onclose, so we handle failure there
-      console.warn(`[WS] error on attempt ${attempt + 1}`);
-    };
-
-    wsRef.current = ws;
+    socketRef.current = socket;
   }, []);
 
   // ── Room initialisation ───────────────────────────────────────────────────
@@ -218,7 +195,7 @@ export const EphemeralChat = ({ initialRoomId, initialKey }: EphemeralChatProps)
     initRoom();
     return () => {
       clearTimeout(timeoutRef.current!);
-      wsRef.current?.close(1000, 'unmount');
+      socketRef.current?.disconnect();
     };
   }, [initRoom]);
 
@@ -234,9 +211,9 @@ export const EphemeralChat = ({ initialRoomId, initialKey }: EphemeralChatProps)
   const sendMessage = async (e: React.FormEvent) => {
     e.preventDefault();
     const text = inputText.trim();
-    if (!text || !keyRef.current || !wsRef.current) return;
+    if (!text || !keyRef.current || !socketRef.current) return;
 
-    if (wsRef.current.readyState !== WebSocket.OPEN) {
+    if (!socketRef.current.connected) {
       setErrorMsg('Not connected – retrying…');
       openSocket(keyRef.current, roomIdRef.current);
       return;
@@ -245,7 +222,7 @@ export const EphemeralChat = ({ initialRoomId, initialKey }: EphemeralChatProps)
     setInputText('');
     try {
       const ciphertext = await encrypt(keyRef.current, text);
-      wsRef.current.send(JSON.stringify({ action: 'sendMessage', roomId: roomIdRef.current, data: ciphertext }));
+      socketRef.current.emit('sendMessage', { roomId: roomIdRef.current, data: ciphertext });
       setMessages(prev => [...prev, { id: `${Date.now()}`, text, sender: 'me', timestamp: new Date() }]);
     } catch (err) {
       console.error('encrypt failed', err);
@@ -274,7 +251,7 @@ export const EphemeralChat = ({ initialRoomId, initialKey }: EphemeralChatProps)
   // ── Self-destruct ─────────────────────────────────────────────────────────
   const wipeSession = () => {
     if (!confirm('Wipe all messages and close this session?')) return;
-    wsRef.current?.close(1000, 'wipe');
+    socketRef.current?.disconnect();
     setMessages([]);
     history.replaceState(null, '', location.pathname);
     location.reload();

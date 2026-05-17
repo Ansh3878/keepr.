@@ -141,8 +141,7 @@ resources:
                 - "http://localhost:8080"
                 - "http://localhost:5173"
                 - "https://keepr-app-gold.vercel.app"
-                # Add your production domain here once live, e.g.:
-                # - "https://keepr.yourdomain.com"
+                - "https://keepr-ggy0.onrender.com"
               ExposedHeaders: []
               MaxAge: 3000
         # Auto-expire encrypted blobs after 7 days (adjust as needed)

@@ -205,7 +205,16 @@ async function startServer() {
   // FEATURE 3: LINK DETONATOR
 
   io.on('connection', (socket) => {
-    console.log('Client connected to detonation core');
+    console.log('Client connected');
+
+    // EPHEMERAL CHAT LOGIC
+    const room = socket.handshake.query.room as string;
+    if (room) {
+      socket.join(room);
+      socket.on('sendMessage', (payload) => {
+        socket.to(payload.roomId).emit('chat-message', payload.data);
+      });
+    }
 
     socket.on('detonate-link', async ({ url }) => {
       try {

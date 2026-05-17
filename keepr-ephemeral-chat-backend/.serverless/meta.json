@@ -222,7 +222,7 @@
               "Properties": {
                 "Code": {
                   "S3Bucket": "serverless-framework-deployments-ap-south-1-ed5464da-282c",
-                  "S3Key": "serverless/keepr-ephemeral-chat/dev/1779009734216-2026-05-17T09:22:14.216Z/keepr-ephemeral-chat.zip"
+                  "S3Key": "serverless/keepr-ephemeral-chat/dev/1779011077873-2026-05-17T09:44:37.873Z/keepr-ephemeral-chat.zip"
                 },
                 "Handler": "handler.connectionHandler",
                 "Runtime": "nodejs20.x",
@@ -250,7 +250,7 @@
               "Properties": {
                 "Code": {
                   "S3Bucket": "serverless-framework-deployments-ap-south-1-ed5464da-282c",
-                  "S3Key": "serverless/keepr-ephemeral-chat/dev/1779009734216-2026-05-17T09:22:14.216Z/keepr-ephemeral-chat.zip"
+                  "S3Key": "serverless/keepr-ephemeral-chat/dev/1779011077873-2026-05-17T09:44:37.873Z/keepr-ephemeral-chat.zip"
                 },
                 "Handler": "handler.defaultHandler",
                 "Runtime": "nodejs20.x",
@@ -278,7 +278,7 @@
               "Properties": {
                 "Code": {
                   "S3Bucket": "serverless-framework-deployments-ap-south-1-ed5464da-282c",
-                  "S3Key": "serverless/keepr-ephemeral-chat/dev/1779009734216-2026-05-17T09:22:14.216Z/keepr-ephemeral-chat.zip"
+                  "S3Key": "serverless/keepr-ephemeral-chat/dev/1779011077873-2026-05-17T09:44:37.873Z/keepr-ephemeral-chat.zip"
                 },
                 "Handler": "handler.sendMessageHandler",
                 "Runtime": "nodejs20.x",
@@ -301,34 +301,34 @@
                 "SendMessageHandlerLogGroup"
               ]
             },
-            "ConnectionHandlerLambdaVersionRYJXK1fOopfwbwTdNAIcJhh2qevmyIrjl9eyDYenOg": {
+            "ConnectionHandlerLambdaVersionLJw8khJLUY1QyEiho1GeGkDRJVTwRmICxDA08WNyV5Q": {
               "Type": "AWS::Lambda::Version",
               "DeletionPolicy": "Retain",
               "Properties": {
                 "FunctionName": {
                   "Ref": "ConnectionHandlerLambdaFunction"
                 },
-                "CodeSha256": "4gLpI7rirjX/RNQ81+N7Vxy1M0rG8EBZYEownH3mass="
+                "CodeSha256": "Jpb2S4qawkHJfhrt2bDOQ7s11oON+zzgLO87G/dv3Eo="
               }
             },
-            "DefaultHandlerLambdaVersionmZwpwbZH5FWm7CgbSO0YsOTOkRhbXIaJXE4hyR1PLw": {
+            "DefaultHandlerLambdaVersionbi1man0Jcp4uIJ7iiOrBDjbsOrivTFM8RLHiGhjBUc": {
               "Type": "AWS::Lambda::Version",
               "DeletionPolicy": "Retain",
               "Properties": {
                 "FunctionName": {
                   "Ref": "DefaultHandlerLambdaFunction"
                 },
-                "CodeSha256": "4gLpI7rirjX/RNQ81+N7Vxy1M0rG8EBZYEownH3mass="
+                "CodeSha256": "Jpb2S4qawkHJfhrt2bDOQ7s11oON+zzgLO87G/dv3Eo="
               }
             },
-            "SendMessageHandlerLambdaVersionyBmN6teXuYDuTuZC7nu6tRZpsvmhMLENZDs7MA5aoc": {
+            "SendMessageHandlerLambdaVersionN1EnsxDXLgJuQgCfdTlgh8DJrbzFkQ9oMH86evhKw3c": {
               "Type": "AWS::Lambda::Version",
               "DeletionPolicy": "Retain",
               "Properties": {
                 "FunctionName": {
                   "Ref": "SendMessageHandlerLambdaFunction"
                 },
-                "CodeSha256": "4gLpI7rirjX/RNQ81+N7Vxy1M0rG8EBZYEownH3mass="
+                "CodeSha256": "Jpb2S4qawkHJfhrt2bDOQ7s11oON+zzgLO87G/dv3Eo="
               }
             },
             "WebsocketsApi": {
@@ -634,7 +634,8 @@
                         "http://localhost:3000",
                         "http://localhost:8080",
                         "http://localhost:5173",
-                        "https://keepr-app-gold.vercel.app"
+                        "https://keepr-app-gold.vercel.app",
+                        "https://keepr-ggy0.onrender.com"
                       ],
                       "ExposedHeaders": [],
                       "MaxAge": 3000
@@ -775,7 +776,7 @@
             "ConnectionHandlerLambdaFunctionQualifiedArn": {
               "Description": "Current Lambda function version",
               "Value": {
-                "Ref": "ConnectionHandlerLambdaVersionRYJXK1fOopfwbwTdNAIcJhh2qevmyIrjl9eyDYenOg"
+                "Ref": "ConnectionHandlerLambdaVersionLJw8khJLUY1QyEiho1GeGkDRJVTwRmICxDA08WNyV5Q"
               },
               "Export": {
                 "Name": "sls-keepr-ephemeral-chat-dev-ConnectionHandlerLambdaFunctionQualifiedArn"
@@ -784,7 +785,7 @@
             "DefaultHandlerLambdaFunctionQualifiedArn": {
               "Description": "Current Lambda function version",
               "Value": {
-                "Ref": "DefaultHandlerLambdaVersionmZwpwbZH5FWm7CgbSO0YsOTOkRhbXIaJXE4hyR1PLw"
+                "Ref": "DefaultHandlerLambdaVersionbi1man0Jcp4uIJ7iiOrBDjbsOrivTFM8RLHiGhjBUc"
               },
               "Export": {
                 "Name": "sls-keepr-ephemeral-chat-dev-DefaultHandlerLambdaFunctionQualifiedArn"
@@ -793,7 +794,7 @@
             "SendMessageHandlerLambdaFunctionQualifiedArn": {
               "Description": "Current Lambda function version",
               "Value": {
-                "Ref": "SendMessageHandlerLambdaVersionyBmN6teXuYDuTuZC7nu6tRZpsvmhMLENZDs7MA5aoc"
+                "Ref": "SendMessageHandlerLambdaVersionN1EnsxDXLgJuQgCfdTlgh8DJrbzFkQ9oMH86evhKw3c"
               },
               "Export": {
                 "Name": "sls-keepr-ephemeral-chat-dev-SendMessageHandlerLambdaFunctionQualifiedArn"
@@ -877,7 +878,7 @@
           "timeout": 6,
           "runtime": "nodejs20.x",
           "vpc": {},
-          "versionLogicalId": "ConnectionHandlerLambdaVersionRYJXK1fOopfwbwTdNAIcJhh2qevmyIrjl9eyDYenOg"
+          "versionLogicalId": "ConnectionHandlerLambdaVersionLJw8khJLUY1QyEiho1GeGkDRJVTwRmICxDA08WNyV5Q"
         },
         "defaultHandler": {
           "handler": "handler.defaultHandler",
@@ -894,7 +895,7 @@
           "timeout": 6,
           "runtime": "nodejs20.x",
           "vpc": {},
-          "versionLogicalId": "DefaultHandlerLambdaVersionmZwpwbZH5FWm7CgbSO0YsOTOkRhbXIaJXE4hyR1PLw"
+          "versionLogicalId": "DefaultHandlerLambdaVersionbi1man0Jcp4uIJ7iiOrBDjbsOrivTFM8RLHiGhjBUc"
         },
         "sendMessageHandler": {
           "handler": "handler.sendMessageHandler",
@@ -911,7 +912,7 @@
           "timeout": 6,
           "runtime": "nodejs20.x",
           "vpc": {},
-          "versionLogicalId": "SendMessageHandlerLambdaVersionyBmN6teXuYDuTuZC7nu6tRZpsvmhMLENZDs7MA5aoc"
+          "versionLogicalId": "SendMessageHandlerLambdaVersionN1EnsxDXLgJuQgCfdTlgh8DJrbzFkQ9oMH86evhKw3c"
         }
       },
       "resources": {
@@ -951,7 +952,8 @@
                       "http://localhost:3000",
                       "http://localhost:8080",
                       "http://localhost:5173",
-                      "https://keepr-app-gold.vercel.app"
+                      "https://keepr-app-gold.vercel.app",
+                      "https://keepr-ggy0.onrender.com"
                     ],
                     "ExposedHeaders": [],
                     "MaxAge": 3000
@@ -1322,7 +1324,7 @@
             "Properties": {
               "Code": {
                 "S3Bucket": "serverless-framework-deployments-ap-south-1-ed5464da-282c",
-                "S3Key": "serverless/keepr-ephemeral-chat/dev/1779009734216-2026-05-17T09:22:14.216Z/keepr-ephemeral-chat.zip"
+                "S3Key": "serverless/keepr-ephemeral-chat/dev/1779011077873-2026-05-17T09:44:37.873Z/keepr-ephemeral-chat.zip"
               },
               "Handler": "handler.connectionHandler",
               "Runtime": "nodejs20.x",
@@ -1350,7 +1352,7 @@
             "Properties": {
               "Code": {
                 "S3Bucket": "serverless-framework-deployments-ap-south-1-ed5464da-282c",
-                "S3Key": "serverless/keepr-ephemeral-chat/dev/1779009734216-2026-05-17T09:22:14.216Z/keepr-ephemeral-chat.zip"
+                "S3Key": "serverless/keepr-ephemeral-chat/dev/1779011077873-2026-05-17T09:44:37.873Z/keepr-ephemeral-chat.zip"
               },
               "Handler": "handler.defaultHandler",
               "Runtime": "nodejs20.x",
@@ -1378,7 +1380,7 @@
             "Properties": {
               "Code": {
                 "S3Bucket": "serverless-framework-deployments-ap-south-1-ed5464da-282c",
-                "S3Key": "serverless/keepr-ephemeral-chat/dev/1779009734216-2026-05-17T09:22:14.216Z/keepr-ephemeral-chat.zip"
+                "S3Key": "serverless/keepr-ephemeral-chat/dev/1779011077873-2026-05-17T09:44:37.873Z/keepr-ephemeral-chat.zip"
               },
               "Handler": "handler.sendMessageHandler",
               "Runtime": "nodejs20.x",
@@ -1401,34 +1403,34 @@
               "SendMessageHandlerLogGroup"
             ]
           },
-          "ConnectionHandlerLambdaVersionRYJXK1fOopfwbwTdNAIcJhh2qevmyIrjl9eyDYenOg": {
+          "ConnectionHandlerLambdaVersionLJw8khJLUY1QyEiho1GeGkDRJVTwRmICxDA08WNyV5Q": {
             "Type": "AWS::Lambda::Version",
             "DeletionPolicy": "Retain",
             "Properties": {
               "FunctionName": {
                 "Ref": "ConnectionHandlerLambdaFunction"
               },
-              "CodeSha256": "4gLpI7rirjX/RNQ81+N7Vxy1M0rG8EBZYEownH3mass="
+              "CodeSha256": "Jpb2S4qawkHJfhrt2bDOQ7s11oON+zzgLO87G/dv3Eo="
             }
           },
-          "DefaultHandlerLambdaVersionmZwpwbZH5FWm7CgbSO0YsOTOkRhbXIaJXE4hyR1PLw": {
+          "DefaultHandlerLambdaVersionbi1man0Jcp4uIJ7iiOrBDjbsOrivTFM8RLHiGhjBUc": {
             "Type": "AWS::Lambda::Version",
             "DeletionPolicy": "Retain",
             "Properties": {
               "FunctionName": {
                 "Ref": "DefaultHandlerLambdaFunction"
               },
-              "CodeSha256": "4gLpI7rirjX/RNQ81+N7Vxy1M0rG8EBZYEownH3mass="
+              "CodeSha256": "Jpb2S4qawkHJfhrt2bDOQ7s11oON+zzgLO87G/dv3Eo="
             }
           },
-          "SendMessageHandlerLambdaVersionyBmN6teXuYDuTuZC7nu6tRZpsvmhMLENZDs7MA5aoc": {
+          "SendMessageHandlerLambdaVersionN1EnsxDXLgJuQgCfdTlgh8DJrbzFkQ9oMH86evhKw3c": {
             "Type": "AWS::Lambda::Version",
             "DeletionPolicy": "Retain",
             "Properties": {
               "FunctionName": {
                 "Ref": "SendMessageHandlerLambdaFunction"
               },
-              "CodeSha256": "4gLpI7rirjX/RNQ81+N7Vxy1M0rG8EBZYEownH3mass="
+              "CodeSha256": "Jpb2S4qawkHJfhrt2bDOQ7s11oON+zzgLO87G/dv3Eo="
             }
           },
           "WebsocketsApi": {
@@ -1734,7 +1736,8 @@
                       "http://localhost:3000",
                       "http://localhost:8080",
                       "http://localhost:5173",
-                      "https://keepr-app-gold.vercel.app"
+                      "https://keepr-app-gold.vercel.app",
+                      "https://keepr-ggy0.onrender.com"
                     ],
                     "ExposedHeaders": [],
                     "MaxAge": 3000
@@ -1875,7 +1878,7 @@
           "ConnectionHandlerLambdaFunctionQualifiedArn": {
             "Description": "Current Lambda function version",
             "Value": {
-              "Ref": "ConnectionHandlerLambdaVersionRYJXK1fOopfwbwTdNAIcJhh2qevmyIrjl9eyDYenOg"
+              "Ref": "ConnectionHandlerLambdaVersionLJw8khJLUY1QyEiho1GeGkDRJVTwRmICxDA08WNyV5Q"
             },
             "Export": {
               "Name": "sls-keepr-ephemeral-chat-dev-ConnectionHandlerLambdaFunctionQualifiedArn"
@@ -1884,7 +1887,7 @@
           "DefaultHandlerLambdaFunctionQualifiedArn": {
             "Description": "Current Lambda function version",
             "Value": {
-              "Ref": "DefaultHandlerLambdaVersionmZwpwbZH5FWm7CgbSO0YsOTOkRhbXIaJXE4hyR1PLw"
+              "Ref": "DefaultHandlerLambdaVersionbi1man0Jcp4uIJ7iiOrBDjbsOrivTFM8RLHiGhjBUc"
             },
             "Export": {
               "Name": "sls-keepr-ephemeral-chat-dev-DefaultHandlerLambdaFunctionQualifiedArn"
@@ -1893,7 +1896,7 @@
           "SendMessageHandlerLambdaFunctionQualifiedArn": {
             "Description": "Current Lambda function version",
             "Value": {
-              "Ref": "SendMessageHandlerLambdaVersionyBmN6teXuYDuTuZC7nu6tRZpsvmhMLENZDs7MA5aoc"
+              "Ref": "SendMessageHandlerLambdaVersionN1EnsxDXLgJuQgCfdTlgh8DJrbzFkQ9oMH86evhKw3c"
             },
             "Export": {
               "Name": "sls-keepr-ephemeral-chat-dev-SendMessageHandlerLambdaFunctionQualifiedArn"
@@ -1965,7 +1968,7 @@
       "serviceProvider": null,
       "instanceParameters": null
     },
-    "serviceRawFile": "\n#  Keepr – Unified AWS Infrastructure (Serverless Framework)\n#\n#  Covers all three features in one deploy command:\n#    Feature 1 – Zero-Trust Vault       (S3 bucket + IAM)\n#    Feature 2 – Link Detonator         (S3 staging bucket + Lambda + IAM)\n#    Feature 3 – Ephemeral Chat         (API Gateway WebSocket + Lambda + DynamoDB)\n#\n#  Deploy:\n#    cd keepr-ephemeral-chat-backend\n#    serverless deploy --stage prod\n#\n#  The \"resources\" section is pure CloudFormation, so every block works\n#  exactly the same as a standalone CloudFormation template would.\n\n\nservice: keepr-ephemeral-chat\n\n\n# CUSTOM  – change these values if you need different names\n\ncustom:\n  # Feature 1 – Vault\n  vaultBucketName: keepr-vault-storage-anshul\n\n  # Feature 2 – Link Detonator\n  detonatorBucketName: keepr-detonator-storage\n  detonatorFunctionName: KeeprLinkDetonator\n  detonatorMemoryMB: 1600       # Chromium needs extra RAM\n  detonatorTimeoutSec: 60\n\n  # Feature 3 – Chat (keep original pattern)\n  connectionsTable: ${self:service}-connections-${sls:stage}\n\n# PROVIDER\n\nprovider:\n  name: aws\n  runtime: nodejs20.x\n  region: ap-south-1\n\n  # WebSocket API for Feature 3\n  websocketsApiName: keepr-chat-api\n  websocketsApiRouteSelectionExpression: $request.body.action\n\n  environment:\n    # Feature 3 – chat Lambda functions need this env var\n    CONNECTIONS_TABLE: ${self:custom.connectionsTable}\n\n  # IAM role for the chat Lambda functions\n  # This role is ONLY for the three WebSocket Lambda handlers below.\n  # The backend server uses the separate KeeprMasterUser / KeeprMasterPolicy.\n  iam:\n    role:\n      statements:\n        # Feature 3: send messages back over WebSocket\n        - Effect: Allow\n          Action:\n            - \"execute-api:ManageConnections\"\n          Resource:\n            - \"arn:aws:execute-api:*:*:**/@connections/*\"\n\n        # Feature 3: read/write connection records in DynamoDB\n        - Effect: Allow\n          Action:\n            - dynamodb:PutItem\n            - dynamodb:DeleteItem\n            - dynamodb:Query\n            - dynamodb:Scan\n          Resource:\n            - Fn::GetAtt: [ConnectionsTable, Arn]\n            - Fn::Join:\n                - \"/\"\n                - - Fn::GetAtt: [ConnectionsTable, Arn]\n                  - \"index/*\"\n\n# ─────────────────────────────────────────────────────────────────────────────\n# FUNCTIONS  –  Feature 3: Ephemeral Chat WebSocket handlers\n#               (unchanged from original working setup)\n# ─────────────────────────────────────────────────────────────────────────────\nfunctions:\n  connectionHandler:\n    handler: handler.connectionHandler\n    events:\n      - websocket:\n          route: $connect\n      - websocket:\n          route: $disconnect\n\n  defaultHandler:\n    handler: handler.defaultHandler\n    events:\n      - websocket:\n          route: $default\n\n  sendMessageHandler:\n    handler: handler.sendMessageHandler\n    events:\n      - websocket:\n          route: sendMessage\n\n# ─────────────────────────────────────────────────────────────────────────────\n# RESOURCES  –  Pure CloudFormation for Features 1, 2, and 3\n# ─────────────────────────────────────────────────────────────────────────────\nresources:\n  Resources:\n\n    # ══════════════════════════════════════════════════════════════════════════\n    # FEATURE 1 – ZERO-TRUST VAULT\n    # S3 bucket that stores AES-256 encrypted user files.\n    # Files are only accessible via short-lived pre-signed URLs generated by\n    # the Node.js backend (server.ts). No public access ever.\n    # ══════════════════════════════════════════════════════════════════════════\n    VaultBucket:\n      Type: AWS::S3::Bucket\n      Properties:\n        BucketName: ${self:custom.vaultBucketName}\n        # Block all public access – objects reachable only via pre-signed URLs\n        PublicAccessBlockConfiguration:\n          BlockPublicAcls: true\n          BlockPublicPolicy: true\n          IgnorePublicAcls: true\n          RestrictPublicBuckets: true\n        # Encrypt all objects at rest\n        BucketEncryption:\n          ServerSideEncryptionConfiguration:\n            - ServerSideEncryptionByDefault:\n                SSEAlgorithm: AES256\n        # CORS – allow pre-signed PUT/GET from local dev servers\n        CorsConfiguration:\n          CorsRules:\n            - AllowedHeaders:\n                - \"*\"\n              AllowedMethods:\n                - PUT\n                - GET\n                - POST\n                - DELETE\n              AllowedOrigins:\n                - \"http://localhost:3000\"\n                - \"http://localhost:8080\"\n                - \"http://localhost:5173\"\n                - \"https://keepr-app-gold.vercel.app\"\n                # Add your production domain here once live, e.g.:\n                # - \"https://keepr.yourdomain.com\"\n              ExposedHeaders: []\n              MaxAge: 3000\n        # Auto-expire encrypted blobs after 7 days (adjust as needed)\n        LifecycleConfiguration:\n          Rules:\n            - Id: AutoExpireVaultObjects\n              Status: Enabled\n              ExpirationInDays: 7\n\n    # ══════════════════════════════════════════════════════════════════════════\n    # FEATURE 2 – LINK DETONATOR\n    # NOTE: keepr-detonator-storage bucket was created manually in AWS Console.\n    #       It is NOT managed here to avoid conflicts.\n    # ══════════════════════════════════════════════════════════════════════════\n\n\n    # Execution role for the KeeprLinkDetonator Lambda\n    # (separate from the chat Lambda execution role managed by Serverless)\n    DetonatorLambdaRole:\n      Type: AWS::IAM::Role\n      Properties:\n        RoleName: KeeprDetonatorLambdaRole\n        AssumeRolePolicyDocument:\n          Version: \"2012-10-17\"\n          Statement:\n            - Effect: Allow\n              Principal:\n                Service: lambda.amazonaws.com\n              Action: \"sts:AssumeRole\"\n        ManagedPolicyArns:\n          # Basic CloudWatch Logs write access\n          - arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole\n        Policies:\n          - PolicyName: DetonatorReadStagingBucket\n            PolicyDocument:\n              Version: \"2012-10-17\"\n              Statement:\n                - Effect: Allow\n                  Action:\n                    - \"s3:GetObject\"\n                  Resource: !Sub \"arn:aws:s3:::${self:custom.detonatorBucketName}/*\"\n\n    # The headless-browser Lambda (Puppeteer/Chromium).\n    # Serverless Framework doesn't \"own\" this function (no events wired to it).\n    # The Node.js backend invokes it directly via the AWS SDK:\n    #   lambda.invoke({ FunctionName: 'KeeprLinkDetonator', ... })\n    # NOTE: Deploy this stack AFTER uploading lambda-detonator.zip to the\n    #       DetonatorStagingBucket, or update-stack after uploading the zip.\n    DetonatorLambdaFunction:\n      Type: AWS::Lambda::Function\n      DependsOn:\n        - DetonatorLambdaRole\n      Properties:\n        FunctionName: ${self:custom.detonatorFunctionName}\n        Runtime: nodejs20.x\n        Role: !GetAtt DetonatorLambdaRole.Arn\n        Handler: index.handler\n        MemorySize: ${self:custom.detonatorMemoryMB}\n        Timeout: ${self:custom.detonatorTimeoutSec}\n        Code:\n          # This references the zip you uploaded manually (or via CI) above\n          S3Bucket: ${self:custom.detonatorBucketName}\n          S3Key: lambda-detonator.zip\n\n    # ══════════════════════════════════════════════════════════════════════════\n    # FEATURE 3 – EPHEMERAL CHAT\n    # DynamoDB table for live WebSocket connection IDs.\n    # This is identical to the original serverless.yml table definition.\n    # ══════════════════════════════════════════════════════════════════════════\n    ConnectionsTable:\n      Type: AWS::DynamoDB::Table\n      Properties:\n        TableName: ${self:custom.connectionsTable}\n        AttributeDefinitions:\n          - AttributeName: connectionId\n            AttributeType: S\n          - AttributeName: roomId\n            AttributeType: S\n        KeySchema:\n          - AttributeName: connectionId\n            KeyType: HASH\n        GlobalSecondaryIndexes:\n          - IndexName: RoomIndex\n            KeySchema:\n              - AttributeName: roomId\n                KeyType: HASH\n            Projection:\n              ProjectionType: ALL\n            ProvisionedThroughput:\n              ReadCapacityUnits: 5\n              WriteCapacityUnits: 5\n        BillingMode: PROVISIONED\n        ProvisionedThroughput:\n          ReadCapacityUnits: 5\n          WriteCapacityUnits: 5\n        # Auto-expire stale connections (handler sets ttl = now + 3600 s)\n        TimeToLiveSpecification:\n          AttributeName: ttl\n          Enabled: true\n\n    # NOTE: KeeprMasterPolicy and keepr-master-server IAM user were created\n    #       manually in AWS Console. Not managed here to avoid conflicts.\n\n\n  # ─────────────────────────────────────────────────────────────────────────\n  # OUTPUTS  – printed by `serverless deploy` and visible in CloudFormation\n  # ─────────────────────────────────────────────────────────────────────────\n  Outputs:\n    VaultBucketName:\n      Description: \"Set this as AWS_BUCKET_NAME in your .env\"\n      Value: !Ref VaultBucket\n\n    DetonatorLambdaArn:\n      Description: \"Set LAMBDA_FUNCTION_NAME=KeeprLinkDetonator in your .env\"\n      Value: !GetAtt DetonatorLambdaFunction.Arn\n\n    ChatConnectionsTableName:\n      Description: \"DynamoDB table for ephemeral chat WebSocket connections\"\n      Value: !Ref ConnectionsTable\n\n    WebSocketUrl:\n      Description: \"Paste this as VITE_WEBSOCKET_URL in your .env\"\n      Value: !Sub \"wss://${WebsocketsApi}.execute-api.${AWS::Region}.amazonaws.com/${sls:stage}\"",
+    "serviceRawFile": "\n#  Keepr – Unified AWS Infrastructure (Serverless Framework)\n#\n#  Covers all three features in one deploy command:\n#    Feature 1 – Zero-Trust Vault       (S3 bucket + IAM)\n#    Feature 2 – Link Detonator         (S3 staging bucket + Lambda + IAM)\n#    Feature 3 – Ephemeral Chat         (API Gateway WebSocket + Lambda + DynamoDB)\n#\n#  Deploy:\n#    cd keepr-ephemeral-chat-backend\n#    serverless deploy --stage prod\n#\n#  The \"resources\" section is pure CloudFormation, so every block works\n#  exactly the same as a standalone CloudFormation template would.\n\n\nservice: keepr-ephemeral-chat\n\n\n# CUSTOM  – change these values if you need different names\n\ncustom:\n  # Feature 1 – Vault\n  vaultBucketName: keepr-vault-storage-anshul\n\n  # Feature 2 – Link Detonator\n  detonatorBucketName: keepr-detonator-storage\n  detonatorFunctionName: KeeprLinkDetonator\n  detonatorMemoryMB: 1600       # Chromium needs extra RAM\n  detonatorTimeoutSec: 60\n\n  # Feature 3 – Chat (keep original pattern)\n  connectionsTable: ${self:service}-connections-${sls:stage}\n\n# PROVIDER\n\nprovider:\n  name: aws\n  runtime: nodejs20.x\n  region: ap-south-1\n\n  # WebSocket API for Feature 3\n  websocketsApiName: keepr-chat-api\n  websocketsApiRouteSelectionExpression: $request.body.action\n\n  environment:\n    # Feature 3 – chat Lambda functions need this env var\n    CONNECTIONS_TABLE: ${self:custom.connectionsTable}\n\n  # IAM role for the chat Lambda functions\n  # This role is ONLY for the three WebSocket Lambda handlers below.\n  # The backend server uses the separate KeeprMasterUser / KeeprMasterPolicy.\n  iam:\n    role:\n      statements:\n        # Feature 3: send messages back over WebSocket\n        - Effect: Allow\n          Action:\n            - \"execute-api:ManageConnections\"\n          Resource:\n            - \"arn:aws:execute-api:*:*:**/@connections/*\"\n\n        # Feature 3: read/write connection records in DynamoDB\n        - Effect: Allow\n          Action:\n            - dynamodb:PutItem\n            - dynamodb:DeleteItem\n            - dynamodb:Query\n            - dynamodb:Scan\n          Resource:\n            - Fn::GetAtt: [ConnectionsTable, Arn]\n            - Fn::Join:\n                - \"/\"\n                - - Fn::GetAtt: [ConnectionsTable, Arn]\n                  - \"index/*\"\n\n# ─────────────────────────────────────────────────────────────────────────────\n# FUNCTIONS  –  Feature 3: Ephemeral Chat WebSocket handlers\n#               (unchanged from original working setup)\n# ─────────────────────────────────────────────────────────────────────────────\nfunctions:\n  connectionHandler:\n    handler: handler.connectionHandler\n    events:\n      - websocket:\n          route: $connect\n      - websocket:\n          route: $disconnect\n\n  defaultHandler:\n    handler: handler.defaultHandler\n    events:\n      - websocket:\n          route: $default\n\n  sendMessageHandler:\n    handler: handler.sendMessageHandler\n    events:\n      - websocket:\n          route: sendMessage\n\n# ─────────────────────────────────────────────────────────────────────────────\n# RESOURCES  –  Pure CloudFormation for Features 1, 2, and 3\n# ─────────────────────────────────────────────────────────────────────────────\nresources:\n  Resources:\n\n    # ══════════════════════════════════════════════════════════════════════════\n    # FEATURE 1 – ZERO-TRUST VAULT\n    # S3 bucket that stores AES-256 encrypted user files.\n    # Files are only accessible via short-lived pre-signed URLs generated by\n    # the Node.js backend (server.ts). No public access ever.\n    # ══════════════════════════════════════════════════════════════════════════\n    VaultBucket:\n      Type: AWS::S3::Bucket\n      Properties:\n        BucketName: ${self:custom.vaultBucketName}\n        # Block all public access – objects reachable only via pre-signed URLs\n        PublicAccessBlockConfiguration:\n          BlockPublicAcls: true\n          BlockPublicPolicy: true\n          IgnorePublicAcls: true\n          RestrictPublicBuckets: true\n        # Encrypt all objects at rest\n        BucketEncryption:\n          ServerSideEncryptionConfiguration:\n            - ServerSideEncryptionByDefault:\n                SSEAlgorithm: AES256\n        # CORS – allow pre-signed PUT/GET from local dev servers\n        CorsConfiguration:\n          CorsRules:\n            - AllowedHeaders:\n                - \"*\"\n              AllowedMethods:\n                - PUT\n                - GET\n                - POST\n                - DELETE\n              AllowedOrigins:\n                - \"http://localhost:3000\"\n                - \"http://localhost:8080\"\n                - \"http://localhost:5173\"\n                - \"https://keepr-app-gold.vercel.app\"\n                - \"https://keepr-ggy0.onrender.com\"\n              ExposedHeaders: []\n              MaxAge: 3000\n        # Auto-expire encrypted blobs after 7 days (adjust as needed)\n        LifecycleConfiguration:\n          Rules:\n            - Id: AutoExpireVaultObjects\n              Status: Enabled\n              ExpirationInDays: 7\n\n    # ══════════════════════════════════════════════════════════════════════════\n    # FEATURE 2 – LINK DETONATOR\n    # NOTE: keepr-detonator-storage bucket was created manually in AWS Console.\n    #       It is NOT managed here to avoid conflicts.\n    # ══════════════════════════════════════════════════════════════════════════\n\n\n    # Execution role for the KeeprLinkDetonator Lambda\n    # (separate from the chat Lambda execution role managed by Serverless)\n    DetonatorLambdaRole:\n      Type: AWS::IAM::Role\n      Properties:\n        RoleName: KeeprDetonatorLambdaRole\n        AssumeRolePolicyDocument:\n          Version: \"2012-10-17\"\n          Statement:\n            - Effect: Allow\n              Principal:\n                Service: lambda.amazonaws.com\n              Action: \"sts:AssumeRole\"\n        ManagedPolicyArns:\n          # Basic CloudWatch Logs write access\n          - arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole\n        Policies:\n          - PolicyName: DetonatorReadStagingBucket\n            PolicyDocument:\n              Version: \"2012-10-17\"\n              Statement:\n                - Effect: Allow\n                  Action:\n                    - \"s3:GetObject\"\n                  Resource: !Sub \"arn:aws:s3:::${self:custom.detonatorBucketName}/*\"\n\n    # The headless-browser Lambda (Puppeteer/Chromium).\n    # Serverless Framework doesn't \"own\" this function (no events wired to it).\n    # The Node.js backend invokes it directly via the AWS SDK:\n    #   lambda.invoke({ FunctionName: 'KeeprLinkDetonator', ... })\n    # NOTE: Deploy this stack AFTER uploading lambda-detonator.zip to the\n    #       DetonatorStagingBucket, or update-stack after uploading the zip.\n    DetonatorLambdaFunction:\n      Type: AWS::Lambda::Function\n      DependsOn:\n        - DetonatorLambdaRole\n      Properties:\n        FunctionName: ${self:custom.detonatorFunctionName}\n        Runtime: nodejs20.x\n        Role: !GetAtt DetonatorLambdaRole.Arn\n        Handler: index.handler\n        MemorySize: ${self:custom.detonatorMemoryMB}\n        Timeout: ${self:custom.detonatorTimeoutSec}\n        Code:\n          # This references the zip you uploaded manually (or via CI) above\n          S3Bucket: ${self:custom.detonatorBucketName}\n          S3Key: lambda-detonator.zip\n\n    # ══════════════════════════════════════════════════════════════════════════\n    # FEATURE 3 – EPHEMERAL CHAT\n    # DynamoDB table for live WebSocket connection IDs.\n    # This is identical to the original serverless.yml table definition.\n    # ══════════════════════════════════════════════════════════════════════════\n    ConnectionsTable:\n      Type: AWS::DynamoDB::Table\n      Properties:\n        TableName: ${self:custom.connectionsTable}\n        AttributeDefinitions:\n          - AttributeName: connectionId\n            AttributeType: S\n          - AttributeName: roomId\n            AttributeType: S\n        KeySchema:\n          - AttributeName: connectionId\n            KeyType: HASH\n        GlobalSecondaryIndexes:\n          - IndexName: RoomIndex\n            KeySchema:\n              - AttributeName: roomId\n                KeyType: HASH\n            Projection:\n              ProjectionType: ALL\n            ProvisionedThroughput:\n              ReadCapacityUnits: 5\n              WriteCapacityUnits: 5\n        BillingMode: PROVISIONED\n        ProvisionedThroughput:\n          ReadCapacityUnits: 5\n          WriteCapacityUnits: 5\n        # Auto-expire stale connections (handler sets ttl = now + 3600 s)\n        TimeToLiveSpecification:\n          AttributeName: ttl\n          Enabled: true\n\n    # NOTE: KeeprMasterPolicy and keepr-master-server IAM user were created\n    #       manually in AWS Console. Not managed here to avoid conflicts.\n\n\n  # ─────────────────────────────────────────────────────────────────────────\n  # OUTPUTS  – printed by `serverless deploy` and visible in CloudFormation\n  # ─────────────────────────────────────────────────────────────────────────\n  Outputs:\n    VaultBucketName:\n      Description: \"Set this as AWS_BUCKET_NAME in your .env\"\n      Value: !Ref VaultBucket\n\n    DetonatorLambdaArn:\n      Description: \"Set LAMBDA_FUNCTION_NAME=KeeprLinkDetonator in your .env\"\n      Value: !GetAtt DetonatorLambdaFunction.Arn\n\n    ChatConnectionsTableName:\n      Description: \"DynamoDB table for ephemeral chat WebSocket connections\"\n      Value: !Ref ConnectionsTable\n\n    WebSocketUrl:\n      Description: \"Paste this as VITE_WEBSOCKET_URL in your .env\"\n      Value: !Sub \"wss://${WebsocketsApi}.execute-api.${AWS::Region}.amazonaws.com/${sls:stage}\"",
     "command": [
       "deploy"
     ],
@@ -2185,7 +2188,7 @@
           "Properties": {
             "Code": {
               "S3Bucket": "serverless-framework-deployments-ap-south-1-ed5464da-282c",
-              "S3Key": "serverless/keepr-ephemeral-chat/dev/1779009734216-2026-05-17T09:22:14.216Z/keepr-ephemeral-chat.zip"
+              "S3Key": "serverless/keepr-ephemeral-chat/dev/1779011077873-2026-05-17T09:44:37.873Z/keepr-ephemeral-chat.zip"
             },
             "Handler": "handler.connectionHandler",
             "Runtime": "nodejs20.x",
@@ -2213,7 +2216,7 @@
           "Properties": {
             "Code": {
               "S3Bucket": "serverless-framework-deployments-ap-south-1-ed5464da-282c",
-              "S3Key": "serverless/keepr-ephemeral-chat/dev/1779009734216-2026-05-17T09:22:14.216Z/keepr-ephemeral-chat.zip"
+              "S3Key": "serverless/keepr-ephemeral-chat/dev/1779011077873-2026-05-17T09:44:37.873Z/keepr-ephemeral-chat.zip"
             },
             "Handler": "handler.defaultHandler",
             "Runtime": "nodejs20.x",
@@ -2241,7 +2244,7 @@
           "Properties": {
             "Code": {
               "S3Bucket": "serverless-framework-deployments-ap-south-1-ed5464da-282c",
-              "S3Key": "serverless/keepr-ephemeral-chat/dev/1779009734216-2026-05-17T09:22:14.216Z/keepr-ephemeral-chat.zip"
+              "S3Key": "serverless/keepr-ephemeral-chat/dev/1779011077873-2026-05-17T09:44:37.873Z/keepr-ephemeral-chat.zip"
             },
             "Handler": "handler.sendMessageHandler",
             "Runtime": "nodejs20.x",
@@ -2264,34 +2267,34 @@
             "SendMessageHandlerLogGroup"
           ]
         },
-        "ConnectionHandlerLambdaVersionRYJXK1fOopfwbwTdNAIcJhh2qevmyIrjl9eyDYenOg": {
+        "ConnectionHandlerLambdaVersionLJw8khJLUY1QyEiho1GeGkDRJVTwRmICxDA08WNyV5Q": {
           "Type": "AWS::Lambda::Version",
           "DeletionPolicy": "Retain",
           "Properties": {
             "FunctionName": {
               "Ref": "ConnectionHandlerLambdaFunction"
             },
-            "CodeSha256": "4gLpI7rirjX/RNQ81+N7Vxy1M0rG8EBZYEownH3mass="
+            "CodeSha256": "Jpb2S4qawkHJfhrt2bDOQ7s11oON+zzgLO87G/dv3Eo="
           }
         },
-        "DefaultHandlerLambdaVersionmZwpwbZH5FWm7CgbSO0YsOTOkRhbXIaJXE4hyR1PLw": {
+        "DefaultHandlerLambdaVersionbi1man0Jcp4uIJ7iiOrBDjbsOrivTFM8RLHiGhjBUc": {
           "Type": "AWS::Lambda::Version",
           "DeletionPolicy": "Retain",
           "Properties": {
             "FunctionName": {
               "Ref": "DefaultHandlerLambdaFunction"
             },
-            "CodeSha256": "4gLpI7rirjX/RNQ81+N7Vxy1M0rG8EBZYEownH3mass="
+            "CodeSha256": "Jpb2S4qawkHJfhrt2bDOQ7s11oON+zzgLO87G/dv3Eo="
           }
         },
-        "SendMessageHandlerLambdaVersionyBmN6teXuYDuTuZC7nu6tRZpsvmhMLENZDs7MA5aoc": {
+        "SendMessageHandlerLambdaVersionN1EnsxDXLgJuQgCfdTlgh8DJrbzFkQ9oMH86evhKw3c": {
           "Type": "AWS::Lambda::Version",
           "DeletionPolicy": "Retain",
           "Properties": {
             "FunctionName": {
               "Ref": "SendMessageHandlerLambdaFunction"
             },
-            "CodeSha256": "4gLpI7rirjX/RNQ81+N7Vxy1M0rG8EBZYEownH3mass="
+            "CodeSha256": "Jpb2S4qawkHJfhrt2bDOQ7s11oON+zzgLO87G/dv3Eo="
           }
         },
         "WebsocketsApi": {
@@ -2597,7 +2600,8 @@
                     "http://localhost:3000",
                     "http://localhost:8080",
                     "http://localhost:5173",
-                    "https://keepr-app-gold.vercel.app"
+                    "https://keepr-app-gold.vercel.app",
+                    "https://keepr-ggy0.onrender.com"
                   ],
                   "ExposedHeaders": [],
                   "MaxAge": 3000
@@ -2738,7 +2742,7 @@
         "ConnectionHandlerLambdaFunctionQualifiedArn": {
           "Description": "Current Lambda function version",
           "Value": {
-            "Ref": "ConnectionHandlerLambdaVersionRYJXK1fOopfwbwTdNAIcJhh2qevmyIrjl9eyDYenOg"
+            "Ref": "ConnectionHandlerLambdaVersionLJw8khJLUY1QyEiho1GeGkDRJVTwRmICxDA08WNyV5Q"
           },
           "Export": {
             "Name": "sls-keepr-ephemeral-chat-dev-ConnectionHandlerLambdaFunctionQualifiedArn"
@@ -2747,7 +2751,7 @@
         "DefaultHandlerLambdaFunctionQualifiedArn": {
           "Description": "Current Lambda function version",
           "Value": {
-            "Ref": "DefaultHandlerLambdaVersionmZwpwbZH5FWm7CgbSO0YsOTOkRhbXIaJXE4hyR1PLw"
+            "Ref": "DefaultHandlerLambdaVersionbi1man0Jcp4uIJ7iiOrBDjbsOrivTFM8RLHiGhjBUc"
           },
           "Export": {
             "Name": "sls-keepr-ephemeral-chat-dev-DefaultHandlerLambdaFunctionQualifiedArn"
@@ -2756,7 +2760,7 @@
         "SendMessageHandlerLambdaFunctionQualifiedArn": {
           "Description": "Current Lambda function version",
           "Value": {
-            "Ref": "SendMessageHandlerLambdaVersionyBmN6teXuYDuTuZC7nu6tRZpsvmhMLENZDs7MA5aoc"
+            "Ref": "SendMessageHandlerLambdaVersionN1EnsxDXLgJuQgCfdTlgh8DJrbzFkQ9oMH86evhKw3c"
           },
           "Export": {
             "Name": "sls-keepr-ephemeral-chat-dev-SendMessageHandlerLambdaFunctionQualifiedArn"
