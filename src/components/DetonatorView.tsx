@@ -21,7 +21,7 @@ export const DetonatorView = () => {
   const terminalEndRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
-    socketRef.current = io('http://localhost:3001');
+    socketRef.current = io();
 
     socketRef.current.on('log', (msg: string) => {
       setLogs(prev => [...prev, `[${new Date().toLocaleTimeString()}] ${msg}`]);

@@ -14,7 +14,7 @@ COPY . .
 RUN npm run build
 
 # Expose the port the Node server relies on
-EXPOSE 3001
+EXPOSE 8080
 
 # Start the monolith server
 CMD ["npm", "run", "start"]

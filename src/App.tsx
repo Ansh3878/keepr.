@@ -1183,7 +1183,7 @@ export default function App() {
       const fileId = Math.random().toString(36).substring(2, 15);
 
       // Step 4a: Ask backend for a pre-signed S3 upload URL
-      const urlRes = await fetch('http://localhost:3001/api/upload-url', {
+      const urlRes = await fetch('/api/upload-url', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ fileId })
@@ -1241,8 +1241,8 @@ export default function App() {
       const fileName = base64FileName ? decodeURIComponent(atob(base64FileName)) : 'decrypted_file';
       const fileType = base64FileType ? decodeURIComponent(atob(base64FileType)) : 'application/octet-stream';
 
-      // 1. Fetch encrypted data ticket from AWS via your server (Port 3001)
-      const ticketRes = await fetch('http://localhost:3001/api/download-url', {
+      // 1. Fetch encrypted data ticket from AWS via your server
+      const ticketRes = await fetch('/api/download-url', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ fileId })
@@ -1279,7 +1279,7 @@ export default function App() {
       setStatus('success');
 
       // 5. BURN IT from AWS forever
-      fetch(`http://localhost:3001/api/burn/${fileId}`, { method: 'DELETE' }).catch(console.error);
+      fetch(`/api/burn/${fileId}`, { method: 'DELETE' }).catch(console.error);
 
     } catch (err) {
       console.error('Decryption Failed:', err);
@@ -1296,7 +1296,7 @@ export default function App() {
 
     try {
       const isUrl = typeof input === 'string';
-      const endpoint = isUrl ? 'http://localhost:3001/api/scan-url' : 'http://localhost:3001/api/scan';
+      const endpoint = isUrl ? '/api/scan-url' : '/api/scan';
 
       let body: any;
       if (isUrl) {
