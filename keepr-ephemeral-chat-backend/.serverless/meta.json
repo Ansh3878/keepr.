@@ -352,7 +352,7 @@
               "Properties": {
                 "Code": {
                   "S3Bucket": "serverless-framework-deployments-ap-south-1-db10e28f-a1c6",
-                  "S3Key": "serverless/keepr-ephemeral-chat/dev/1779703674016-2026-05-25T10:07:54.016Z/keepr-ephemeral-chat.zip"
+                  "S3Key": "serverless/keepr-ephemeral-chat/dev/1779706044317-2026-05-25T10:47:24.317Z/keepr-ephemeral-chat.zip"
                 },
                 "Handler": "handler.connectionHandler",
                 "Runtime": "nodejs20.x",
@@ -388,7 +388,7 @@
               "Properties": {
                 "Code": {
                   "S3Bucket": "serverless-framework-deployments-ap-south-1-db10e28f-a1c6",
-                  "S3Key": "serverless/keepr-ephemeral-chat/dev/1779703674016-2026-05-25T10:07:54.016Z/keepr-ephemeral-chat.zip"
+                  "S3Key": "serverless/keepr-ephemeral-chat/dev/1779706044317-2026-05-25T10:47:24.317Z/keepr-ephemeral-chat.zip"
                 },
                 "Handler": "handler.defaultHandler",
                 "Runtime": "nodejs20.x",
@@ -424,7 +424,7 @@
               "Properties": {
                 "Code": {
                   "S3Bucket": "serverless-framework-deployments-ap-south-1-db10e28f-a1c6",
-                  "S3Key": "serverless/keepr-ephemeral-chat/dev/1779703674016-2026-05-25T10:07:54.016Z/keepr-ephemeral-chat.zip"
+                  "S3Key": "serverless/keepr-ephemeral-chat/dev/1779706044317-2026-05-25T10:47:24.317Z/keepr-ephemeral-chat.zip"
                 },
                 "Handler": "handler.sendMessageHandler",
                 "Runtime": "nodejs20.x",
@@ -460,7 +460,7 @@
               "Properties": {
                 "Code": {
                   "S3Bucket": "serverless-framework-deployments-ap-south-1-db10e28f-a1c6",
-                  "S3Key": "serverless/keepr-ephemeral-chat/dev/1779703674016-2026-05-25T10:07:54.016Z/keepr-ephemeral-chat.zip"
+                  "S3Key": "serverless/keepr-ephemeral-chat/dev/1779706044317-2026-05-25T10:47:24.317Z/keepr-ephemeral-chat.zip"
                 },
                 "Handler": "handlers/secureRoomApi.handler",
                 "Runtime": "nodejs20.x",
@@ -497,7 +497,7 @@
               "Properties": {
                 "Code": {
                   "S3Bucket": "serverless-framework-deployments-ap-south-1-db10e28f-a1c6",
-                  "S3Key": "serverless/keepr-ephemeral-chat/dev/1779703674016-2026-05-25T10:07:54.016Z/keepr-ephemeral-chat.zip"
+                  "S3Key": "serverless/keepr-ephemeral-chat/dev/1779706044317-2026-05-25T10:47:24.317Z/keepr-ephemeral-chat.zip"
                 },
                 "Handler": "handlers/secureRoomCron.handler",
                 "Runtime": "nodejs20.x",
@@ -529,54 +529,54 @@
                 "SecureRoomCronJobLogGroup"
               ]
             },
-            "ConnectionHandlerLambdaVersionQePsG5Xor3iu5mtH08S5UoeO3tSoBzajUCQv2uDqxm0": {
+            "ConnectionHandlerLambdaVersion6FqfxYBEfijk4CS1rFTQw3neDxl87MmSIqqlRac3s": {
               "Type": "AWS::Lambda::Version",
               "DeletionPolicy": "Retain",
               "Properties": {
                 "FunctionName": {
                   "Ref": "ConnectionHandlerLambdaFunction"
                 },
-                "CodeSha256": "xyBUSZQJ0D+Hs7sA11cIW8L256vzDtrl7NaP0lN5y44="
+                "CodeSha256": "nurOphtuIwT5sRQDzeeJb5SvFI1VdhbHSZHhGjPNmzs="
               }
             },
-            "DefaultHandlerLambdaVersionxFPOrJ2dkYnAbUGtK5kh6vmXID9DQnoVOrTB1rB14UI": {
+            "DefaultHandlerLambdaVersion1N0wTSLtOv24KhbolIsEf4DP8DRC0sWhQ4o6SrsRo": {
               "Type": "AWS::Lambda::Version",
               "DeletionPolicy": "Retain",
               "Properties": {
                 "FunctionName": {
                   "Ref": "DefaultHandlerLambdaFunction"
                 },
-                "CodeSha256": "xyBUSZQJ0D+Hs7sA11cIW8L256vzDtrl7NaP0lN5y44="
+                "CodeSha256": "nurOphtuIwT5sRQDzeeJb5SvFI1VdhbHSZHhGjPNmzs="
               }
             },
-            "SendMessageHandlerLambdaVersiono9b861AwIkI3K6ggKOPmlvs5lFiJqUV2w9WRrzsxfw": {
+            "SendMessageHandlerLambdaVersion0zpnghVYVcbIVHMaSfbpYzd1YB7Yr3Lh8sqRx4YulLE": {
               "Type": "AWS::Lambda::Version",
               "DeletionPolicy": "Retain",
               "Properties": {
                 "FunctionName": {
                   "Ref": "SendMessageHandlerLambdaFunction"
                 },
-                "CodeSha256": "xyBUSZQJ0D+Hs7sA11cIW8L256vzDtrl7NaP0lN5y44="
+                "CodeSha256": "nurOphtuIwT5sRQDzeeJb5SvFI1VdhbHSZHhGjPNmzs="
               }
             },
-            "SecureRoomApiHandlerLambdaVersionPldxKWu0BE2iFiNpIgUt5cVR7sLg6zXztEFvCvk1Gw": {
+            "SecureRoomApiHandlerLambdaVersiony1wiiylj5kV79cB6b6O8xn47WjgkpKsE1FK888JwI": {
               "Type": "AWS::Lambda::Version",
               "DeletionPolicy": "Retain",
               "Properties": {
                 "FunctionName": {
                   "Ref": "SecureRoomApiHandlerLambdaFunction"
                 },
-                "CodeSha256": "xyBUSZQJ0D+Hs7sA11cIW8L256vzDtrl7NaP0lN5y44="
+                "CodeSha256": "nurOphtuIwT5sRQDzeeJb5SvFI1VdhbHSZHhGjPNmzs="
               }
             },
-            "SecureRoomCronJobLambdaVersionfhScJx0nAqfYBbCdrb9kWRwtVUkT0KcMaw9J5vOh8E": {
+            "SecureRoomCronJobLambdaVersionDsOLuygwk7Ogiypfcf1b9WRNzhLOK7nEqQ4UWPoPyNU": {
               "Type": "AWS::Lambda::Version",
               "DeletionPolicy": "Retain",
               "Properties": {
                 "FunctionName": {
                   "Ref": "SecureRoomCronJobLambdaFunction"
                 },
-                "CodeSha256": "xyBUSZQJ0D+Hs7sA11cIW8L256vzDtrl7NaP0lN5y44="
+                "CodeSha256": "nurOphtuIwT5sRQDzeeJb5SvFI1VdhbHSZHhGjPNmzs="
               }
             },
             "SecureRoomCronJobEventsRuleSchedule1": {
@@ -1537,7 +1537,7 @@
                 "SecureRoomApiHandlerLambdaPermissionApiGateway"
               ]
             },
-            "ApiGatewayDeployment1779703659258": {
+            "ApiGatewayDeployment1779706034539": {
               "Type": "AWS::ApiGateway::Deployment",
               "Properties": {
                 "RestApiId": {
@@ -1907,7 +1907,7 @@
                         "http://localhost:8080",
                         "http://localhost:5173",
                         "https://keeper-app-gold.vercel.app",
-                        "https://keeper-ggy0.onrender.com"
+                        "https://keepr-4j2p.onrender.com"
                       ],
                       "ExposedHeaders": [],
                       "MaxAge": 3000
@@ -2072,7 +2072,8 @@
                         "http://localhost:3000",
                         "http://localhost:8080",
                         "http://localhost:5173",
-                        "https://keeper-app-gold.vercel.app"
+                        "https://keeper-app-gold.vercel.app",
+                        "https://keepr-4j2p.onrender.com"
                       ],
                       "ExposedHeaders": [
                         "ETag"
@@ -2184,7 +2185,7 @@
             "ConnectionHandlerLambdaFunctionQualifiedArn": {
               "Description": "Current Lambda function version",
               "Value": {
-                "Ref": "ConnectionHandlerLambdaVersionQePsG5Xor3iu5mtH08S5UoeO3tSoBzajUCQv2uDqxm0"
+                "Ref": "ConnectionHandlerLambdaVersion6FqfxYBEfijk4CS1rFTQw3neDxl87MmSIqqlRac3s"
               },
               "Export": {
                 "Name": "sls-keepr-ephemeral-chat-dev-ConnectionHandlerLambdaFunctionQualifiedArn"
@@ -2193,7 +2194,7 @@
             "DefaultHandlerLambdaFunctionQualifiedArn": {
               "Description": "Current Lambda function version",
               "Value": {
-                "Ref": "DefaultHandlerLambdaVersionxFPOrJ2dkYnAbUGtK5kh6vmXID9DQnoVOrTB1rB14UI"
+                "Ref": "DefaultHandlerLambdaVersion1N0wTSLtOv24KhbolIsEf4DP8DRC0sWhQ4o6SrsRo"
               },
               "Export": {
                 "Name": "sls-keepr-ephemeral-chat-dev-DefaultHandlerLambdaFunctionQualifiedArn"
@@ -2202,7 +2203,7 @@
             "SendMessageHandlerLambdaFunctionQualifiedArn": {
               "Description": "Current Lambda function version",
               "Value": {
-                "Ref": "SendMessageHandlerLambdaVersiono9b861AwIkI3K6ggKOPmlvs5lFiJqUV2w9WRrzsxfw"
+                "Ref": "SendMessageHandlerLambdaVersion0zpnghVYVcbIVHMaSfbpYzd1YB7Yr3Lh8sqRx4YulLE"
               },
               "Export": {
                 "Name": "sls-keepr-ephemeral-chat-dev-SendMessageHandlerLambdaFunctionQualifiedArn"
@@ -2211,7 +2212,7 @@
             "SecureRoomApiHandlerLambdaFunctionQualifiedArn": {
               "Description": "Current Lambda function version",
               "Value": {
-                "Ref": "SecureRoomApiHandlerLambdaVersionPldxKWu0BE2iFiNpIgUt5cVR7sLg6zXztEFvCvk1Gw"
+                "Ref": "SecureRoomApiHandlerLambdaVersiony1wiiylj5kV79cB6b6O8xn47WjgkpKsE1FK888JwI"
               },
               "Export": {
                 "Name": "sls-keepr-ephemeral-chat-dev-SecureRoomApiHandlerLambdaFunctionQualifiedArn"
@@ -2220,7 +2221,7 @@
             "SecureRoomCronJobLambdaFunctionQualifiedArn": {
               "Description": "Current Lambda function version",
               "Value": {
-                "Ref": "SecureRoomCronJobLambdaVersionfhScJx0nAqfYBbCdrb9kWRwtVUkT0KcMaw9J5vOh8E"
+                "Ref": "SecureRoomCronJobLambdaVersionDsOLuygwk7Ogiypfcf1b9WRNzhLOK7nEqQ4UWPoPyNU"
               },
               "Export": {
                 "Name": "sls-keepr-ephemeral-chat-dev-SecureRoomCronJobLambdaFunctionQualifiedArn"
@@ -2330,7 +2331,7 @@
           "timeout": 6,
           "runtime": "nodejs20.x",
           "vpc": {},
-          "versionLogicalId": "ConnectionHandlerLambdaVersionQePsG5Xor3iu5mtH08S5UoeO3tSoBzajUCQv2uDqxm0"
+          "versionLogicalId": "ConnectionHandlerLambdaVersion6FqfxYBEfijk4CS1rFTQw3neDxl87MmSIqqlRac3s"
         },
         "defaultHandler": {
           "handler": "handler.defaultHandler",
@@ -2347,7 +2348,7 @@
           "timeout": 6,
           "runtime": "nodejs20.x",
           "vpc": {},
-          "versionLogicalId": "DefaultHandlerLambdaVersionxFPOrJ2dkYnAbUGtK5kh6vmXID9DQnoVOrTB1rB14UI"
+          "versionLogicalId": "DefaultHandlerLambdaVersion1N0wTSLtOv24KhbolIsEf4DP8DRC0sWhQ4o6SrsRo"
         },
         "sendMessageHandler": {
           "handler": "handler.sendMessageHandler",
@@ -2364,7 +2365,7 @@
           "timeout": 6,
           "runtime": "nodejs20.x",
           "vpc": {},
-          "versionLogicalId": "SendMessageHandlerLambdaVersiono9b861AwIkI3K6ggKOPmlvs5lFiJqUV2w9WRrzsxfw"
+          "versionLogicalId": "SendMessageHandlerLambdaVersion0zpnghVYVcbIVHMaSfbpYzd1YB7Yr3Lh8sqRx4YulLE"
         },
         "secureRoomApiHandler": {
           "handler": "handlers/secureRoomApi.handler",
@@ -2644,7 +2645,7 @@
           "memory": 512,
           "runtime": "nodejs20.x",
           "vpc": {},
-          "versionLogicalId": "SecureRoomApiHandlerLambdaVersionPldxKWu0BE2iFiNpIgUt5cVR7sLg6zXztEFvCvk1Gw"
+          "versionLogicalId": "SecureRoomApiHandlerLambdaVersiony1wiiylj5kV79cB6b6O8xn47WjgkpKsE1FK888JwI"
         },
         "secureRoomCronJob": {
           "handler": "handlers/secureRoomCron.handler",
@@ -2672,7 +2673,7 @@
           "memory": 512,
           "runtime": "nodejs20.x",
           "vpc": {},
-          "versionLogicalId": "SecureRoomCronJobLambdaVersionfhScJx0nAqfYBbCdrb9kWRwtVUkT0KcMaw9J5vOh8E"
+          "versionLogicalId": "SecureRoomCronJobLambdaVersionDsOLuygwk7Ogiypfcf1b9WRNzhLOK7nEqQ4UWPoPyNU"
         }
       },
       "resources": {
@@ -2713,7 +2714,7 @@
                       "http://localhost:8080",
                       "http://localhost:5173",
                       "https://keeper-app-gold.vercel.app",
-                      "https://keeper-ggy0.onrender.com"
+                      "https://keepr-4j2p.onrender.com"
                     ],
                     "ExposedHeaders": [],
                     "MaxAge": 3000
@@ -2878,7 +2879,8 @@
                       "http://localhost:3000",
                       "http://localhost:8080",
                       "http://localhost:5173",
-                      "https://keeper-app-gold.vercel.app"
+                      "https://keeper-app-gold.vercel.app",
+                      "https://keepr-4j2p.onrender.com"
                     ],
                     "ExposedHeaders": [
                       "ETag"
@@ -3346,7 +3348,7 @@
             "Properties": {
               "Code": {
                 "S3Bucket": "serverless-framework-deployments-ap-south-1-db10e28f-a1c6",
-                "S3Key": "serverless/keepr-ephemeral-chat/dev/1779703674016-2026-05-25T10:07:54.016Z/keepr-ephemeral-chat.zip"
+                "S3Key": "serverless/keepr-ephemeral-chat/dev/1779706044317-2026-05-25T10:47:24.317Z/keepr-ephemeral-chat.zip"
               },
               "Handler": "handler.connectionHandler",
               "Runtime": "nodejs20.x",
@@ -3382,7 +3384,7 @@
             "Properties": {
               "Code": {
                 "S3Bucket": "serverless-framework-deployments-ap-south-1-db10e28f-a1c6",
-                "S3Key": "serverless/keepr-ephemeral-chat/dev/1779703674016-2026-05-25T10:07:54.016Z/keepr-ephemeral-chat.zip"
+                "S3Key": "serverless/keepr-ephemeral-chat/dev/1779706044317-2026-05-25T10:47:24.317Z/keepr-ephemeral-chat.zip"
               },
               "Handler": "handler.defaultHandler",
               "Runtime": "nodejs20.x",
@@ -3418,7 +3420,7 @@
             "Properties": {
               "Code": {
                 "S3Bucket": "serverless-framework-deployments-ap-south-1-db10e28f-a1c6",
-                "S3Key": "serverless/keepr-ephemeral-chat/dev/1779703674016-2026-05-25T10:07:54.016Z/keepr-ephemeral-chat.zip"
+                "S3Key": "serverless/keepr-ephemeral-chat/dev/1779706044317-2026-05-25T10:47:24.317Z/keepr-ephemeral-chat.zip"
               },
               "Handler": "handler.sendMessageHandler",
               "Runtime": "nodejs20.x",
@@ -3454,7 +3456,7 @@
             "Properties": {
               "Code": {
                 "S3Bucket": "serverless-framework-deployments-ap-south-1-db10e28f-a1c6",
-                "S3Key": "serverless/keepr-ephemeral-chat/dev/1779703674016-2026-05-25T10:07:54.016Z/keepr-ephemeral-chat.zip"
+                "S3Key": "serverless/keepr-ephemeral-chat/dev/1779706044317-2026-05-25T10:47:24.317Z/keepr-ephemeral-chat.zip"
               },
               "Handler": "handlers/secureRoomApi.handler",
               "Runtime": "nodejs20.x",
@@ -3491,7 +3493,7 @@
             "Properties": {
               "Code": {
                 "S3Bucket": "serverless-framework-deployments-ap-south-1-db10e28f-a1c6",
-                "S3Key": "serverless/keepr-ephemeral-chat/dev/1779703674016-2026-05-25T10:07:54.016Z/keepr-ephemeral-chat.zip"
+                "S3Key": "serverless/keepr-ephemeral-chat/dev/1779706044317-2026-05-25T10:47:24.317Z/keepr-ephemeral-chat.zip"
               },
               "Handler": "handlers/secureRoomCron.handler",
               "Runtime": "nodejs20.x",
@@ -3523,54 +3525,54 @@
               "SecureRoomCronJobLogGroup"
             ]
           },
-          "ConnectionHandlerLambdaVersionQePsG5Xor3iu5mtH08S5UoeO3tSoBzajUCQv2uDqxm0": {
+          "ConnectionHandlerLambdaVersion6FqfxYBEfijk4CS1rFTQw3neDxl87MmSIqqlRac3s": {
             "Type": "AWS::Lambda::Version",
             "DeletionPolicy": "Retain",
             "Properties": {
               "FunctionName": {
                 "Ref": "ConnectionHandlerLambdaFunction"
               },
-              "CodeSha256": "xyBUSZQJ0D+Hs7sA11cIW8L256vzDtrl7NaP0lN5y44="
+              "CodeSha256": "nurOphtuIwT5sRQDzeeJb5SvFI1VdhbHSZHhGjPNmzs="
             }
           },
-          "DefaultHandlerLambdaVersionxFPOrJ2dkYnAbUGtK5kh6vmXID9DQnoVOrTB1rB14UI": {
+          "DefaultHandlerLambdaVersion1N0wTSLtOv24KhbolIsEf4DP8DRC0sWhQ4o6SrsRo": {
             "Type": "AWS::Lambda::Version",
             "DeletionPolicy": "Retain",
             "Properties": {
               "FunctionName": {
                 "Ref": "DefaultHandlerLambdaFunction"
               },
-              "CodeSha256": "xyBUSZQJ0D+Hs7sA11cIW8L256vzDtrl7NaP0lN5y44="
+              "CodeSha256": "nurOphtuIwT5sRQDzeeJb5SvFI1VdhbHSZHhGjPNmzs="
             }
           },
-          "SendMessageHandlerLambdaVersiono9b861AwIkI3K6ggKOPmlvs5lFiJqUV2w9WRrzsxfw": {
+          "SendMessageHandlerLambdaVersion0zpnghVYVcbIVHMaSfbpYzd1YB7Yr3Lh8sqRx4YulLE": {
             "Type": "AWS::Lambda::Version",
             "DeletionPolicy": "Retain",
             "Properties": {
               "FunctionName": {
                 "Ref": "SendMessageHandlerLambdaFunction"
               },
-              "CodeSha256": "xyBUSZQJ0D+Hs7sA11cIW8L256vzDtrl7NaP0lN5y44="
+              "CodeSha256": "nurOphtuIwT5sRQDzeeJb5SvFI1VdhbHSZHhGjPNmzs="
             }
           },
-          "SecureRoomApiHandlerLambdaVersionPldxKWu0BE2iFiNpIgUt5cVR7sLg6zXztEFvCvk1Gw": {
+          "SecureRoomApiHandlerLambdaVersiony1wiiylj5kV79cB6b6O8xn47WjgkpKsE1FK888JwI": {
             "Type": "AWS::Lambda::Version",
             "DeletionPolicy": "Retain",
             "Properties": {
               "FunctionName": {
                 "Ref": "SecureRoomApiHandlerLambdaFunction"
               },
-              "CodeSha256": "xyBUSZQJ0D+Hs7sA11cIW8L256vzDtrl7NaP0lN5y44="
+              "CodeSha256": "nurOphtuIwT5sRQDzeeJb5SvFI1VdhbHSZHhGjPNmzs="
             }
           },
-          "SecureRoomCronJobLambdaVersionfhScJx0nAqfYBbCdrb9kWRwtVUkT0KcMaw9J5vOh8E": {
+          "SecureRoomCronJobLambdaVersionDsOLuygwk7Ogiypfcf1b9WRNzhLOK7nEqQ4UWPoPyNU": {
             "Type": "AWS::Lambda::Version",
             "DeletionPolicy": "Retain",
             "Properties": {
               "FunctionName": {
                 "Ref": "SecureRoomCronJobLambdaFunction"
               },
-              "CodeSha256": "xyBUSZQJ0D+Hs7sA11cIW8L256vzDtrl7NaP0lN5y44="
+              "CodeSha256": "nurOphtuIwT5sRQDzeeJb5SvFI1VdhbHSZHhGjPNmzs="
             }
           },
           "SecureRoomCronJobEventsRuleSchedule1": {
@@ -4531,7 +4533,7 @@
               "SecureRoomApiHandlerLambdaPermissionApiGateway"
             ]
           },
-          "ApiGatewayDeployment1779703659258": {
+          "ApiGatewayDeployment1779706034539": {
             "Type": "AWS::ApiGateway::Deployment",
             "Properties": {
               "RestApiId": {
@@ -4901,7 +4903,7 @@
                       "http://localhost:8080",
                       "http://localhost:5173",
                       "https://keeper-app-gold.vercel.app",
-                      "https://keeper-ggy0.onrender.com"
+                      "https://keepr-4j2p.onrender.com"
                     ],
                     "ExposedHeaders": [],
                     "MaxAge": 3000
@@ -5066,7 +5068,8 @@
                       "http://localhost:3000",
                       "http://localhost:8080",
                       "http://localhost:5173",
-                      "https://keeper-app-gold.vercel.app"
+                      "https://keeper-app-gold.vercel.app",
+                      "https://keepr-4j2p.onrender.com"
                     ],
                     "ExposedHeaders": [
                       "ETag"
@@ -5178,7 +5181,7 @@
           "ConnectionHandlerLambdaFunctionQualifiedArn": {
             "Description": "Current Lambda function version",
             "Value": {
-              "Ref": "ConnectionHandlerLambdaVersionQePsG5Xor3iu5mtH08S5UoeO3tSoBzajUCQv2uDqxm0"
+              "Ref": "ConnectionHandlerLambdaVersion6FqfxYBEfijk4CS1rFTQw3neDxl87MmSIqqlRac3s"
             },
             "Export": {
               "Name": "sls-keepr-ephemeral-chat-dev-ConnectionHandlerLambdaFunctionQualifiedArn"
@@ -5187,7 +5190,7 @@
           "DefaultHandlerLambdaFunctionQualifiedArn": {
             "Description": "Current Lambda function version",
             "Value": {
-              "Ref": "DefaultHandlerLambdaVersionxFPOrJ2dkYnAbUGtK5kh6vmXID9DQnoVOrTB1rB14UI"
+              "Ref": "DefaultHandlerLambdaVersion1N0wTSLtOv24KhbolIsEf4DP8DRC0sWhQ4o6SrsRo"
             },
             "Export": {
               "Name": "sls-keepr-ephemeral-chat-dev-DefaultHandlerLambdaFunctionQualifiedArn"
@@ -5196,7 +5199,7 @@
           "SendMessageHandlerLambdaFunctionQualifiedArn": {
             "Description": "Current Lambda function version",
             "Value": {
-              "Ref": "SendMessageHandlerLambdaVersiono9b861AwIkI3K6ggKOPmlvs5lFiJqUV2w9WRrzsxfw"
+              "Ref": "SendMessageHandlerLambdaVersion0zpnghVYVcbIVHMaSfbpYzd1YB7Yr3Lh8sqRx4YulLE"
             },
             "Export": {
               "Name": "sls-keepr-ephemeral-chat-dev-SendMessageHandlerLambdaFunctionQualifiedArn"
@@ -5205,7 +5208,7 @@
           "SecureRoomApiHandlerLambdaFunctionQualifiedArn": {
             "Description": "Current Lambda function version",
             "Value": {
-              "Ref": "SecureRoomApiHandlerLambdaVersionPldxKWu0BE2iFiNpIgUt5cVR7sLg6zXztEFvCvk1Gw"
+              "Ref": "SecureRoomApiHandlerLambdaVersiony1wiiylj5kV79cB6b6O8xn47WjgkpKsE1FK888JwI"
             },
             "Export": {
               "Name": "sls-keepr-ephemeral-chat-dev-SecureRoomApiHandlerLambdaFunctionQualifiedArn"
@@ -5214,7 +5217,7 @@
           "SecureRoomCronJobLambdaFunctionQualifiedArn": {
             "Description": "Current Lambda function version",
             "Value": {
-              "Ref": "SecureRoomCronJobLambdaVersionfhScJx0nAqfYBbCdrb9kWRwtVUkT0KcMaw9J5vOh8E"
+              "Ref": "SecureRoomCronJobLambdaVersionDsOLuygwk7Ogiypfcf1b9WRNzhLOK7nEqQ4UWPoPyNU"
             },
             "Export": {
               "Name": "sls-keepr-ephemeral-chat-dev-SecureRoomCronJobLambdaFunctionQualifiedArn"
@@ -5312,7 +5315,7 @@
       "serviceProvider": null,
       "instanceParameters": null
     },
-    "serviceRawFile": "#  Keeper – Unified AWS Infrastructure (Serverless Framework v4)\r\n#\r\n#  Covers all four features in one deploy command:\r\n#    Feature 1 – Zero-Trust Vault              (S3 bucket + IAM)\r\n#    Feature 2 – Link Detonator                (S3 staging bucket + Lambda)\r\n#    Feature 3 – Ephemeral Chat                (WebSocket + Lambda + DynamoDB)\r\n#    Feature 4 – Secure Cloud Storage Room     (S3 + DynamoDB + Lambda API + Cron)\r\n#\r\n#  Deploy:\r\n#    cd keeper-ephemeral-chat-backend\r\n#    serverless deploy --stage prod\r\n#\r\n#  Serverless v4 features:\r\n#    - Built-in esbuild for TypeScript bundling (no serverless-esbuild plugin needed)\r\n#    - Native SDK v3 support\r\n\r\n\r\nservice: keepr-ephemeral-chat\r\n\r\nframeworkVersion: \"4\"\r\n\r\n\r\n# CUSTOM  – change these values if you need different names\r\n\r\ncustom:\r\n  # Feature 1 – Vault\r\n  vaultBucketName: keepr-vault-storage-anshul\r\n\r\n  # Feature 2 – Link Detonator\r\n  detonatorBucketName: keepr-detonator-storage\r\n  detonatorFunctionName: KeeprLinkDetonator\r\n  detonatorMemoryMB: 1600\r\n  detonatorTimeoutSec: 60\r\n\r\n  # Feature 3 – Chat\r\n  connectionsTable: ${self:service}-connections-${sls:stage}\r\n\r\n  # Feature 4 – Secure Cloud Storage Room\r\n  secureRoomBucketName: keepr-secure-rooms-${sls:stage}\r\n  roomSettingsTableName: keepr-room-settings-${sls:stage}\r\n  roomApiGatewayName: keepr-room-api-${sls:stage}\r\n\r\n\r\n# PROVIDER\r\n\r\nprovider:\r\n  name: aws\r\n  runtime: nodejs20.x\r\n  region: ap-south-1\r\n\r\n  # WebSocket API for Feature 3\r\n  websocketsApiName: keepr-chat-api\r\n  websocketsApiRouteSelectionExpression: $request.body.action\r\n\r\n  environment:\r\n    # Feature 3 – chat Lambda functions need this env var\r\n    CONNECTIONS_TABLE: ${self:custom.connectionsTable}\r\n    \r\n    # Feature 4 – Secure Room functions need these env vars\r\n    SECURE_ROOM_BUCKET: ${self:custom.secureRoomBucketName}\r\n    ROOM_SETTINGS_TABLE: ${self:custom.roomSettingsTableName}\r\n    SENDER_EMAIL: ${env:SENDER_EMAIL, \"anshulspotify5@gmail.com\"}\r\n    EMAIL_USER: ${env:EMAIL_USER, \"anshulspotify5@gmail.com\"}\r\n    EMAIL_APP_PASSWORD: ${env:EMAIL_APP_PASSWORD, \"cdxmbbvfwqaroqdg\"}\r\n\r\n  # Built-in esbuild for TypeScript (Serverless v4)\r\n  architecture: arm64  # Optional: use for cost savings on Lambda@Edge, or remove for x86_64\r\n\r\n  # IAM role for the chat Lambda functions\r\n  iam:\r\n    role:\r\n      statements:\r\n        # Feature 3: send messages back over WebSocket\r\n        - Effect: Allow\r\n          Action:\r\n            - \"execute-api:ManageConnections\"\r\n          Resource:\r\n            - \"arn:aws:execute-api:*:*:**/@connections/*\"\r\n\r\n        # Feature 3: read/write connection records in DynamoDB\r\n        - Effect: Allow\r\n          Action:\r\n            - dynamodb:PutItem\r\n            - dynamodb:DeleteItem\r\n            - dynamodb:Query\r\n            - dynamodb:Scan\r\n          Resource:\r\n            - Fn::GetAtt: [ConnectionsTable, Arn]\r\n            - Fn::Join:\r\n                - \"/\"\r\n                - - Fn::GetAtt: [ConnectionsTable, Arn]\r\n                  - \"index/*\"\r\n\r\n        # Feature 4: S3 access for Secure Rooms\r\n        - Effect: Allow\r\n          Action:\r\n            - s3:GetObject\r\n            - s3:PutObject\r\n            - s3:DeleteObject\r\n            - s3:ListBucket\r\n          Resource:\r\n            - \"arn:aws:s3:::${self:custom.secureRoomBucketName}\"\r\n            - \"arn:aws:s3:::${self:custom.secureRoomBucketName}/*\"\r\n\r\n        # Feature 4: SES access for sending email notifications\r\n        - Effect: Allow\r\n          Action:\r\n            - ses:SendEmail\r\n            - ses:SendRawEmail\r\n          Resource:\r\n            - \"arn:aws:ses:${self:provider.region}:*:identity/*\"\r\n\r\n        # Feature 4: DynamoDB access for Room Settings\r\n        - Effect: Allow\r\n          Action:\r\n            - dynamodb:GetItem\r\n            - dynamodb:PutItem\r\n            - dynamodb:UpdateItem\r\n            - dynamodb:DeleteItem\r\n            - dynamodb:Query\r\n            - dynamodb:Scan\r\n          Resource:\r\n            - Fn::GetAtt: [RoomSettingsTable, Arn]\r\n            - Fn::Join:\r\n                - \"/\"\r\n                - - Fn::GetAtt: [RoomSettingsTable, Arn]\r\n                  - \"index/*\"\r\n\r\n\r\n# ─────────────────────────────────────────────────────────────────────────────\r\n# FUNCTIONS\r\n# ─────────────────────────────────────────────────────────────────────────────\r\nfunctions:\r\n  # Feature 3: Ephemeral Chat WebSocket handlers\r\n  connectionHandler:\r\n    handler: handler.connectionHandler\r\n    events:\r\n      - websocket:\r\n          route: $connect\r\n      - websocket:\r\n          route: $disconnect\r\n\r\n  defaultHandler:\r\n    handler: handler.defaultHandler\r\n    events:\r\n      - websocket:\r\n          route: $default\r\n\r\n  sendMessageHandler:\r\n    handler: handler.sendMessageHandler\r\n    events:\r\n      - websocket:\r\n          route: sendMessage\r\n\r\n  # Feature 4: Secure Cloud Storage Room – REST API Handler\r\n  secureRoomApiHandler:\r\n    handler: handlers/secureRoomApi.handler\r\n    timeout: 29\r\n    memorySize: 512\r\n    events:\r\n      # Generate S3 Presigned URLs for upload\r\n      - http:\r\n          path: /rooms/{roomId}/upload-url\r\n          method: post\r\n          cors: true\r\n\r\n      # Generate S3 Presigned URLs for download\r\n      - http:\r\n          path: /rooms/{roomId}/download-url\r\n          method: post\r\n          cors: true\r\n\r\n      # Create a new secure room\r\n      - http:\r\n          path: /rooms\r\n          method: post\r\n          cors: true\r\n\r\n      # List all secure rooms\r\n      - http:\r\n          path: /rooms\r\n          method: get\r\n          cors: true\r\n\r\n      # Get room metadata\r\n      - http:\r\n          path: /rooms/{roomId}\r\n          method: get\r\n          cors: true\r\n\r\n      # Update room settings\r\n      - http:\r\n          path: /rooms/{roomId}\r\n          method: put\r\n          cors: true\r\n\r\n      # Delete/dismantle secure room\r\n      - http:\r\n          path: /rooms/{roomId}\r\n          method: delete\r\n          cors: true\r\n\r\n      # List files in a room\r\n      - http:\r\n          path: /rooms/{roomId}/files\r\n          method: get\r\n          cors: true\r\n\r\n      # Delete file from a room\r\n      - http:\r\n          path: /rooms/{roomId}/files\r\n          method: delete\r\n          cors: true\r\n\r\n      # Trigger manual test migration (full lifecycle: migrate → delete S3 → delete DynamoDB → email)\r\n      - http:\r\n          path: /rooms/{roomId}/test-migration\r\n          method: post\r\n          cors: true\r\n\r\n      # Trigger manual purge-only cleanup (for purge strategy testing without migration)\r\n      - http:\r\n          path: /rooms/{roomId}/trigger-cleanup\r\n          method: post\r\n          cors: true\r\n\r\n  # Feature 4: Cron Job – Daily Auto-Deletion & Emergency Handoff\r\n  secureRoomCronJob:\r\n    handler: handlers/secureRoomCron.handler\r\n    timeout: 300\r\n    memorySize: 512\r\n    events:\r\n      # Trigger every 5 minutes – catches expirations within 5 min of their deadline\r\n      - schedule:\r\n          rate: rate(5 minutes)\r\n          enabled: true\r\n          description: \"Cleanup and emergency handoff for expired secure rooms (runs every 5 min)\"\r\n    environment:\r\n      SENDER_EMAIL: ${env:SENDER_EMAIL, \"anshulspotify5@gmail.com\"}\r\n      EMAIL_USER: ${env:EMAIL_USER, \"anshulspotify5@gmail.com\"}\r\n      EMAIL_APP_PASSWORD: ${env:EMAIL_APP_PASSWORD, \"cdxmbbvfwqaroqdg\"}\r\n\r\n\r\n# ─────────────────────────────────────────────────────────────────────────────\r\n# RESOURCES  –  Pure CloudFormation for all features\r\n# ─────────────────────────────────────────────────────────────────────────────\r\nresources:\r\n  Resources:\r\n\r\n    # ══════════════════════════════════════════════════════════════════════════\r\n    # FEATURE 1 – ZERO-TRUST VAULT\r\n    # ══════════════════════════════════════════════════════════════════════════\r\n    VaultBucket:\r\n      Type: AWS::S3::Bucket\r\n      Properties:\r\n        BucketName: ${self:custom.vaultBucketName}\r\n        PublicAccessBlockConfiguration:\r\n          BlockPublicAcls: true\r\n          BlockPublicPolicy: true\r\n          IgnorePublicAcls: true\r\n          RestrictPublicBuckets: true\r\n        BucketEncryption:\r\n          ServerSideEncryptionConfiguration:\r\n            - ServerSideEncryptionByDefault:\r\n                SSEAlgorithm: AES256\r\n        CorsConfiguration:\r\n          CorsRules:\r\n            - AllowedHeaders:\r\n                - \"*\"\r\n              AllowedMethods:\r\n                - PUT\r\n                - GET\r\n                - POST\r\n                - DELETE\r\n              AllowedOrigins:\r\n                - \"http://localhost:3000\"\r\n                - \"http://localhost:8080\"\r\n                - \"http://localhost:5173\"\r\n                - \"https://keeper-app-gold.vercel.app\"\r\n                - \"https://keeper-ggy0.onrender.com\"\r\n              ExposedHeaders: []\r\n              MaxAge: 3000\r\n        LifecycleConfiguration:\r\n          Rules:\r\n            - Id: AutoExpireVaultObjects\r\n              Status: Enabled\r\n              ExpirationInDays: 7\r\n\r\n    # ══════════════════════════════════════════════════════════════════════════\r\n    # FEATURE 2 – LINK DETONATOR\r\n    # ══════════════════════════════════════════════════════════════════════════\r\n    DetonatorLambdaRole:\r\n      Type: AWS::IAM::Role\r\n      Properties:\r\n        RoleName: KeeprDetonatorLambdaRole\r\n        AssumeRolePolicyDocument:\r\n          Version: \"2012-10-17\"\r\n          Statement:\r\n            - Effect: Allow\r\n              Principal:\r\n                Service: lambda.amazonaws.com\r\n              Action: \"sts:AssumeRole\"\r\n        ManagedPolicyArns:\r\n          - arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole\r\n        Policies:\r\n          - PolicyName: DetonatorReadStagingBucket\r\n            PolicyDocument:\r\n              Version: \"2012-10-17\"\r\n              Statement:\r\n                - Effect: Allow\r\n                  Action:\r\n                    - \"s3:GetObject\"\r\n                  Resource: !Sub \"arn:aws:s3:::${self:custom.detonatorBucketName}/*\"\r\n\r\n    DetonatorLambdaFunction:\r\n      Type: AWS::Lambda::Function\r\n      DependsOn:\r\n        - DetonatorLambdaRole\r\n      Properties:\r\n        FunctionName: ${self:custom.detonatorFunctionName}\r\n        Runtime: nodejs20.x\r\n        Role: !GetAtt DetonatorLambdaRole.Arn\r\n        Handler: index.handler\r\n        MemorySize: ${self:custom.detonatorMemoryMB}\r\n        Timeout: ${self:custom.detonatorTimeoutSec}\r\n        Code:\r\n          S3Bucket: ${self:custom.detonatorBucketName}\r\n          S3Key: lambda-detonator.zip\r\n\r\n    # ══════════════════════════════════════════════════════════════════════════\r\n    # FEATURE 3 – EPHEMERAL CHAT\r\n    # ══════════════════════════════════════════════════════════════════════════\r\n    ConnectionsTable:\r\n      Type: AWS::DynamoDB::Table\r\n      Properties:\r\n        TableName: ${self:custom.connectionsTable}\r\n        AttributeDefinitions:\r\n          - AttributeName: connectionId\r\n            AttributeType: S\r\n          - AttributeName: roomId\r\n            AttributeType: S\r\n        KeySchema:\r\n          - AttributeName: connectionId\r\n            KeyType: HASH\r\n        GlobalSecondaryIndexes:\r\n          - IndexName: RoomIndex\r\n            KeySchema:\r\n              - AttributeName: roomId\r\n                KeyType: HASH\r\n            Projection:\r\n              ProjectionType: ALL\r\n            ProvisionedThroughput:\r\n              ReadCapacityUnits: 5\r\n              WriteCapacityUnits: 5\r\n        BillingMode: PROVISIONED\r\n        ProvisionedThroughput:\r\n          ReadCapacityUnits: 5\r\n          WriteCapacityUnits: 5\r\n        TimeToLiveSpecification:\r\n          AttributeName: ttl\r\n          Enabled: true\r\n\r\n    # ══════════════════════════════════════════════════════════════════════════\r\n    # FEATURE 4 – SECURE CLOUD STORAGE ROOM\r\n    # ══════════════════════════════════════════════════════════════════════════\r\n\r\n    # S3 Bucket for Secure Rooms\r\n    SecureRoomBucket:\r\n      Type: AWS::S3::Bucket\r\n      Properties:\r\n        BucketName: ${self:custom.secureRoomBucketName}\r\n        PublicAccessBlockConfiguration:\r\n          BlockPublicAcls: true\r\n          BlockPublicPolicy: true\r\n          IgnorePublicAcls: true\r\n          RestrictPublicBuckets: true\r\n        BucketEncryption:\r\n          ServerSideEncryptionConfiguration:\r\n            - ServerSideEncryptionByDefault:\r\n                SSEAlgorithm: AES256\r\n        CorsConfiguration:\r\n          CorsRules:\r\n            - AllowedHeaders:\r\n                - \"*\"\r\n              AllowedMethods:\r\n                - PUT\r\n                - GET\r\n                - POST\r\n                - DELETE\r\n              AllowedOrigins:\r\n                - \"http://localhost:3000\"\r\n                - \"http://localhost:8080\"\r\n                - \"http://localhost:5173\"\r\n                - \"https://keeper-app-gold.vercel.app\"\r\n              ExposedHeaders:\r\n                - ETag\r\n              MaxAge: 3000\r\n        # Objects expire based on room expiry (handled by Lambda cron)\r\n        LifecycleConfiguration:\r\n          Rules:\r\n            - Id: DeleteExpiredRoomObjects\r\n              Status: Enabled\r\n              ExpirationInDays: 30\r\n              NoncurrentVersionExpirationInDays: 1\r\n\r\n    # DynamoDB Table for Room Settings\r\n    RoomSettingsTable:\r\n      Type: AWS::DynamoDB::Table\r\n      Properties:\r\n        TableName: ${self:custom.roomSettingsTableName}\r\n        AttributeDefinitions:\r\n          - AttributeName: roomId\r\n            AttributeType: S\r\n          - AttributeName: createdAt\r\n            AttributeType: N\r\n          - AttributeName: ownerId\r\n            AttributeType: S\r\n          - AttributeName: expiryTimestamp\r\n            AttributeType: N\r\n        KeySchema:\r\n          - AttributeName: roomId\r\n            KeyType: HASH\r\n        GlobalSecondaryIndexes:\r\n          - IndexName: OwnerIdIndex\r\n            KeySchema:\r\n              - AttributeName: ownerId\r\n                KeyType: HASH\r\n              - AttributeName: createdAt\r\n                KeyType: RANGE\r\n            Projection:\r\n              ProjectionType: ALL\r\n            ProvisionedThroughput:\r\n              ReadCapacityUnits: 5\r\n              WriteCapacityUnits: 5\r\n          - IndexName: ExpiryIndex\r\n            KeySchema:\r\n              - AttributeName: expiryTimestamp\r\n                KeyType: HASH\r\n            Projection:\r\n              ProjectionType: KEYS_ONLY\r\n            ProvisionedThroughput:\r\n              ReadCapacityUnits: 5\r\n              WriteCapacityUnits: 5\r\n        BillingMode: PROVISIONED\r\n        ProvisionedThroughput:\r\n          ReadCapacityUnits: 5\r\n          WriteCapacityUnits: 5\r\n        TimeToLiveSpecification:\r\n          AttributeName: ttl\r\n          Enabled: true\r\n        StreamSpecification:\r\n          StreamViewType: NEW_AND_OLD_IMAGES\r\n\r\n\r\n  # ─────────────────────────────────────────────────────────────────────────\r\n  # OUTPUTS\r\n  # ─────────────────────────────────────────────────────────────────────────\r\n  Outputs:\r\n    SecureRoomBucketName:\r\n      Description: \"S3 Bucket for Secure Rooms\"\r\n      Value: !Ref SecureRoomBucket\r\n      Export:\r\n        Name: ${self:service}-secure-room-bucket-${sls:stage}\r\n\r\n    RoomSettingsTableName:\r\n      Description: \"DynamoDB Table for Room Settings\"\r\n      Value: !Ref RoomSettingsTable\r\n      Export:\r\n        Name: ${self:service}-room-settings-table-${sls:stage}\r\n\r\n    SecureRoomApiEndpoint:\r\n      Description: \"REST API Endpoint for Secure Rooms\"\r\n      Value: !Sub 'https://\\${ApiGatewayRestApi}.execute-api.\\${AWS::Region}.amazonaws.com/${sls:stage}'\r\n      Export:\r\n        Name: ${self:service}-api-endpoint-${sls:stage}\r\n",
+    "serviceRawFile": "#  Keeper – Unified AWS Infrastructure (Serverless Framework v4)\r\n#\r\n#  Covers all four features in one deploy command:\r\n#    Feature 1 – Zero-Trust Vault              (S3 bucket + IAM)\r\n#    Feature 2 – Link Detonator                (S3 staging bucket + Lambda)\r\n#    Feature 3 – Ephemeral Chat                (WebSocket + Lambda + DynamoDB)\r\n#    Feature 4 – Secure Cloud Storage Room     (S3 + DynamoDB + Lambda API + Cron)\r\n#\r\n#  Deploy:\r\n#    cd keeper-ephemeral-chat-backend\r\n#    serverless deploy --stage prod\r\n#\r\n#  Serverless v4 features:\r\n#    - Built-in esbuild for TypeScript bundling (no serverless-esbuild plugin needed)\r\n#    - Native SDK v3 support\r\n\r\n\r\nservice: keepr-ephemeral-chat\r\n\r\nframeworkVersion: \"4\"\r\n\r\n\r\n# CUSTOM  – change these values if you need different names\r\n\r\ncustom:\r\n  # Feature 1 – Vault\r\n  vaultBucketName: keepr-vault-storage-anshul\r\n\r\n  # Feature 2 – Link Detonator\r\n  detonatorBucketName: keepr-detonator-storage\r\n  detonatorFunctionName: KeeprLinkDetonator\r\n  detonatorMemoryMB: 1600\r\n  detonatorTimeoutSec: 60\r\n\r\n  # Feature 3 – Chat\r\n  connectionsTable: ${self:service}-connections-${sls:stage}\r\n\r\n  # Feature 4 – Secure Cloud Storage Room\r\n  secureRoomBucketName: keepr-secure-rooms-${sls:stage}\r\n  roomSettingsTableName: keepr-room-settings-${sls:stage}\r\n  roomApiGatewayName: keepr-room-api-${sls:stage}\r\n\r\n\r\n# PROVIDER\r\n\r\nprovider:\r\n  name: aws\r\n  runtime: nodejs20.x\r\n  region: ap-south-1\r\n\r\n  # WebSocket API for Feature 3\r\n  websocketsApiName: keepr-chat-api\r\n  websocketsApiRouteSelectionExpression: $request.body.action\r\n\r\n  environment:\r\n    # Feature 3 – chat Lambda functions need this env var\r\n    CONNECTIONS_TABLE: ${self:custom.connectionsTable}\r\n    \r\n    # Feature 4 – Secure Room functions need these env vars\r\n    SECURE_ROOM_BUCKET: ${self:custom.secureRoomBucketName}\r\n    ROOM_SETTINGS_TABLE: ${self:custom.roomSettingsTableName}\r\n    SENDER_EMAIL: ${env:SENDER_EMAIL, \"anshulspotify5@gmail.com\"}\r\n    EMAIL_USER: ${env:EMAIL_USER, \"anshulspotify5@gmail.com\"}\r\n    EMAIL_APP_PASSWORD: ${env:EMAIL_APP_PASSWORD, \"cdxmbbvfwqaroqdg\"}\r\n\r\n  # Built-in esbuild for TypeScript (Serverless v4)\r\n  architecture: arm64  # Optional: use for cost savings on Lambda@Edge, or remove for x86_64\r\n\r\n  # IAM role for the chat Lambda functions\r\n  iam:\r\n    role:\r\n      statements:\r\n        # Feature 3: send messages back over WebSocket\r\n        - Effect: Allow\r\n          Action:\r\n            - \"execute-api:ManageConnections\"\r\n          Resource:\r\n            - \"arn:aws:execute-api:*:*:**/@connections/*\"\r\n\r\n        # Feature 3: read/write connection records in DynamoDB\r\n        - Effect: Allow\r\n          Action:\r\n            - dynamodb:PutItem\r\n            - dynamodb:DeleteItem\r\n            - dynamodb:Query\r\n            - dynamodb:Scan\r\n          Resource:\r\n            - Fn::GetAtt: [ConnectionsTable, Arn]\r\n            - Fn::Join:\r\n                - \"/\"\r\n                - - Fn::GetAtt: [ConnectionsTable, Arn]\r\n                  - \"index/*\"\r\n\r\n        # Feature 4: S3 access for Secure Rooms\r\n        - Effect: Allow\r\n          Action:\r\n            - s3:GetObject\r\n            - s3:PutObject\r\n            - s3:DeleteObject\r\n            - s3:ListBucket\r\n          Resource:\r\n            - \"arn:aws:s3:::${self:custom.secureRoomBucketName}\"\r\n            - \"arn:aws:s3:::${self:custom.secureRoomBucketName}/*\"\r\n\r\n        # Feature 4: SES access for sending email notifications\r\n        - Effect: Allow\r\n          Action:\r\n            - ses:SendEmail\r\n            - ses:SendRawEmail\r\n          Resource:\r\n            - \"arn:aws:ses:${self:provider.region}:*:identity/*\"\r\n\r\n        # Feature 4: DynamoDB access for Room Settings\r\n        - Effect: Allow\r\n          Action:\r\n            - dynamodb:GetItem\r\n            - dynamodb:PutItem\r\n            - dynamodb:UpdateItem\r\n            - dynamodb:DeleteItem\r\n            - dynamodb:Query\r\n            - dynamodb:Scan\r\n          Resource:\r\n            - Fn::GetAtt: [RoomSettingsTable, Arn]\r\n            - Fn::Join:\r\n                - \"/\"\r\n                - - Fn::GetAtt: [RoomSettingsTable, Arn]\r\n                  - \"index/*\"\r\n\r\n\r\n# ─────────────────────────────────────────────────────────────────────────────\r\n# FUNCTIONS\r\n# ─────────────────────────────────────────────────────────────────────────────\r\nfunctions:\r\n  # Feature 3: Ephemeral Chat WebSocket handlers\r\n  connectionHandler:\r\n    handler: handler.connectionHandler\r\n    events:\r\n      - websocket:\r\n          route: $connect\r\n      - websocket:\r\n          route: $disconnect\r\n\r\n  defaultHandler:\r\n    handler: handler.defaultHandler\r\n    events:\r\n      - websocket:\r\n          route: $default\r\n\r\n  sendMessageHandler:\r\n    handler: handler.sendMessageHandler\r\n    events:\r\n      - websocket:\r\n          route: sendMessage\r\n\r\n  # Feature 4: Secure Cloud Storage Room – REST API Handler\r\n  secureRoomApiHandler:\r\n    handler: handlers/secureRoomApi.handler\r\n    timeout: 29\r\n    memorySize: 512\r\n    events:\r\n      # Generate S3 Presigned URLs for upload\r\n      - http:\r\n          path: /rooms/{roomId}/upload-url\r\n          method: post\r\n          cors: true\r\n\r\n      # Generate S3 Presigned URLs for download\r\n      - http:\r\n          path: /rooms/{roomId}/download-url\r\n          method: post\r\n          cors: true\r\n\r\n      # Create a new secure room\r\n      - http:\r\n          path: /rooms\r\n          method: post\r\n          cors: true\r\n\r\n      # List all secure rooms\r\n      - http:\r\n          path: /rooms\r\n          method: get\r\n          cors: true\r\n\r\n      # Get room metadata\r\n      - http:\r\n          path: /rooms/{roomId}\r\n          method: get\r\n          cors: true\r\n\r\n      # Update room settings\r\n      - http:\r\n          path: /rooms/{roomId}\r\n          method: put\r\n          cors: true\r\n\r\n      # Delete/dismantle secure room\r\n      - http:\r\n          path: /rooms/{roomId}\r\n          method: delete\r\n          cors: true\r\n\r\n      # List files in a room\r\n      - http:\r\n          path: /rooms/{roomId}/files\r\n          method: get\r\n          cors: true\r\n\r\n      # Delete file from a room\r\n      - http:\r\n          path: /rooms/{roomId}/files\r\n          method: delete\r\n          cors: true\r\n\r\n      # Trigger manual test migration (full lifecycle: migrate → delete S3 → delete DynamoDB → email)\r\n      - http:\r\n          path: /rooms/{roomId}/test-migration\r\n          method: post\r\n          cors: true\r\n\r\n      # Trigger manual purge-only cleanup (for purge strategy testing without migration)\r\n      - http:\r\n          path: /rooms/{roomId}/trigger-cleanup\r\n          method: post\r\n          cors: true\r\n\r\n  # Feature 4: Cron Job – Daily Auto-Deletion & Emergency Handoff\r\n  secureRoomCronJob:\r\n    handler: handlers/secureRoomCron.handler\r\n    timeout: 300\r\n    memorySize: 512\r\n    events:\r\n      # Trigger every 5 minutes – catches expirations within 5 min of their deadline\r\n      - schedule:\r\n          rate: rate(5 minutes)\r\n          enabled: true\r\n          description: \"Cleanup and emergency handoff for expired secure rooms (runs every 5 min)\"\r\n    environment:\r\n      SENDER_EMAIL: ${env:SENDER_EMAIL, \"anshulspotify5@gmail.com\"}\r\n      EMAIL_USER: ${env:EMAIL_USER, \"anshulspotify5@gmail.com\"}\r\n      EMAIL_APP_PASSWORD: ${env:EMAIL_APP_PASSWORD, \"cdxmbbvfwqaroqdg\"}\r\n\r\n\r\n# ─────────────────────────────────────────────────────────────────────────────\r\n# RESOURCES  –  Pure CloudFormation for all features\r\n# ─────────────────────────────────────────────────────────────────────────────\r\nresources:\r\n  Resources:\r\n\r\n    # ══════════════════════════════════════════════════════════════════════════\r\n    # FEATURE 1 – ZERO-TRUST VAULT\r\n    # ══════════════════════════════════════════════════════════════════════════\r\n    VaultBucket:\r\n      Type: AWS::S3::Bucket\r\n      Properties:\r\n        BucketName: ${self:custom.vaultBucketName}\r\n        PublicAccessBlockConfiguration:\r\n          BlockPublicAcls: true\r\n          BlockPublicPolicy: true\r\n          IgnorePublicAcls: true\r\n          RestrictPublicBuckets: true\r\n        BucketEncryption:\r\n          ServerSideEncryptionConfiguration:\r\n            - ServerSideEncryptionByDefault:\r\n                SSEAlgorithm: AES256\r\n        CorsConfiguration:\r\n          CorsRules:\r\n            - AllowedHeaders:\r\n                - \"*\"\r\n              AllowedMethods:\r\n                - PUT\r\n                - GET\r\n                - POST\r\n                - DELETE\r\n              AllowedOrigins:\r\n                - \"http://localhost:3000\"\r\n                - \"http://localhost:8080\"\r\n                - \"http://localhost:5173\"\r\n                - \"https://keeper-app-gold.vercel.app\"\r\n                - \"https://keepr-4j2p.onrender.com\"\r\n              ExposedHeaders: []\r\n              MaxAge: 3000\r\n        LifecycleConfiguration:\r\n          Rules:\r\n            - Id: AutoExpireVaultObjects\r\n              Status: Enabled\r\n              ExpirationInDays: 7\r\n\r\n    # ══════════════════════════════════════════════════════════════════════════\r\n    # FEATURE 2 – LINK DETONATOR\r\n    # ══════════════════════════════════════════════════════════════════════════\r\n    DetonatorLambdaRole:\r\n      Type: AWS::IAM::Role\r\n      Properties:\r\n        RoleName: KeeprDetonatorLambdaRole\r\n        AssumeRolePolicyDocument:\r\n          Version: \"2012-10-17\"\r\n          Statement:\r\n            - Effect: Allow\r\n              Principal:\r\n                Service: lambda.amazonaws.com\r\n              Action: \"sts:AssumeRole\"\r\n        ManagedPolicyArns:\r\n          - arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole\r\n        Policies:\r\n          - PolicyName: DetonatorReadStagingBucket\r\n            PolicyDocument:\r\n              Version: \"2012-10-17\"\r\n              Statement:\r\n                - Effect: Allow\r\n                  Action:\r\n                    - \"s3:GetObject\"\r\n                  Resource: !Sub \"arn:aws:s3:::${self:custom.detonatorBucketName}/*\"\r\n\r\n    DetonatorLambdaFunction:\r\n      Type: AWS::Lambda::Function\r\n      DependsOn:\r\n        - DetonatorLambdaRole\r\n      Properties:\r\n        FunctionName: ${self:custom.detonatorFunctionName}\r\n        Runtime: nodejs20.x\r\n        Role: !GetAtt DetonatorLambdaRole.Arn\r\n        Handler: index.handler\r\n        MemorySize: ${self:custom.detonatorMemoryMB}\r\n        Timeout: ${self:custom.detonatorTimeoutSec}\r\n        Code:\r\n          S3Bucket: ${self:custom.detonatorBucketName}\r\n          S3Key: lambda-detonator.zip\r\n\r\n    # ══════════════════════════════════════════════════════════════════════════\r\n    # FEATURE 3 – EPHEMERAL CHAT\r\n    # ══════════════════════════════════════════════════════════════════════════\r\n    ConnectionsTable:\r\n      Type: AWS::DynamoDB::Table\r\n      Properties:\r\n        TableName: ${self:custom.connectionsTable}\r\n        AttributeDefinitions:\r\n          - AttributeName: connectionId\r\n            AttributeType: S\r\n          - AttributeName: roomId\r\n            AttributeType: S\r\n        KeySchema:\r\n          - AttributeName: connectionId\r\n            KeyType: HASH\r\n        GlobalSecondaryIndexes:\r\n          - IndexName: RoomIndex\r\n            KeySchema:\r\n              - AttributeName: roomId\r\n                KeyType: HASH\r\n            Projection:\r\n              ProjectionType: ALL\r\n            ProvisionedThroughput:\r\n              ReadCapacityUnits: 5\r\n              WriteCapacityUnits: 5\r\n        BillingMode: PROVISIONED\r\n        ProvisionedThroughput:\r\n          ReadCapacityUnits: 5\r\n          WriteCapacityUnits: 5\r\n        TimeToLiveSpecification:\r\n          AttributeName: ttl\r\n          Enabled: true\r\n\r\n    # ══════════════════════════════════════════════════════════════════════════\r\n    # FEATURE 4 – SECURE CLOUD STORAGE ROOM\r\n    # ══════════════════════════════════════════════════════════════════════════\r\n\r\n    # S3 Bucket for Secure Rooms\r\n    SecureRoomBucket:\r\n      Type: AWS::S3::Bucket\r\n      Properties:\r\n        BucketName: ${self:custom.secureRoomBucketName}\r\n        PublicAccessBlockConfiguration:\r\n          BlockPublicAcls: true\r\n          BlockPublicPolicy: true\r\n          IgnorePublicAcls: true\r\n          RestrictPublicBuckets: true\r\n        BucketEncryption:\r\n          ServerSideEncryptionConfiguration:\r\n            - ServerSideEncryptionByDefault:\r\n                SSEAlgorithm: AES256\r\n        CorsConfiguration:\r\n          CorsRules:\r\n            - AllowedHeaders:\r\n                - \"*\"\r\n              AllowedMethods:\r\n                - PUT\r\n                - GET\r\n                - POST\r\n                - DELETE\r\n              AllowedOrigins:\r\n                - \"http://localhost:3000\"\r\n                - \"http://localhost:8080\"\r\n                - \"http://localhost:5173\"\r\n                - \"https://keeper-app-gold.vercel.app\"\r\n                - \"https://keepr-4j2p.onrender.com\"\r\n              ExposedHeaders:\r\n                - ETag\r\n              MaxAge: 3000\r\n        # Objects expire based on room expiry (handled by Lambda cron)\r\n        LifecycleConfiguration:\r\n          Rules:\r\n            - Id: DeleteExpiredRoomObjects\r\n              Status: Enabled\r\n              ExpirationInDays: 30\r\n              NoncurrentVersionExpirationInDays: 1\r\n\r\n    # DynamoDB Table for Room Settings\r\n    RoomSettingsTable:\r\n      Type: AWS::DynamoDB::Table\r\n      Properties:\r\n        TableName: ${self:custom.roomSettingsTableName}\r\n        AttributeDefinitions:\r\n          - AttributeName: roomId\r\n            AttributeType: S\r\n          - AttributeName: createdAt\r\n            AttributeType: N\r\n          - AttributeName: ownerId\r\n            AttributeType: S\r\n          - AttributeName: expiryTimestamp\r\n            AttributeType: N\r\n        KeySchema:\r\n          - AttributeName: roomId\r\n            KeyType: HASH\r\n        GlobalSecondaryIndexes:\r\n          - IndexName: OwnerIdIndex\r\n            KeySchema:\r\n              - AttributeName: ownerId\r\n                KeyType: HASH\r\n              - AttributeName: createdAt\r\n                KeyType: RANGE\r\n            Projection:\r\n              ProjectionType: ALL\r\n            ProvisionedThroughput:\r\n              ReadCapacityUnits: 5\r\n              WriteCapacityUnits: 5\r\n          - IndexName: ExpiryIndex\r\n            KeySchema:\r\n              - AttributeName: expiryTimestamp\r\n                KeyType: HASH\r\n            Projection:\r\n              ProjectionType: KEYS_ONLY\r\n            ProvisionedThroughput:\r\n              ReadCapacityUnits: 5\r\n              WriteCapacityUnits: 5\r\n        BillingMode: PROVISIONED\r\n        ProvisionedThroughput:\r\n          ReadCapacityUnits: 5\r\n          WriteCapacityUnits: 5\r\n        TimeToLiveSpecification:\r\n          AttributeName: ttl\r\n          Enabled: true\r\n        StreamSpecification:\r\n          StreamViewType: NEW_AND_OLD_IMAGES\r\n\r\n\r\n  # ─────────────────────────────────────────────────────────────────────────\r\n  # OUTPUTS\r\n  # ─────────────────────────────────────────────────────────────────────────\r\n  Outputs:\r\n    SecureRoomBucketName:\r\n      Description: \"S3 Bucket for Secure Rooms\"\r\n      Value: !Ref SecureRoomBucket\r\n      Export:\r\n        Name: ${self:service}-secure-room-bucket-${sls:stage}\r\n\r\n    RoomSettingsTableName:\r\n      Description: \"DynamoDB Table for Room Settings\"\r\n      Value: !Ref RoomSettingsTable\r\n      Export:\r\n        Name: ${self:service}-room-settings-table-${sls:stage}\r\n\r\n    SecureRoomApiEndpoint:\r\n      Description: \"REST API Endpoint for Secure Rooms\"\r\n      Value: !Sub 'https://\\${ApiGatewayRestApi}.execute-api.\\${AWS::Region}.amazonaws.com/${sls:stage}'\r\n      Export:\r\n        Name: ${self:service}-api-endpoint-${sls:stage}\r\n",
     "command": [
       "deploy"
     ],
@@ -5614,7 +5617,7 @@
           "Properties": {
             "Code": {
               "S3Bucket": "serverless-framework-deployments-ap-south-1-db10e28f-a1c6",
-              "S3Key": "serverless/keepr-ephemeral-chat/dev/1779703674016-2026-05-25T10:07:54.016Z/keepr-ephemeral-chat.zip"
+              "S3Key": "serverless/keepr-ephemeral-chat/dev/1779706044317-2026-05-25T10:47:24.317Z/keepr-ephemeral-chat.zip"
             },
             "Handler": "handler.connectionHandler",
             "Runtime": "nodejs20.x",
@@ -5650,7 +5653,7 @@
           "Properties": {
             "Code": {
               "S3Bucket": "serverless-framework-deployments-ap-south-1-db10e28f-a1c6",
-              "S3Key": "serverless/keepr-ephemeral-chat/dev/1779703674016-2026-05-25T10:07:54.016Z/keepr-ephemeral-chat.zip"
+              "S3Key": "serverless/keepr-ephemeral-chat/dev/1779706044317-2026-05-25T10:47:24.317Z/keepr-ephemeral-chat.zip"
             },
             "Handler": "handler.defaultHandler",
             "Runtime": "nodejs20.x",
@@ -5686,7 +5689,7 @@
           "Properties": {
             "Code": {
               "S3Bucket": "serverless-framework-deployments-ap-south-1-db10e28f-a1c6",
-              "S3Key": "serverless/keepr-ephemeral-chat/dev/1779703674016-2026-05-25T10:07:54.016Z/keepr-ephemeral-chat.zip"
+              "S3Key": "serverless/keepr-ephemeral-chat/dev/1779706044317-2026-05-25T10:47:24.317Z/keepr-ephemeral-chat.zip"
             },
             "Handler": "handler.sendMessageHandler",
             "Runtime": "nodejs20.x",
@@ -5722,7 +5725,7 @@
           "Properties": {
             "Code": {
               "S3Bucket": "serverless-framework-deployments-ap-south-1-db10e28f-a1c6",
-              "S3Key": "serverless/keepr-ephemeral-chat/dev/1779703674016-2026-05-25T10:07:54.016Z/keepr-ephemeral-chat.zip"
+              "S3Key": "serverless/keepr-ephemeral-chat/dev/1779706044317-2026-05-25T10:47:24.317Z/keepr-ephemeral-chat.zip"
             },
             "Handler": "handlers/secureRoomApi.handler",
             "Runtime": "nodejs20.x",
@@ -5759,7 +5762,7 @@
           "Properties": {
             "Code": {
               "S3Bucket": "serverless-framework-deployments-ap-south-1-db10e28f-a1c6",
-              "S3Key": "serverless/keepr-ephemeral-chat/dev/1779703674016-2026-05-25T10:07:54.016Z/keepr-ephemeral-chat.zip"
+              "S3Key": "serverless/keepr-ephemeral-chat/dev/1779706044317-2026-05-25T10:47:24.317Z/keepr-ephemeral-chat.zip"
             },
             "Handler": "handlers/secureRoomCron.handler",
             "Runtime": "nodejs20.x",
@@ -5791,54 +5794,54 @@
             "SecureRoomCronJobLogGroup"
           ]
         },
-        "ConnectionHandlerLambdaVersionQePsG5Xor3iu5mtH08S5UoeO3tSoBzajUCQv2uDqxm0": {
+        "ConnectionHandlerLambdaVersion6FqfxYBEfijk4CS1rFTQw3neDxl87MmSIqqlRac3s": {
           "Type": "AWS::Lambda::Version",
           "DeletionPolicy": "Retain",
           "Properties": {
             "FunctionName": {
               "Ref": "ConnectionHandlerLambdaFunction"
             },
-            "CodeSha256": "xyBUSZQJ0D+Hs7sA11cIW8L256vzDtrl7NaP0lN5y44="
+            "CodeSha256": "nurOphtuIwT5sRQDzeeJb5SvFI1VdhbHSZHhGjPNmzs="
           }
         },
-        "DefaultHandlerLambdaVersionxFPOrJ2dkYnAbUGtK5kh6vmXID9DQnoVOrTB1rB14UI": {
+        "DefaultHandlerLambdaVersion1N0wTSLtOv24KhbolIsEf4DP8DRC0sWhQ4o6SrsRo": {
           "Type": "AWS::Lambda::Version",
           "DeletionPolicy": "Retain",
           "Properties": {
             "FunctionName": {
               "Ref": "DefaultHandlerLambdaFunction"
             },
-            "CodeSha256": "xyBUSZQJ0D+Hs7sA11cIW8L256vzDtrl7NaP0lN5y44="
+            "CodeSha256": "nurOphtuIwT5sRQDzeeJb5SvFI1VdhbHSZHhGjPNmzs="
           }
         },
-        "SendMessageHandlerLambdaVersiono9b861AwIkI3K6ggKOPmlvs5lFiJqUV2w9WRrzsxfw": {
+        "SendMessageHandlerLambdaVersion0zpnghVYVcbIVHMaSfbpYzd1YB7Yr3Lh8sqRx4YulLE": {
           "Type": "AWS::Lambda::Version",
           "DeletionPolicy": "Retain",
           "Properties": {
             "FunctionName": {
               "Ref": "SendMessageHandlerLambdaFunction"
             },
-            "CodeSha256": "xyBUSZQJ0D+Hs7sA11cIW8L256vzDtrl7NaP0lN5y44="
+            "CodeSha256": "nurOphtuIwT5sRQDzeeJb5SvFI1VdhbHSZHhGjPNmzs="
           }
         },
-        "SecureRoomApiHandlerLambdaVersionPldxKWu0BE2iFiNpIgUt5cVR7sLg6zXztEFvCvk1Gw": {
+        "SecureRoomApiHandlerLambdaVersiony1wiiylj5kV79cB6b6O8xn47WjgkpKsE1FK888JwI": {
           "Type": "AWS::Lambda::Version",
           "DeletionPolicy": "Retain",
           "Properties": {
             "FunctionName": {
               "Ref": "SecureRoomApiHandlerLambdaFunction"
             },
-            "CodeSha256": "xyBUSZQJ0D+Hs7sA11cIW8L256vzDtrl7NaP0lN5y44="
+            "CodeSha256": "nurOphtuIwT5sRQDzeeJb5SvFI1VdhbHSZHhGjPNmzs="
           }
         },
-        "SecureRoomCronJobLambdaVersionfhScJx0nAqfYBbCdrb9kWRwtVUkT0KcMaw9J5vOh8E": {
+        "SecureRoomCronJobLambdaVersionDsOLuygwk7Ogiypfcf1b9WRNzhLOK7nEqQ4UWPoPyNU": {
           "Type": "AWS::Lambda::Version",
           "DeletionPolicy": "Retain",
           "Properties": {
             "FunctionName": {
               "Ref": "SecureRoomCronJobLambdaFunction"
             },
-            "CodeSha256": "xyBUSZQJ0D+Hs7sA11cIW8L256vzDtrl7NaP0lN5y44="
+            "CodeSha256": "nurOphtuIwT5sRQDzeeJb5SvFI1VdhbHSZHhGjPNmzs="
           }
         },
         "SecureRoomCronJobEventsRuleSchedule1": {
@@ -6799,7 +6802,7 @@
             "SecureRoomApiHandlerLambdaPermissionApiGateway"
           ]
         },
-        "ApiGatewayDeployment1779703659258": {
+        "ApiGatewayDeployment1779706034539": {
           "Type": "AWS::ApiGateway::Deployment",
           "Properties": {
             "RestApiId": {
@@ -7169,7 +7172,7 @@
                     "http://localhost:8080",
                     "http://localhost:5173",
                     "https://keeper-app-gold.vercel.app",
-                    "https://keeper-ggy0.onrender.com"
+                    "https://keepr-4j2p.onrender.com"
                   ],
                   "ExposedHeaders": [],
                   "MaxAge": 3000
@@ -7334,7 +7337,8 @@
                     "http://localhost:3000",
                     "http://localhost:8080",
                     "http://localhost:5173",
-                    "https://keeper-app-gold.vercel.app"
+                    "https://keeper-app-gold.vercel.app",
+                    "https://keepr-4j2p.onrender.com"
                   ],
                   "ExposedHeaders": [
                     "ETag"
@@ -7446,7 +7450,7 @@
         "ConnectionHandlerLambdaFunctionQualifiedArn": {
           "Description": "Current Lambda function version",
           "Value": {
-            "Ref": "ConnectionHandlerLambdaVersionQePsG5Xor3iu5mtH08S5UoeO3tSoBzajUCQv2uDqxm0"
+            "Ref": "ConnectionHandlerLambdaVersion6FqfxYBEfijk4CS1rFTQw3neDxl87MmSIqqlRac3s"
           },
           "Export": {
             "Name": "sls-keepr-ephemeral-chat-dev-ConnectionHandlerLambdaFunctionQualifiedArn"
@@ -7455,7 +7459,7 @@
         "DefaultHandlerLambdaFunctionQualifiedArn": {
           "Description": "Current Lambda function version",
           "Value": {
-            "Ref": "DefaultHandlerLambdaVersionxFPOrJ2dkYnAbUGtK5kh6vmXID9DQnoVOrTB1rB14UI"
+            "Ref": "DefaultHandlerLambdaVersion1N0wTSLtOv24KhbolIsEf4DP8DRC0sWhQ4o6SrsRo"
           },
           "Export": {
             "Name": "sls-keepr-ephemeral-chat-dev-DefaultHandlerLambdaFunctionQualifiedArn"
@@ -7464,7 +7468,7 @@
         "SendMessageHandlerLambdaFunctionQualifiedArn": {
           "Description": "Current Lambda function version",
           "Value": {
-            "Ref": "SendMessageHandlerLambdaVersiono9b861AwIkI3K6ggKOPmlvs5lFiJqUV2w9WRrzsxfw"
+            "Ref": "SendMessageHandlerLambdaVersion0zpnghVYVcbIVHMaSfbpYzd1YB7Yr3Lh8sqRx4YulLE"
           },
           "Export": {
             "Name": "sls-keepr-ephemeral-chat-dev-SendMessageHandlerLambdaFunctionQualifiedArn"
@@ -7473,7 +7477,7 @@
         "SecureRoomApiHandlerLambdaFunctionQualifiedArn": {
           "Description": "Current Lambda function version",
           "Value": {
-            "Ref": "SecureRoomApiHandlerLambdaVersionPldxKWu0BE2iFiNpIgUt5cVR7sLg6zXztEFvCvk1Gw"
+            "Ref": "SecureRoomApiHandlerLambdaVersiony1wiiylj5kV79cB6b6O8xn47WjgkpKsE1FK888JwI"
           },
           "Export": {
             "Name": "sls-keepr-ephemeral-chat-dev-SecureRoomApiHandlerLambdaFunctionQualifiedArn"
@@ -7482,7 +7486,7 @@
         "SecureRoomCronJobLambdaFunctionQualifiedArn": {
           "Description": "Current Lambda function version",
           "Value": {
-            "Ref": "SecureRoomCronJobLambdaVersionfhScJx0nAqfYBbCdrb9kWRwtVUkT0KcMaw9J5vOh8E"
+            "Ref": "SecureRoomCronJobLambdaVersionDsOLuygwk7Ogiypfcf1b9WRNzhLOK7nEqQ4UWPoPyNU"
           },
           "Export": {
             "Name": "sls-keepr-ephemeral-chat-dev-SecureRoomCronJobLambdaFunctionQualifiedArn"
