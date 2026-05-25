@@ -43,6 +43,7 @@ const SENDER_EMAIL = process.env.SENDER_EMAIL || process.env.EMAIL_USER || "ansh
 // ─────────────────────────────────────────────────────────────────
 async function sendHandoffEmail(room: any, migratedFiles: string[]): Promise<void> {
   const toEmail = room.transferEmail || SENDER_EMAIL;
+  const websiteUrl = process.env.WEBSITE_URL || "https://keepr-4j2p.onrender.com";
   if (!toEmail) {
     console.warn("No transfer email configured for room, skipping notification.");
     return;
@@ -134,7 +135,7 @@ Keepr Security System
       
       <!-- Action Button -->
       <div style="text-align: center; margin-bottom: 32px;">
-        <a href="http://localhost:5173/?roomId=${room.roomId}" style="display: inline-block; background: #ffffff; color: #000000; font-size: 14px; font-weight: 800; text-decoration: none; padding: 14px 36px; border-radius: 12px; box-shadow: 0 10px 20px rgba(255,255,255,0.1); text-transform: uppercase; letter-spacing: 0.05em;">Log In & Migrate Now</a>
+        <a href="${websiteUrl}/?roomId=${room.roomId}" style="display: inline-block; background: #ffffff; color: #000000; font-size: 14px; font-weight: 800; text-decoration: none; padding: 14px 36px; border-radius: 12px; box-shadow: 0 10px 20px rgba(255,255,255,0.1); text-transform: uppercase; letter-spacing: 0.05em;">Log In & Migrate Now</a>
       </div>
       
       <p style="color:#52525b; font-size:11px; margin-top:32px; border-top:1px solid #1f1f2e; padding-top:20px; text-align: center; line-height: 1.5;">

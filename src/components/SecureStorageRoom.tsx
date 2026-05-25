@@ -310,6 +310,7 @@ export function SecureStorageRoom() {
   const [transferEmail, setTransferEmail] = useState('');
   const [feedbackMsg, setFeedbackMsg] = useState('');
   const [activeRoomStrategy, setActiveRoomStrategy] = useState<'purge' | 'migration' | 'handoff_unlocked'>('purge');
+  const [isSavingSettings, setIsSavingSettings] = useState(false);
 
   // Manage body scroll lock when modal is open
   const isAnyModalOpen = !!(showSettings || isRenameOpen || isDeleteConfirmOpen || !!roomToPurge);
@@ -1261,6 +1262,9 @@ export function SecureStorageRoom() {
   };
 
   const saveSettings = async () => {
+    if (isSavingSettings) return;
+    setIsSavingSettings(true);
+
     let apiEndpoint = SECURE_ROOM_API_ENDPOINT;
     if (!apiEndpoint || apiEndpoint.includes('REPLACE_WITH_YOUR_API_ID')) {
       const wsUrl = import.meta.env.VITE_WEBSOCKET_URL || '';
@@ -1318,10 +1322,14 @@ export function SecureStorageRoom() {
             }
           } else {
             console.error("Failed to update room settings in backend:", response.statusText);
+            setFeedbackMsg('Failed to lock parameters into cloud node.');
+            setTimeout(() => setFeedbackMsg(''), 3000);
           }
         }
       } catch (e) {
         console.error("Error saving room settings:", e);
+        setFeedbackMsg('Connection interrupted. Settings not saved.');
+        setTimeout(() => setFeedbackMsg(''), 3000);
       }
     }
 
@@ -1336,12 +1344,13 @@ export function SecureStorageRoom() {
 
     if (hasBackendSuccess) {
       setFeedbackMsg('Automation criteria and inactivity parameters locked into cloud node.');
-    } else {
+    } else if (!apiEndpoint || apiEndpoint.includes('REPLACE_WITH_YOUR_API_ID')) {
       setFeedbackMsg('Automation criteria and inactivity parameters locked in (Local offline mode).');
     }
 
     setTimeout(() => setFeedbackMsg(''), 3000);
     setShowSettings(false);
+    setIsSavingSettings(false);
     handleUpdateActivity();
   };
 
@@ -2664,16 +2673,27 @@ export function SecureStorageRoom() {
 
                   <div className="flex gap-3 pt-3 border-t border-zinc-900">
                     <button
+                      type="button"
+                      disabled={isSavingSettings}
                       onClick={() => setShowSettings(false)}
-                      className="flex-1 py-3 bg-zinc-950 hover:bg-zinc-900 border border-zinc-800 hover:border-zinc-700 text-zinc-300 text-xs font-semibold rounded-xl transition-all cursor-pointer"
+                      className="flex-1 py-3 bg-zinc-950 hover:bg-zinc-900 border border-zinc-800 hover:border-zinc-700 text-zinc-300 text-xs font-semibold rounded-xl transition-all cursor-pointer disabled:opacity-50"
                     >
                       Rescind
                     </button>
                     <button
+                      type="button"
+                      disabled={isSavingSettings}
                       onClick={saveSettings}
-                      className="flex-1 py-3 bg-white hover:bg-zinc-200 text-black text-xs font-semibold rounded-xl transition-all cursor-pointer"
+                      className="flex-1 py-3 bg-white hover:bg-zinc-200 text-black text-xs font-semibold rounded-xl transition-all cursor-pointer disabled:opacity-50 flex items-center justify-center gap-2"
                     >
-                      Commit Switch parameters
+                      {isSavingSettings ? (
+                        <>
+                          <RefreshCw className="w-3.5 h-3.5 animate-spin" />
+                          Locking...
+                        </>
+                      ) : (
+                        'Commit Switch parameters'
+                      )}
                     </button>
                   </div>
 

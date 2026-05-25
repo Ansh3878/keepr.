@@ -268,8 +268,8 @@ const Navbar = ({ activeView, navigateTo, isMenuOpen, setIsMenuOpen, isPro, isFr
           </button>
         </div>
 
-        <div className="flex items-center gap-4">
-          <div className="relative group">
+        <div className="flex items-center gap-3 sm:gap-4">
+          <div className="relative flex items-center justify-center group">
             <UserButton appearance={{ elements: { userButtonAvatarBox: `w-10 h-10 shadow-[0_0_20px_rgba(255,255,255,0.2)] ${isPro ? 'ring-2 ring-cyan-500 shadow-[0_0_12px_rgba(34,211,238,0.6)]' : ''}` } }} />
             {isPro && (
               <div className="absolute -top-8 left-1/2 -translate-x-1/2 px-2 py-1 bg-cyan-500 text-black text-[10px] font-black rounded whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none">
@@ -285,10 +285,10 @@ const Navbar = ({ activeView, navigateTo, isMenuOpen, setIsMenuOpen, isPro, isFr
             <ChevronRight className="w-4 h-4" />
           </button>
           <button
-            className="md:hidden text-white p-2"
+            className="md:hidden text-white p-2 flex items-center justify-center hover:text-cyan-400 transition-all cursor-pointer"
             onClick={() => setIsMenuOpen(!isMenuOpen)}
           >
-            {isMenuOpen ? <X /> : <Menu />}
+            {isMenuOpen ? <X className="w-6 h-6" /> : <Menu className="w-6 h-6" />}
           </button>
         </div>
       </div>
@@ -620,7 +620,7 @@ const SendView = ({
                     onClick={() => fileInputRef.current?.click()}
                     onDragOver={(e) => e.preventDefault()}
                     onDrop={onDrop}
-                    className="border-2 border-dashed border-zinc-800 rounded-3xl p-16 flex flex-col items-center justify-center group hover:border-cyan-500/40 hover:bg-cyan-500/[0.02] transition-all cursor-pointer min-h-[400px]"
+                    className="border-2 border-dashed border-zinc-800 rounded-3xl p-8 sm:p-16 flex flex-col items-center justify-center group hover:border-cyan-500/40 hover:bg-cyan-500/[0.02] transition-all cursor-pointer min-h-[400px]"
                   >
                     <input
                       type="file"
@@ -643,18 +643,18 @@ const SendView = ({
                         <Upload className="w-12 h-12 text-white" />
                       )}
                     </motion.div>
-
+ 
                     {file ? (
-                      <div className="text-center">
-                        <h2 className="text-2xl font-bold text-white mb-2">{file.name}</h2>
-                        <p className="text-zinc-500 text-sm">{(file.size / (1024 * 1024)).toFixed(2)} MB • Ready for encryption</p>
+                      <div className="text-center px-4">
+                        <h2 className="text-2xl font-bold text-white mb-2 text-center break-all">{file.name}</h2>
+                        <p className="text-zinc-500 text-sm text-center">{(file.size / (1024 * 1024)).toFixed(2)} MB • Ready for encryption</p>
                       </div>
                     ) : (
-                      <>
-                        <h2 className="text-3xl font-bold mb-4 tracking-tighter">Secure Dropzone</h2>
-                        <p className="text-zinc-500 mb-2 italic font-serif">Drag and drop or click to browse</p>
-                        <p className="text-zinc-700 text-[10px] uppercase tracking-widest font-black">Files up to 10GB • Encrypted locally</p>
-                      </>
+                      <div className="text-center px-4 flex flex-col items-center">
+                        <h2 className="text-3xl font-bold mb-4 tracking-tighter text-center">Secure Dropzone</h2>
+                        <p className="text-zinc-500 mb-2 italic font-serif text-center">Drag and drop or click to browse</p>
+                        <p className="text-zinc-700 text-[10px] uppercase tracking-widest font-black text-center">Files up to 10GB • Encrypted locally</p>
+                      </div>
                     )}
                   </div>
 
@@ -924,7 +924,7 @@ const ScanView = ({
                     onDragLeave={() => setDragActive(false)}
                     onDrop={(e) => { e.preventDefault(); setDragActive(false); handleFile(e.dataTransfer.files); }}
                     onClick={() => fileInputRef.current?.click()}
-                    className={`border-2 border-dashed rounded-[2rem] p-16 flex flex-col items-center justify-center transition-all cursor-pointer min-h-[350px] ${dragActive ? 'border-red-500 bg-red-500/5' : 'border-zinc-800 hover:border-red-500/40 hover:bg-red-500/[0.02]'
+                    className={`border-2 border-dashed rounded-[2rem] p-8 sm:p-16 flex flex-col items-center justify-center transition-all cursor-pointer min-h-[350px] ${dragActive ? 'border-red-500 bg-red-500/5' : 'border-zinc-800 hover:border-red-500/40 hover:bg-red-500/[0.02]'
                       }`}
                   >
                     <input
@@ -944,13 +944,13 @@ const ScanView = ({
                         <Upload className="w-10 h-10 text-white" />
                       )}
                     </motion.div>
-                    <h2 className="text-3xl font-bold text-white mb-2 tracking-tighter">
+                    <h2 className="text-3xl font-bold text-white mb-2 tracking-tighter text-center">
                       {status === 'processing' ? 'Uploading & Analyzing...' : 'Drop File to Scan'}
                     </h2>
-                    <p className="text-zinc-500 italic font-serif text-lg mb-2">
+                    <p className="text-zinc-500 italic font-serif text-lg mb-2 text-center">
                       {status === 'processing' ? 'Submitting to threat intelligence core' : 'Scan binaries, documents, or scripts under 32MB'}
                     </p>
-                    <p className="text-zinc-700 text-[10px] uppercase tracking-widest font-black">Anonymous • Private • E2E Integrity Checks</p>
+                    <p className="text-zinc-700 text-[10px] uppercase tracking-widest font-black text-center">Anonymous • Private • E2E Integrity Checks</p>
                   </div>
                 ) : (
                   <div className="min-h-[350px] flex flex-col items-center justify-center space-y-10 py-10">
@@ -1774,7 +1774,7 @@ function AppContent() {
 
 
 
-  const premiumFeatures: ViewType[] = ['detonator', 'chat'];
+  const premiumFeatures: ViewType[] = ['detonator', 'chat', 'storage'];
 
   const navigateTo = (view: ViewType) => {
     const isPremium = premiumFeatures.includes(view);
@@ -2029,26 +2029,38 @@ function AppContent() {
                 <p className="text-[10px] text-zinc-600 uppercase tracking-[0.3em] font-black">Encrypted Features</p>
                 <div className="grid gap-2">
                   {[
-                    { id: 'send', title: 'Send File', desc: 'Encrypted peer transfer', icon: Upload },
-                    { id: 'receive', title: 'Receive File', desc: 'Secure asset retrieval', icon: Download },
-                    { id: 'scan', title: 'Malware Scan', desc: 'Virus & threat analysis', icon: Shield },
-                    { id: 'chat', title: 'Secure Chat', desc: 'Ephemeral E2EE messaging', icon: MessageSquare },
-                    { id: 'detonator', title: 'Link Detonator', desc: 'Isolated sandbox analysis', icon: Zap }
-                  ].map((item) => (
-                    <button
-                      key={item.id}
-                      onClick={() => navigateTo(item.id as ViewType)}
-                      className="w-full flex items-center gap-4 p-4 rounded-3xl bg-zinc-900/50 border border-white/5 text-left active:bg-white/10 transition-all"
-                    >
-                      <div className="w-12 h-12 bg-zinc-800 rounded-2xl flex items-center justify-center border border-zinc-700 shrink-0">
-                        <item.icon className="w-6 h-6 text-white" />
-                      </div>
-                      <div className="flex flex-col">
-                        <span className="text-white text-lg font-bold tracking-tight">{item.title}</span>
-                        <span className="text-zinc-500 text-[10px] uppercase tracking-widest font-black mt-1 leading-none">{item.desc}</span>
-                      </div>
-                    </button>
-                  ))}
+                    { id: 'send', title: 'Send File', desc: 'Encrypted peer transfer', icon: Upload, isPremium: false },
+                    { id: 'receive', title: 'Receive File', desc: 'Secure asset retrieval', icon: Download, isPremium: false },
+                    { id: 'scan', title: 'Malware Scan', desc: 'Virus & threat analysis', icon: Shield, isPremium: false },
+                    { id: 'chat', title: 'Secure Chat', desc: 'Ephemeral E2EE messaging', icon: MessageSquare, isPremium: true },
+                    { id: 'detonator', title: 'Link Detonator', desc: 'Isolated sandbox analysis', icon: Zap, isPremium: true },
+                    { id: 'storage', title: 'Secure Room', desc: 'Encrypted Cloud Storage', icon: Lock, isPremium: true }
+                  ].map((item) => {
+                    const isFeatureLocked = item.isPremium && !isPro && !isTrialActive;
+                    return (
+                      <button
+                        key={item.id}
+                        onClick={() => navigateTo(item.id as ViewType)}
+                        className={`w-full flex items-center gap-4 p-4 rounded-3xl bg-zinc-900/50 border border-white/5 text-left active:bg-white/10 transition-all ${isFeatureLocked ? 'opacity-50' : ''}`}
+                      >
+                        <div className="w-12 h-12 bg-zinc-800 rounded-2xl flex items-center justify-center border border-zinc-700 shrink-0">
+                          <item.icon className="w-6 h-6 text-white" />
+                        </div>
+                        <div className="flex-1 flex flex-col min-w-0">
+                          <div className="flex items-center gap-2 flex-wrap">
+                            <span className="text-white text-lg font-bold tracking-tight">{item.title}</span>
+                            {!isPro && isTrialActive && item.isPremium && (
+                              <span className="text-[9px] bg-cyan-500/20 text-cyan-400 px-2 py-0.5 rounded-full font-black uppercase tracking-widest shrink-0">TRIAL</span>
+                            )}
+                            {isFeatureLocked && (
+                              <span className="text-[9px] bg-amber-500/20 text-amber-400 px-2 py-0.5 rounded-full font-black uppercase tracking-widest shrink-0">PREMIUM</span>
+                            )}
+                          </div>
+                          <span className="text-zinc-500 text-[10px] uppercase tracking-widest font-black mt-1 leading-none">{item.desc}</span>
+                        </div>
+                      </button>
+                    );
+                  })}
                 </div>
               </div>
 
