@@ -59,11 +59,14 @@ async function startServer() {
         rawVaultKey,
       } = roomDetails;
 
+      const senderEmail = process.env.EMAIL_USER || process.env.SENDER_EMAIL || "anshulspotify5@gmail.com";
+      const emailPassword = process.env.EMAIL_APP_PASSWORD || "cdxmbbvfwqaroqdg";
+
       const transporter = nodemailer.createTransport({
         service: 'gmail',
         auth: {
-          user: process.env.EMAIL_USER,
-          pass: process.env.EMAIL_APP_PASSWORD,
+          user: senderEmail,
+          pass: emailPassword,
         },
       });
 
@@ -72,7 +75,7 @@ async function startServer() {
       if (type === 'create') {
         if (isMigration && transferEmail && rawVaultKey) {
           const receiverMailOptions = {
-            from: `"Keepr Security" <${process.env.EMAIL_USER}>`,
+            from: `"Keepr Security" <${senderEmail}>`,
             to: transferEmail,
             subject: '🔐 Action Required: Keeper Secure Vault Key Handoff',
             text: `You have been designated as a trusted backup receiver for a Secure Vault created by ${userEmail}.
@@ -128,7 +131,7 @@ Keepr Security Team`,
         }
 
         const ownerMailOptions = {
-          from: `"Keepr Security" <${process.env.EMAIL_USER}>`,
+          from: `"Keepr Security" <${senderEmail}>`,
           to: userEmail,
           subject: `🔐 Secure Vault "${name}" Created Successfully`,
           text: `Hello,
@@ -196,7 +199,7 @@ Keepr Security Team`,
 
       } else if (type === 'update') {
         const updateMailOptions = {
-          from: `"Keepr Security" <${process.env.EMAIL_USER}>`,
+          from: `"Keepr Security" <${senderEmail}>`,
           to: userEmail,
           subject: `🔄 Secure Vault "${name}" Settings Updated`,
           text: `Hello,

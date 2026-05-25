@@ -1298,28 +1298,26 @@ export function SecureStorageRoom() {
           if (response.ok) {
             hasBackendSuccess = true;
 
-            // Trigger Next.js email API route for room settings update using Gmail SMTP
-            try {
-              await fetch('/api/send-email', {
-                method: 'POST',
-                headers: {
-                  'Content-Type': 'application/json',
-                },
-                body: JSON.stringify({
-                  type: 'update',
-                  userEmail: user?.primaryEmailAddress?.emailAddress || import.meta.env.VITE_EMAIL_USER || '',
-                  roomDetails: {
-                    roomId: activeRoomId,
-                    name: roomName,
-                    safetyStrategy: safetyStrategy,
-                    inactivityDays: inactivityDays,
-                    transferEmail: transferEmail,
-                  }
-                })
-              });
-            } catch (err) {
+            // Trigger Next.js email API route for room settings update using Gmail SMTP in background
+            fetch('/api/send-email', {
+              method: 'POST',
+              headers: {
+                'Content-Type': 'application/json',
+              },
+              body: JSON.stringify({
+                type: 'update',
+                userEmail: user?.primaryEmailAddress?.emailAddress || import.meta.env.VITE_EMAIL_USER || '',
+                roomDetails: {
+                  roomId: activeRoomId,
+                  name: roomName,
+                  safetyStrategy: safetyStrategy,
+                  inactivityDays: inactivityDays,
+                  transferEmail: transferEmail,
+                }
+              })
+            }).catch(err => {
               console.error("Failed to trigger update email notification:", err);
-            }
+            });
           } else {
             console.error("Failed to update room settings in backend:", response.statusText);
             setFeedbackMsg('Failed to lock parameters into cloud node.');

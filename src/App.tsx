@@ -77,7 +77,7 @@ const Navbar = ({ activeView, navigateTo, isMenuOpen, setIsMenuOpen, isPro, isFr
     const isPremium = premiumFeatures.includes(feature);
     
     // Check premium features only
-    if (isPremium && !isPro && !isTrialActive) {
+    if (isPremium && !isPro) {
       onPremiumFeatureAttempt();
       return;
     }
@@ -89,8 +89,8 @@ const Navbar = ({ activeView, navigateTo, isMenuOpen, setIsMenuOpen, isPro, isFr
 
   const canAccessFeature = (feature: ViewType): boolean => {
     const isPremium = premiumFeatures.includes(feature);
-    // Free features always accessible, premium features need trial or pro
-    return !isPremium || isPro || isTrialActive;
+    // Free features always accessible, premium features need pro
+    return !isPremium || isPro;
   };
 
   const refreshSubscriptionStatus = async () => {
@@ -205,8 +205,7 @@ const Navbar = ({ activeView, navigateTo, isMenuOpen, setIsMenuOpen, isPro, isFr
                         <div className="flex flex-col flex-1">
                           <div className="flex items-center gap-2">
                             <span className="text-white text-sm font-bold tracking-tight">Secure Chat</span>
-                            {!isPro && isTrialActive && <span className="text-[10px] bg-cyan-500/20 text-cyan-400 px-2 py-1 rounded-full font-black">TRIAL</span>}
-                            {!canAccessFeature('chat') && <span className="text-[10px] bg-amber-500/20 text-amber-400 px-2 py-1 rounded-full font-black">PREMIUM</span>}
+                            {!isPro && <span className="text-[10px] bg-amber-500/20 text-amber-400 px-2 py-1 rounded-full font-black">PREMIUM</span>}
                           </div>
                           <span className="text-zinc-400 text-[10px] uppercase tracking-widest font-black leading-none mt-1.5 group-hover/item:text-zinc-300 transition-colors">Ephemeral E2EE messaging</span>
                         </div>
@@ -222,8 +221,7 @@ const Navbar = ({ activeView, navigateTo, isMenuOpen, setIsMenuOpen, isPro, isFr
                         <div className="flex flex-col flex-1">
                           <div className="flex items-center gap-2">
                             <span className="text-white text-sm font-bold tracking-tight">Link Detonator</span>
-                            {!isPro && isTrialActive && <span className="text-[10px] bg-cyan-500/20 text-cyan-400 px-2 py-1 rounded-full font-black">TRIAL</span>}
-                            {!canAccessFeature('detonator') && <span className="text-[10px] bg-amber-500/20 text-amber-400 px-2 py-1 rounded-full font-black">PREMIUM</span>}
+                            {!isPro && <span className="text-[10px] bg-amber-500/20 text-amber-400 px-2 py-1 rounded-full font-black">PREMIUM</span>}
                           </div>
                           <span className="text-zinc-400 text-[10px] uppercase tracking-widest font-black leading-none mt-1.5 group-hover/item:text-zinc-300 transition-colors">Isolated sandbox analysis</span>
                         </div>
@@ -240,8 +238,7 @@ const Navbar = ({ activeView, navigateTo, isMenuOpen, setIsMenuOpen, isPro, isFr
                         <div className="flex flex-col flex-1">
                           <div className="flex items-center gap-2">
                             <span className="text-white text-sm font-bold tracking-tight">Secure Storage</span>
-                            {!isPro && isTrialActive && <span className="text-[10px] bg-cyan-500/20 text-cyan-400 px-2 py-1 rounded-full font-black">TRIAL</span>}
-                            {!canAccessFeature('storage') && <span className="text-[10px] bg-amber-500/20 text-amber-400 px-2 py-1 rounded-full font-black">PREMIUM</span>}
+                            {!isPro && <span className="text-[10px] bg-amber-500/20 text-amber-400 px-2 py-1 rounded-full font-black">PREMIUM</span>}
                           </div>
                           <span className="text-zinc-400 text-[10px] uppercase tracking-widest font-black leading-none mt-1.5 group-hover/item:text-zinc-300 transition-colors">Encrypted MacBook Finder</span>
                         </div>
@@ -1780,7 +1777,7 @@ function AppContent() {
     const isPremium = premiumFeatures.includes(view);
     
     // Check if user is trying to access premium feature without access
-    if (isPremium && !isPro && !isTrialActive) {
+    if (isPremium && !isPro) {
       handlePremiumFeatureAttempt();
       return;
     }
@@ -2036,7 +2033,7 @@ function AppContent() {
                     { id: 'detonator', title: 'Link Detonator', desc: 'Isolated sandbox analysis', icon: Zap, isPremium: true },
                     { id: 'storage', title: 'Secure Room', desc: 'Encrypted Cloud Storage', icon: Lock, isPremium: true }
                   ].map((item) => {
-                    const isFeatureLocked = item.isPremium && !isPro && !isTrialActive;
+                    const isFeatureLocked = item.isPremium && !isPro;
                     return (
                       <button
                         key={item.id}
@@ -2049,9 +2046,6 @@ function AppContent() {
                         <div className="flex-1 flex flex-col min-w-0">
                           <div className="flex items-center gap-2 flex-wrap">
                             <span className="text-white text-lg font-bold tracking-tight">{item.title}</span>
-                            {!isPro && isTrialActive && item.isPremium && (
-                              <span className="text-[9px] bg-cyan-500/20 text-cyan-400 px-2 py-0.5 rounded-full font-black uppercase tracking-widest shrink-0">TRIAL</span>
-                            )}
                             {isFeatureLocked && (
                               <span className="text-[9px] bg-amber-500/20 text-amber-400 px-2 py-0.5 rounded-full font-black uppercase tracking-widest shrink-0">PREMIUM</span>
                             )}
