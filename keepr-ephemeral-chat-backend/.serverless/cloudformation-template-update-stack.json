@@ -218,7 +218,7 @@
       "Properties": {
         "Code": {
           "S3Bucket": "serverless-framework-deployments-ap-south-1-db10e28f-a1c6",
-          "S3Key": "serverless/keepr-ephemeral-chat/dev/1779708580147-2026-05-25T11:29:40.147Z/keepr-ephemeral-chat.zip"
+          "S3Key": "serverless/keepr-ephemeral-chat/dev/1779712286816-2026-05-25T12:31:26.816Z/keepr-ephemeral-chat.zip"
         },
         "Handler": "handler.connectionHandler",
         "Runtime": "nodejs20.x",
@@ -254,7 +254,7 @@
       "Properties": {
         "Code": {
           "S3Bucket": "serverless-framework-deployments-ap-south-1-db10e28f-a1c6",
-          "S3Key": "serverless/keepr-ephemeral-chat/dev/1779708580147-2026-05-25T11:29:40.147Z/keepr-ephemeral-chat.zip"
+          "S3Key": "serverless/keepr-ephemeral-chat/dev/1779712286816-2026-05-25T12:31:26.816Z/keepr-ephemeral-chat.zip"
         },
         "Handler": "handler.defaultHandler",
         "Runtime": "nodejs20.x",
@@ -290,7 +290,7 @@
       "Properties": {
         "Code": {
           "S3Bucket": "serverless-framework-deployments-ap-south-1-db10e28f-a1c6",
-          "S3Key": "serverless/keepr-ephemeral-chat/dev/1779708580147-2026-05-25T11:29:40.147Z/keepr-ephemeral-chat.zip"
+          "S3Key": "serverless/keepr-ephemeral-chat/dev/1779712286816-2026-05-25T12:31:26.816Z/keepr-ephemeral-chat.zip"
         },
         "Handler": "handler.sendMessageHandler",
         "Runtime": "nodejs20.x",
@@ -326,7 +326,7 @@
       "Properties": {
         "Code": {
           "S3Bucket": "serverless-framework-deployments-ap-south-1-db10e28f-a1c6",
-          "S3Key": "serverless/keepr-ephemeral-chat/dev/1779708580147-2026-05-25T11:29:40.147Z/keepr-ephemeral-chat.zip"
+          "S3Key": "serverless/keepr-ephemeral-chat/dev/1779712286816-2026-05-25T12:31:26.816Z/keepr-ephemeral-chat.zip"
         },
         "Handler": "handlers/secureRoomApi.handler",
         "Runtime": "nodejs20.x",
@@ -363,7 +363,7 @@
       "Properties": {
         "Code": {
           "S3Bucket": "serverless-framework-deployments-ap-south-1-db10e28f-a1c6",
-          "S3Key": "serverless/keepr-ephemeral-chat/dev/1779708580147-2026-05-25T11:29:40.147Z/keepr-ephemeral-chat.zip"
+          "S3Key": "serverless/keepr-ephemeral-chat/dev/1779712286816-2026-05-25T12:31:26.816Z/keepr-ephemeral-chat.zip"
         },
         "Handler": "handlers/secureRoomCron.handler",
         "Runtime": "nodejs20.x",
@@ -395,54 +395,54 @@
         "SecureRoomCronJobLogGroup"
       ]
     },
-    "ConnectionHandlerLambdaVersionJfC1X8LizadJ4uHEzrkjIVo4Z24ehRstNdn54cvnyc": {
+    "ConnectionHandlerLambdaVersionLlUeDTvt3kAeDS825DMUKc2qQNfbFwcy1IuXeCeAU": {
       "Type": "AWS::Lambda::Version",
       "DeletionPolicy": "Retain",
       "Properties": {
         "FunctionName": {
           "Ref": "ConnectionHandlerLambdaFunction"
         },
-        "CodeSha256": "kIk+4kD6wkJ++E2aWUE1NjV16V6lxPBIfuhrBLccFZs="
+        "CodeSha256": "Vl3IKY5ywNwnfyobCQsBWfpg3sTzQTWyB4+6t5Nvnvw="
       }
     },
-    "DefaultHandlerLambdaVersionDSh1Kp1gLms1LkvTKivLemGzhLcUGIHDIYFLO730sMQ": {
+    "DefaultHandlerLambdaVersion464hr2JaC5XW2gKqG9Txr8gK4dCByeRiwVHDNoKFM": {
       "Type": "AWS::Lambda::Version",
       "DeletionPolicy": "Retain",
       "Properties": {
         "FunctionName": {
           "Ref": "DefaultHandlerLambdaFunction"
         },
-        "CodeSha256": "kIk+4kD6wkJ++E2aWUE1NjV16V6lxPBIfuhrBLccFZs="
+        "CodeSha256": "Vl3IKY5ywNwnfyobCQsBWfpg3sTzQTWyB4+6t5Nvnvw="
       }
     },
-    "SendMessageHandlerLambdaVersiongMy895MoGBMYgmsLusXnJh0Aq6Ae8ARbyTZhdPpE": {
+    "SendMessageHandlerLambdaVersioncvqxApxxCI6ndi4vWvDjCk3Z1wfpHo50qV1XwsHyU8s": {
       "Type": "AWS::Lambda::Version",
       "DeletionPolicy": "Retain",
       "Properties": {
         "FunctionName": {
           "Ref": "SendMessageHandlerLambdaFunction"
         },
-        "CodeSha256": "kIk+4kD6wkJ++E2aWUE1NjV16V6lxPBIfuhrBLccFZs="
+        "CodeSha256": "Vl3IKY5ywNwnfyobCQsBWfpg3sTzQTWyB4+6t5Nvnvw="
       }
     },
-    "SecureRoomApiHandlerLambdaVersionYDWO44PmrtBHNYPp0u1s5PDWy5FGtMz5pj9rlmvg": {
+    "SecureRoomApiHandlerLambdaVersionbfwY7JGZ2J5c0IKgD9KgrkifrsGSi1gQXMlAxEpilc": {
       "Type": "AWS::Lambda::Version",
       "DeletionPolicy": "Retain",
       "Properties": {
         "FunctionName": {
           "Ref": "SecureRoomApiHandlerLambdaFunction"
         },
-        "CodeSha256": "kIk+4kD6wkJ++E2aWUE1NjV16V6lxPBIfuhrBLccFZs="
+        "CodeSha256": "Vl3IKY5ywNwnfyobCQsBWfpg3sTzQTWyB4+6t5Nvnvw="
       }
     },
-    "SecureRoomCronJobLambdaVersionlKgL8DliiTp0AgwiJOfuqE524XZ1bMwXXd6SxSo9WE": {
+    "SecureRoomCronJobLambdaVersionjkN78ddYLIhkGKwmANNpIl3QaRJ6IwSDeoar2DZb12Y": {
       "Type": "AWS::Lambda::Version",
       "DeletionPolicy": "Retain",
       "Properties": {
         "FunctionName": {
           "Ref": "SecureRoomCronJobLambdaFunction"
         },
-        "CodeSha256": "kIk+4kD6wkJ++E2aWUE1NjV16V6lxPBIfuhrBLccFZs="
+        "CodeSha256": "Vl3IKY5ywNwnfyobCQsBWfpg3sTzQTWyB4+6t5Nvnvw="
       }
     },
     "SecureRoomCronJobEventsRuleSchedule1": {
@@ -1403,7 +1403,7 @@
         "SecureRoomApiHandlerLambdaPermissionApiGateway"
       ]
     },
-    "ApiGatewayDeployment1779708570781": {
+    "ApiGatewayDeployment1779712277314": {
       "Type": "AWS::ApiGateway::Deployment",
       "Properties": {
         "RestApiId": {
@@ -2051,7 +2051,7 @@
     "ConnectionHandlerLambdaFunctionQualifiedArn": {
       "Description": "Current Lambda function version",
       "Value": {
-        "Ref": "ConnectionHandlerLambdaVersionJfC1X8LizadJ4uHEzrkjIVo4Z24ehRstNdn54cvnyc"
+        "Ref": "ConnectionHandlerLambdaVersionLlUeDTvt3kAeDS825DMUKc2qQNfbFwcy1IuXeCeAU"
       },
       "Export": {
         "Name": "sls-keepr-ephemeral-chat-dev-ConnectionHandlerLambdaFunctionQualifiedArn"
@@ -2060,7 +2060,7 @@
     "DefaultHandlerLambdaFunctionQualifiedArn": {
       "Description": "Current Lambda function version",
       "Value": {
-        "Ref": "DefaultHandlerLambdaVersionDSh1Kp1gLms1LkvTKivLemGzhLcUGIHDIYFLO730sMQ"
+        "Ref": "DefaultHandlerLambdaVersion464hr2JaC5XW2gKqG9Txr8gK4dCByeRiwVHDNoKFM"
       },
       "Export": {
         "Name": "sls-keepr-ephemeral-chat-dev-DefaultHandlerLambdaFunctionQualifiedArn"
@@ -2069,7 +2069,7 @@
     "SendMessageHandlerLambdaFunctionQualifiedArn": {
       "Description": "Current Lambda function version",
       "Value": {
-        "Ref": "SendMessageHandlerLambdaVersiongMy895MoGBMYgmsLusXnJh0Aq6Ae8ARbyTZhdPpE"
+        "Ref": "SendMessageHandlerLambdaVersioncvqxApxxCI6ndi4vWvDjCk3Z1wfpHo50qV1XwsHyU8s"
       },
       "Export": {
         "Name": "sls-keepr-ephemeral-chat-dev-SendMessageHandlerLambdaFunctionQualifiedArn"
@@ -2078,7 +2078,7 @@
     "SecureRoomApiHandlerLambdaFunctionQualifiedArn": {
       "Description": "Current Lambda function version",
       "Value": {
-        "Ref": "SecureRoomApiHandlerLambdaVersionYDWO44PmrtBHNYPp0u1s5PDWy5FGtMz5pj9rlmvg"
+        "Ref": "SecureRoomApiHandlerLambdaVersionbfwY7JGZ2J5c0IKgD9KgrkifrsGSi1gQXMlAxEpilc"
       },
       "Export": {
         "Name": "sls-keepr-ephemeral-chat-dev-SecureRoomApiHandlerLambdaFunctionQualifiedArn"
@@ -2087,7 +2087,7 @@
     "SecureRoomCronJobLambdaFunctionQualifiedArn": {
       "Description": "Current Lambda function version",
       "Value": {
-        "Ref": "SecureRoomCronJobLambdaVersionlKgL8DliiTp0AgwiJOfuqE524XZ1bMwXXd6SxSo9WE"
+        "Ref": "SecureRoomCronJobLambdaVersionjkN78ddYLIhkGKwmANNpIl3QaRJ6IwSDeoar2DZb12Y"
       },
       "Export": {
         "Name": "sls-keepr-ephemeral-chat-dev-SecureRoomCronJobLambdaFunctionQualifiedArn"
