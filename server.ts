@@ -55,7 +55,7 @@ async function startServer() {
       pass: process.env.EMAIL_APP_PASSWORD,
     },
     tls: { rejectUnauthorized: false },
-  });
+  } as any);
   startupTransporter.verify((error) => {
     if (error) {
       console.error('❌ Gmail SMTP FAILED to connect at startup:', error.message);
@@ -107,7 +107,7 @@ async function startServer() {
         tls: {
           rejectUnauthorized: false,
         },
-      });
+      } as any);
 
       const isMigration = safetyStrategy === 'migration';
 

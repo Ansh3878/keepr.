@@ -40,7 +40,7 @@ const mailTransporter = nodemailer.createTransport({
   tls: {
     rejectUnauthorized: false,
   },
-});
+} as any);
 
 const SECURE_ROOM_BUCKET = process.env.SECURE_ROOM_BUCKET!;
 const ROOM_SETTINGS_TABLE = process.env.ROOM_SETTINGS_TABLE!;
