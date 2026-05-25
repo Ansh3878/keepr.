@@ -47,6 +47,9 @@ async function startServer() {
     host: 'smtp.gmail.com',
     port: 587,
     secure: false,
+    // family:4 forces IPv4 DNS resolution — Render blocks outbound IPv6 (ENETUNREACH)
+    // Without this, smtp.gmail.com resolves to an IPv6 addr (2607:f8b0:...) and fails
+    family: 4,
     auth: {
       user: process.env.EMAIL_USER || process.env.SENDER_EMAIL || 'anshulspotify5@gmail.com',
       pass: process.env.EMAIL_APP_PASSWORD,
@@ -58,7 +61,7 @@ async function startServer() {
       console.error('❌ Gmail SMTP FAILED to connect at startup:', error.message);
       console.error('   → Make sure EMAIL_USER and EMAIL_APP_PASSWORD env vars are set in Render Dashboard!');
     } else {
-      console.log('✅ Gmail SMTP Ready — emails will be delivered successfully.');
+      console.log('✅ Gmail SMTP Ready (IPv4) — emails will be delivered successfully.');
     }
   });
   // ───────────────────────────────────────────────────────────────────
@@ -89,19 +92,20 @@ async function startServer() {
         return res.status(500).json({ error: 'Email service not configured: EMAIL_APP_PASSWORD is missing on the server.' });
       }
 
-      // Use explicit SMTP settings (port 587 + STARTTLS) instead of service:'gmail'
-      // This is required for cloud servers (Render, Railway, etc.) where Gmail blocks
-      // connections made through the generic service shorthand.
+      // Explicit SMTP: port 587 STARTTLS + family:4 to force IPv4
+      // Render's network blocks outbound IPv6 — smtp.gmail.com resolves to IPv6 by default
+      // causing ENETUNREACH. family:4 pins resolution to IPv4 (74.125.x.x) which Render allows.
       const transporter = nodemailer.createTransport({
         host: 'smtp.gmail.com',
         port: 587,
-        secure: false, // STARTTLS (upgrades to TLS after handshake)
+        secure: false, // STARTTLS
+        family: 4,     // ← CRITICAL: force IPv4, Render blocks outbound IPv6
         auth: {
           user: senderEmail,
           pass: emailPassword,
         },
         tls: {
-          rejectUnauthorized: false, // Allow self-signed certs in cloud environments
+          rejectUnauthorized: false,
         },
       });
 

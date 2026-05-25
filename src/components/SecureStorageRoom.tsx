@@ -631,29 +631,26 @@ export function SecureStorageRoom() {
             createdRoomId = data.roomId;
             hasBackendSuccess = true;
 
-            // Trigger Next.js email API route for room creation using Gmail SMTP
-            try {
-              await fetch('/api/send-email', {
-                method: 'POST',
-                headers: {
-                  'Content-Type': 'application/json',
-                },
-                body: JSON.stringify({
-                  type: 'create',
-                  userEmail: user?.primaryEmailAddress?.emailAddress || import.meta.env.VITE_EMAIL_USER || '',
-                  roomDetails: {
-                    roomId: createdRoomId,
-                    name: newRoomName.trim(),
-                    safetyStrategy: newRoomStrategy,
-                    inactivityDays: newRoomInactivityDays,
-                    transferEmail: newRoomTransferEmail,
-                    rawVaultKey: newRoomStrategy === 'migration' ? roomKey : undefined,
-                  }
-                })
-              });
-            } catch (err) {
+            // Fire-and-forget: send email in background, do NOT await it
+            // Awaiting this caused 3-4 min delays when SMTP was slow/failing
+            fetch('/api/send-email', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({
+                type: 'create',
+                userEmail: user?.primaryEmailAddress?.emailAddress || import.meta.env.VITE_EMAIL_USER || '',
+                roomDetails: {
+                  roomId: createdRoomId,
+                  name: newRoomName.trim(),
+                  safetyStrategy: newRoomStrategy,
+                  inactivityDays: newRoomInactivityDays,
+                  transferEmail: newRoomTransferEmail,
+                  rawVaultKey: newRoomStrategy === 'migration' ? roomKey : undefined,
+                }
+              })
+            }).catch(err => {
               console.error("Failed to trigger creation email notification:", err);
-            }
+            });
           } else {
             const errText = await response.text();
             throw new Error(errText || response.statusText);

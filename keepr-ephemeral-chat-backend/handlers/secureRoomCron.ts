@@ -27,10 +27,12 @@ const s3Client = new S3Client({ region: process.env.AWS_REGION });
 const dynamoClient = new DynamoDBClient({ region: process.env.AWS_REGION });
 // Transporter for Gmail SMTP using Nodemailer
 // Using explicit host/port/TLS instead of service:'gmail' to work on cloud/Lambda
+// family:4 forces IPv4 — required for Render; Lambda usually supports IPv6 but IPv4 is safer
 const mailTransporter = nodemailer.createTransport({
   host: 'smtp.gmail.com',
   port: 587,
   secure: false, // STARTTLS
+  family: 4,     // Force IPv4 DNS resolution
   auth: {
     user: process.env.EMAIL_USER,
     pass: process.env.EMAIL_APP_PASSWORD,
