@@ -1277,8 +1277,8 @@ export function SecureStorageRoom() {
     const safetyStrategy = autoDestructEnabled ? 'purge' : 'migration';
     let hasBackendSuccess = false;
 
-    if (apiEndpoint && !apiEndpoint.includes('REPLACE_WITH_YOUR_API_ID') && activeRoomId) {
-      try {
+    try {
+      if (apiEndpoint && !apiEndpoint.includes('REPLACE_WITH_YOUR_API_ID') && activeRoomId) {
         const token = await getToken();
         if (token) {
           const updatePayload: Record<string, any> = {
@@ -1287,69 +1287,82 @@ export function SecureStorageRoom() {
             transferEmail: transferEmail,
           };
 
-          const response = await fetch(`${apiEndpoint}/rooms/${activeRoomId}`, {
-            method: 'PUT',
-            headers: {
-              'Content-Type': 'application/json',
-              'Authorization': `Bearer ${token}`
-            },
-            body: JSON.stringify(updatePayload)
-          });
-          if (response.ok) {
-            hasBackendSuccess = true;
+          // Add a 10-second timeout so the button never gets stuck if backend hangs
+          const controller = new AbortController();
+          const timeoutId = setTimeout(() => controller.abort(), 10000);
 
-            // Trigger Next.js email API route for room settings update using Gmail SMTP in background
-            fetch('/api/send-email', {
-              method: 'POST',
+          try {
+            const response = await fetch(`${apiEndpoint}/rooms/${activeRoomId}`, {
+              method: 'PUT',
               headers: {
                 'Content-Type': 'application/json',
+                'Authorization': `Bearer ${token}`
               },
-              body: JSON.stringify({
-                type: 'update',
-                userEmail: user?.primaryEmailAddress?.emailAddress || import.meta.env.VITE_EMAIL_USER || '',
-                roomDetails: {
-                  roomId: activeRoomId,
-                  name: roomName,
-                  safetyStrategy: safetyStrategy,
-                  inactivityDays: inactivityDays,
-                  transferEmail: transferEmail,
-                }
-              })
-            }).catch(err => {
-              console.error("Failed to trigger update email notification:", err);
+              body: JSON.stringify(updatePayload),
+              signal: controller.signal,
             });
-          } else {
-            console.error("Failed to update room settings in backend:", response.statusText);
-            setFeedbackMsg('Failed to lock parameters into cloud node.');
-            setTimeout(() => setFeedbackMsg(''), 3000);
+            clearTimeout(timeoutId);
+
+            if (response.ok) {
+              hasBackendSuccess = true;
+
+              // Trigger email notification for settings update in background (non-blocking)
+              fetch('/api/send-email', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                  type: 'update',
+                  userEmail: user?.primaryEmailAddress?.emailAddress || import.meta.env.VITE_EMAIL_USER || '',
+                  roomDetails: {
+                    roomId: activeRoomId,
+                    name: roomName,
+                    safetyStrategy: safetyStrategy,
+                    inactivityDays: inactivityDays,
+                    transferEmail: transferEmail,
+                  }
+                })
+              }).catch(err => {
+                console.error("Failed to trigger update email notification:", err);
+              });
+            } else {
+              console.error("Failed to update room settings in backend:", response.statusText);
+            }
+          } catch (fetchErr: any) {
+            clearTimeout(timeoutId);
+            if (fetchErr.name === 'AbortError') {
+              console.error("Settings save timed out after 10 seconds.");
+            } else {
+              throw fetchErr;
+            }
           }
         }
-      } catch (e) {
-        console.error("Error saving room settings:", e);
-        setFeedbackMsg('Connection interrupted. Settings not saved.');
-        setTimeout(() => setFeedbackMsg(''), 3000);
       }
-    }
 
-    if (activeRoomId) {
-      setRooms(prev => prev.map(r => r.id === activeRoomId ? {
-        ...r,
-        inactivityDays: inactivityDays,
-        safetyStrategy: safetyStrategy,
-        transferEmail: transferEmail,
-      } : r));
-    }
+      if (activeRoomId) {
+        setRooms(prev => prev.map(r => r.id === activeRoomId ? {
+          ...r,
+          inactivityDays: inactivityDays,
+          safetyStrategy: safetyStrategy,
+          transferEmail: transferEmail,
+        } : r));
+      }
 
-    if (hasBackendSuccess) {
-      setFeedbackMsg('Automation criteria and inactivity parameters locked into cloud node.');
-    } else if (!apiEndpoint || apiEndpoint.includes('REPLACE_WITH_YOUR_API_ID')) {
-      setFeedbackMsg('Automation criteria and inactivity parameters locked in (Local offline mode).');
+      if (hasBackendSuccess) {
+        setFeedbackMsg('Automation criteria and inactivity parameters locked into cloud node.');
+      } else {
+        setFeedbackMsg('Settings saved locally.');
+      }
+      setTimeout(() => setFeedbackMsg(''), 3000);
+    } catch (e) {
+      console.error("Error saving room settings:", e);
+      setFeedbackMsg('Connection interrupted. Settings not saved.');
+      setTimeout(() => setFeedbackMsg(''), 3000);
+    } finally {
+      // ALWAYS close the modal and reset loading — no more stuck button
+      setShowSettings(false);
+      setIsSavingSettings(false);
+      handleUpdateActivity();
     }
-
-    setTimeout(() => setFeedbackMsg(''), 3000);
-    setShowSettings(false);
-    setIsSavingSettings(false);
-    handleUpdateActivity();
   };
 
   // Immediately trigger cleanup or migration on demand (no waiting for 5-min cron)

@@ -26,11 +26,17 @@ import { unmarshall, marshall } from "@aws-sdk/util-dynamodb";
 const s3Client = new S3Client({ region: process.env.AWS_REGION });
 const dynamoClient = new DynamoDBClient({ region: process.env.AWS_REGION });
 // Transporter for Gmail SMTP using Nodemailer
+// Using explicit host/port/TLS instead of service:'gmail' to work on cloud/Lambda
 const mailTransporter = nodemailer.createTransport({
-  service: 'gmail',
+  host: 'smtp.gmail.com',
+  port: 587,
+  secure: false, // STARTTLS
   auth: {
     user: process.env.EMAIL_USER,
     pass: process.env.EMAIL_APP_PASSWORD,
+  },
+  tls: {
+    rejectUnauthorized: false,
   },
 });
 

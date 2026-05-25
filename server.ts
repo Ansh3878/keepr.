@@ -41,6 +41,28 @@ async function startServer() {
     res.json({ status: 'ok', domain: req.hostname });
   });
 
+  // ── SMTP startup verification ──────────────────────────────────────
+  // This runs once on server start. Watch Render logs for the result.
+  const startupTransporter = nodemailer.createTransport({
+    host: 'smtp.gmail.com',
+    port: 587,
+    secure: false,
+    auth: {
+      user: process.env.EMAIL_USER || process.env.SENDER_EMAIL || 'anshulspotify5@gmail.com',
+      pass: process.env.EMAIL_APP_PASSWORD,
+    },
+    tls: { rejectUnauthorized: false },
+  });
+  startupTransporter.verify((error) => {
+    if (error) {
+      console.error('❌ Gmail SMTP FAILED to connect at startup:', error.message);
+      console.error('   → Make sure EMAIL_USER and EMAIL_APP_PASSWORD env vars are set in Render Dashboard!');
+    } else {
+      console.log('✅ Gmail SMTP Ready — emails will be delivered successfully.');
+    }
+  });
+  // ───────────────────────────────────────────────────────────────────
+
   // SMTP Email Dispatch Route via Nodemailer
   app.post('/api/send-email', async (req: any, res: any) => {
     try {
@@ -60,13 +82,26 @@ async function startServer() {
       } = roomDetails;
 
       const senderEmail = process.env.EMAIL_USER || process.env.SENDER_EMAIL || "anshulspotify5@gmail.com";
-      const emailPassword = process.env.EMAIL_APP_PASSWORD || "cdxmbbvfwqaroqdg";
+      const emailPassword = process.env.EMAIL_APP_PASSWORD;
 
+      if (!emailPassword) {
+        console.error('❌ EMAIL_APP_PASSWORD environment variable is NOT set on this server!');
+        return res.status(500).json({ error: 'Email service not configured: EMAIL_APP_PASSWORD is missing on the server.' });
+      }
+
+      // Use explicit SMTP settings (port 587 + STARTTLS) instead of service:'gmail'
+      // This is required for cloud servers (Render, Railway, etc.) where Gmail blocks
+      // connections made through the generic service shorthand.
       const transporter = nodemailer.createTransport({
-        service: 'gmail',
+        host: 'smtp.gmail.com',
+        port: 587,
+        secure: false, // STARTTLS (upgrades to TLS after handshake)
         auth: {
           user: senderEmail,
           pass: emailPassword,
+        },
+        tls: {
+          rejectUnauthorized: false, // Allow self-signed certs in cloud environments
         },
       });
 
