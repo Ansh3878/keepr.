@@ -27,6 +27,13 @@ import {
 } from 'lucide-react';
 import { DetonatorView } from './components/DetonatorView';
 import { EphemeralChat } from './components/EphemeralChat';
+import { SecureStorageRoom } from './components/SecureStorageRoom';
+import { AuthenticateWithRedirectCallback, SignedIn, SignedOut, UserButton, useClerk, useUser, useAuth } from '@clerk/clerk-react';
+import { CheckoutButton } from '@clerk/clerk-react/experimental';
+import { AuthPage } from './components/AuthPage';
+import PixelBlast from './components/PixelBlast';
+
+const PRO_PLAN_ID = 'cplan_3DxALr3WcHcdWjgUQNny6lyq6Bm';
 
 const bufferToBase64 = (buffer: ArrayBuffer): string => {
   const bytes = new Uint8Array(buffer);
@@ -46,17 +53,59 @@ const base64ToBuffer = (base64: string): ArrayBuffer => {
   return bytes.buffer;
 };
 
-type ViewType = 'home' | 'send' | 'receive' | 'scan' | 'pricing' | 'detonator' | 'chat' | 'whyus';
+type ViewType = 'home' | 'send' | 'receive' | 'scan' | 'pricing' | 'detonator' | 'chat' | 'whyus' | 'storage';
 
 interface NavbarProps {
   activeView: ViewType;
   navigateTo: (view: ViewType) => void;
   isMenuOpen: boolean;
   setIsMenuOpen: (open: boolean) => void;
+  isPro: boolean;
+  isFree: boolean;
+  isTrialActive: boolean;
+  onPremiumFeatureAttempt: () => void;
 }
 
-const Navbar = ({ activeView, navigateTo, isMenuOpen, setIsMenuOpen }: NavbarProps) => {
+const Navbar = ({ activeView, navigateTo, isMenuOpen, setIsMenuOpen, isPro, isFree, isTrialActive, onPremiumFeatureAttempt }: NavbarProps) => {
   const [isFeaturesOpen, setIsFeaturesOpen] = useState(false);
+  const { user } = useUser();
+
+  const premiumFeatures = ['detonator', 'chat', 'storage'];
+  const freeFeatures = ['send', 'receive', 'scan'];
+
+  const handleFeatureClick = (feature: ViewType) => {
+    const isPremium = premiumFeatures.includes(feature);
+    
+    // Check premium features only
+    if (isPremium && !isPro && !isTrialActive) {
+      onPremiumFeatureAttempt();
+      return;
+    }
+    
+    // Free features (send, receive, scan) are always accessible
+    navigateTo(feature);
+    setIsFeaturesOpen(false);
+  };
+
+  const canAccessFeature = (feature: ViewType): boolean => {
+    const isPremium = premiumFeatures.includes(feature);
+    // Free features always accessible, premium features need trial or pro
+    return !isPremium || isPro || isTrialActive;
+  };
+
+  const refreshSubscriptionStatus = async () => {
+    try {
+      if (user) {
+        const reloadedUser = await user.reload?.();
+        if (reloadedUser) {
+          console.log('User metadata:', reloadedUser.unsafeMetadata);
+          console.log('Has subscriptions:', (reloadedUser as any).subscriptions);
+        }
+      }
+    } catch (error) {
+      console.error('Error refreshing subscription:', error);
+    }
+  };
 
   return (
     <nav className="fixed top-0 left-0 right-0 z-50 px-6 py-4">
@@ -113,7 +162,7 @@ const Navbar = ({ activeView, navigateTo, isMenuOpen, setIsMenuOpen }: NavbarPro
                         <div className="w-11 h-11 bg-zinc-800 rounded-xl flex items-center justify-center border border-zinc-700 group-hover/item:border-cyan-500/50 group-hover/item:bg-zinc-700 transition-colors shrink-0">
                           <Upload className="w-5 h-5 text-white" />
                         </div>
-                        <div className="flex flex-col">
+                        <div className="flex flex-col flex-1">
                           <span className="text-white text-sm font-bold tracking-tight">Send File</span>
                           <span className="text-zinc-400 text-[10px] uppercase tracking-widest font-black leading-none mt-1.5 group-hover/item:text-zinc-300 transition-colors">Encrypted peer transfer</span>
                         </div>
@@ -126,7 +175,7 @@ const Navbar = ({ activeView, navigateTo, isMenuOpen, setIsMenuOpen }: NavbarPro
                         <div className="w-11 h-11 bg-zinc-800 rounded-xl flex items-center justify-center border border-zinc-700 group-hover/item:border-cyan-500/50 group-hover/item:bg-zinc-700 transition-colors shrink-0">
                           <Download className="w-5 h-5 text-white" />
                         </div>
-                        <div className="flex flex-col">
+                        <div className="flex flex-col flex-1">
                           <span className="text-white text-sm font-bold tracking-tight">Receive File</span>
                           <span className="text-zinc-400 text-[10px] uppercase tracking-widest font-black leading-none mt-1.5 group-hover/item:text-zinc-300 transition-colors">Secure asset retrieval</span>
                         </div>
@@ -139,36 +188,65 @@ const Navbar = ({ activeView, navigateTo, isMenuOpen, setIsMenuOpen }: NavbarPro
                         <div className="w-11 h-11 bg-zinc-800 rounded-xl flex items-center justify-center border border-zinc-700 group-hover/item:border-cyan-500/50 group-hover/item:bg-zinc-700 transition-colors shrink-0">
                           <Shield className="w-5 h-5 text-white" />
                         </div>
-                        <div className="flex flex-col">
+                        <div className="flex flex-col flex-1">
                           <span className="text-white text-sm font-bold tracking-tight">Malware Scan</span>
                           <span className="text-zinc-400 text-[10px] uppercase tracking-widest font-black leading-none mt-1.5 group-hover/item:text-zinc-300 transition-colors">Virus & threat analysis</span>
                         </div>
                       </button>
 
                       <button
-                        onClick={() => { navigateTo('chat'); setIsFeaturesOpen(false); }}
-                        className="w-full flex items-center gap-4 p-3.5 rounded-2xl hover:bg-white/10 transition-all text-left group/item"
+                        onClick={() => handleFeatureClick('chat')}
+                        disabled={!canAccessFeature('chat')}
+                        className="w-full flex items-center gap-4 p-3.5 rounded-2xl hover:bg-white/10 transition-all text-left group/item disabled:opacity-50 disabled:cursor-not-allowed"
                       >
                         <div className="w-11 h-11 bg-zinc-800 rounded-xl flex items-center justify-center border border-zinc-700 group-hover/item:border-cyan-500/50 group-hover/item:bg-zinc-700 transition-colors shrink-0">
                           <MessageSquare className="w-5 h-5 text-white" />
                         </div>
-                        <div className="flex flex-col">
-                          <span className="text-white text-sm font-bold tracking-tight">Secure Chat</span>
+                        <div className="flex flex-col flex-1">
+                          <div className="flex items-center gap-2">
+                            <span className="text-white text-sm font-bold tracking-tight">Secure Chat</span>
+                            {!isPro && isTrialActive && <span className="text-[10px] bg-cyan-500/20 text-cyan-400 px-2 py-1 rounded-full font-black">TRIAL</span>}
+                            {!canAccessFeature('chat') && <span className="text-[10px] bg-amber-500/20 text-amber-400 px-2 py-1 rounded-full font-black">PREMIUM</span>}
+                          </div>
                           <span className="text-zinc-400 text-[10px] uppercase tracking-widest font-black leading-none mt-1.5 group-hover/item:text-zinc-300 transition-colors">Ephemeral E2EE messaging</span>
                         </div>
                       </button>
                       <button
-                        onClick={() => { navigateTo('detonator'); setIsFeaturesOpen(false); }}
-                        className="w-full flex items-center gap-4 p-3.5 rounded-2xl hover:bg-white/10 transition-all text-left group/item"
+                        onClick={() => handleFeatureClick('detonator')}
+                        disabled={!canAccessFeature('detonator')}
+                        className="w-full flex items-center gap-4 p-3.5 rounded-2xl hover:bg-white/10 transition-all text-left group/item disabled:opacity-50 disabled:cursor-not-allowed"
                       >
                         <div className="w-11 h-11 bg-zinc-800 rounded-xl flex items-center justify-center border border-zinc-700 group-hover/item:border-cyan-500/50 group-hover/item:bg-zinc-700 transition-colors shrink-0">
                           <Zap className="w-5 h-5 text-white" />
                         </div>
-                        <div className="flex flex-col">
-                          <span className="text-white text-sm font-bold tracking-tight">Link Detonator</span>
+                        <div className="flex flex-col flex-1">
+                          <div className="flex items-center gap-2">
+                            <span className="text-white text-sm font-bold tracking-tight">Link Detonator</span>
+                            {!isPro && isTrialActive && <span className="text-[10px] bg-cyan-500/20 text-cyan-400 px-2 py-1 rounded-full font-black">TRIAL</span>}
+                            {!canAccessFeature('detonator') && <span className="text-[10px] bg-amber-500/20 text-amber-400 px-2 py-1 rounded-full font-black">PREMIUM</span>}
+                          </div>
                           <span className="text-zinc-400 text-[10px] uppercase tracking-widest font-black leading-none mt-1.5 group-hover/item:text-zinc-300 transition-colors">Isolated sandbox analysis</span>
                         </div>
                       </button>
+
+                       <button 
+                        onClick={() => handleFeatureClick('storage')}
+                        disabled={!canAccessFeature('storage')}
+                        className="w-full flex items-center gap-4 p-3.5 rounded-2xl hover:bg-white/10 transition-all text-left group/item disabled:opacity-50 disabled:cursor-not-allowed"
+                      >
+                        <div className="w-11 h-11 bg-zinc-800 rounded-xl flex items-center justify-center border border-zinc-700 group-hover/item:border-cyan-500/50 group-hover/item:bg-zinc-700 transition-colors shrink-0">
+                          <Lock className="w-5 h-5 text-white" />
+                        </div>
+                        <div className="flex flex-col flex-1">
+                          <div className="flex items-center gap-2">
+                            <span className="text-white text-sm font-bold tracking-tight">Secure Storage</span>
+                            {!isPro && isTrialActive && <span className="text-[10px] bg-cyan-500/20 text-cyan-400 px-2 py-1 rounded-full font-black">TRIAL</span>}
+                            {!canAccessFeature('storage') && <span className="text-[10px] bg-amber-500/20 text-amber-400 px-2 py-1 rounded-full font-black">PREMIUM</span>}
+                          </div>
+                          <span className="text-zinc-400 text-[10px] uppercase tracking-widest font-black leading-none mt-1.5 group-hover/item:text-zinc-300 transition-colors">Encrypted MacBook Finder</span>
+                        </div>
+                      </button>
+
                     </div>
                   </div>
                 </motion.div>
@@ -191,6 +269,14 @@ const Navbar = ({ activeView, navigateTo, isMenuOpen, setIsMenuOpen }: NavbarPro
         </div>
 
         <div className="flex items-center gap-4">
+          <div className="relative group">
+            <UserButton appearance={{ elements: { userButtonAvatarBox: `w-10 h-10 shadow-[0_0_20px_rgba(255,255,255,0.2)] ${isPro ? 'ring-2 ring-cyan-500 shadow-[0_0_12px_rgba(34,211,238,0.6)]' : ''}` } }} />
+            {isPro && (
+              <div className="absolute -top-8 left-1/2 -translate-x-1/2 px-2 py-1 bg-cyan-500 text-black text-[10px] font-black rounded whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none">
+                PREMIUM
+              </div>
+            )}
+          </div>
           <button
             onClick={() => navigateTo('send')}
             className="hidden sm:flex items-center gap-2 bg-white text-black px-6 py-2 rounded-full text-sm font-bold hover:bg-zinc-200 transition-all hover:scale-105 active:scale-95 shadow-[0_0_20px_rgba(255,255,255,0.2)] cursor-pointer"
@@ -214,9 +300,29 @@ const HomeView = ({ navigateTo }: { navigateTo: (v: ViewType) => void }) => (
 
   <>
     <section className="relative pt-40 pb-20 px-6 overflow-hidden">
-      <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[800px] h-[800px] bg-cyan-500/5 blur-[120px] rounded-full pointer-events-none" />
-
-      <div className="max-w-4xl mx-auto text-center flex flex-col items-center">
+      <div className="absolute inset-0 top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[800px] h-[800px] bg-cyan-500/5 blur-[120px] rounded-full pointer-events-none" />
+      <div className="absolute inset-0">
+        <PixelBlast
+            variant="circle"
+            pixelSize={4}
+            color="#00d3f2"
+            patternScale={2}
+            patternDensity={1}
+            pixelSizeJitter={0}
+            enableRipples
+            rippleSpeed={0.3}
+            rippleThickness={0.08}
+            rippleIntensityScale={1.2}
+            liquid={false}
+            liquidStrength={0.12}
+            liquidRadius={1.2}
+            liquidWobbleSpeed={5}
+            speed={0.5}
+            edgeFade={0.25}
+            transparent
+          />
+      </div>
+      <div className="relative max-w-4xl mx-auto text-center flex flex-col items-center pointer-events-none">
         <motion.h1
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
@@ -273,7 +379,7 @@ const HomeView = ({ navigateTo }: { navigateTo: (v: ViewType) => void }) => (
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: 0.8 }}
                 onClick={() => navigateTo('send')}
-                className="absolute bottom-6 bg-zinc-800/80 border border-zinc-600/50 text-white px-6 py-2 rounded-lg text-sm font-medium hover:bg-zinc-700 hover:border-zinc-500 transition-all backdrop-blur-sm shadow-xl active:scale-95"
+                className="absolute bottom-6 bg-zinc-800/80 border border-zinc-600/50 text-white px-6 py-2 rounded-lg text-sm font-medium hover:bg-zinc-700 hover:border-zinc-500 transition-all backdrop-blur-sm shadow-xl active:scale-95 pointer-events-auto"
               >
                 Get Started
               </motion.button>
@@ -902,7 +1008,23 @@ const ScanView = ({
   );
 };
 
-const PricingView = () => (
+const PricingView = ({
+  handleFreePlan,
+  handleProSubscriptionComplete,
+  handleRestoreProPlan,
+  hasPaidProSubscription,
+  isActivatingPro,
+  isPro,
+  isFree
+}: {
+  handleFreePlan: () => void;
+  handleProSubscriptionComplete: () => void | Promise<void>;
+  handleRestoreProPlan: () => void | Promise<void>;
+  hasPaidProSubscription: boolean;
+  isActivatingPro: boolean;
+  isPro: boolean;
+  isFree: boolean;
+}) => (
   <section className="relative pt-40 pb-20 px-6 min-h-screen overflow-hidden">
     <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[1200px] h-[1200px] bg-cyan-500/[0.02] blur-[180px] rounded-full pointer-events-none" />
 
@@ -936,22 +1058,24 @@ const PricingView = () => (
       <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
         {[
           {
-            name: 'Lite',
-            price: '$0',
-            description: 'For personal safety and casual file sharing.',
+            name: 'Basic',
+            price: 'Free',
+            description: 'Essential security for individuals and small projects.',
             features: ['5GB Storage', 'Peer-to-Peer Transfer', 'Basic Malware Scan', 'AES-256 Encryption'],
             excluded: ['Priority Support', 'Custom Domains', 'Admin Panel'],
             cta: 'Get Started',
-            popular: false
+            popular: false,
+            id: 'basic'
           },
           {
             name: 'Pro',
-            price: '$12',
+            price: '$5',
             description: 'For power users and data-conscious professionals.',
             features: ['100GB Storage', 'Advanced Threat Intel', 'Password Expiry Control', 'Custom Share Branding', 'Priority Email Support'],
             excluded: ['Dedicated Servers', 'SSO Integration'],
             cta: 'Go Pro',
-            popular: true
+            popular: true,
+            id: PRO_PLAN_ID
           },
           {
             name: 'Enterprise',
@@ -959,7 +1083,8 @@ const PricingView = () => (
             description: 'Uncompromising security for large scale operations.',
             features: ['Unlimited Storage', 'Dedicated GPU Nodes', 'Full Admin Controls', 'SSO & Audit Logs', '24/7 Dedicated Support', 'Custom SLA'],
             cta: 'Contact Sales',
-            popular: false
+            popular: false,
+            id: 'enterprise'
           }
         ].map((plan, i) => (
           <motion.div
@@ -1008,9 +1133,34 @@ const PricingView = () => (
               )}
             </div>
 
-            <button className={`w-full py-4 rounded-2xl font-black text-[10px] uppercase tracking-widest transition-all ${plan.popular ? 'bg-black text-white hover:bg-zinc-800' : 'bg-white text-black hover:bg-zinc-200'}`}>
-              {plan.cta}
-            </button>
+            {plan.id === PRO_PLAN_ID && !isPro && !hasPaidProSubscription ? (
+              <CheckoutButton
+                planId={plan.id}
+                planPeriod="month"
+                onSubscriptionComplete={handleProSubscriptionComplete}
+                newSubscriptionRedirectUrl="/?checkout=complete"
+              >
+                <button
+                  type="button"
+                  disabled={isActivatingPro}
+                  className={`w-full py-4 rounded-2xl font-black text-[10px] uppercase tracking-widest transition-all ${plan.popular ? 'bg-black text-white hover:bg-zinc-800' : 'bg-white text-black hover:bg-zinc-200'} disabled:opacity-50 disabled:cursor-not-allowed`}
+                >
+                  {isActivatingPro ? 'Activating...' : plan.cta}
+                </button>
+              </CheckoutButton>
+            ) : (
+              <button
+                type="button"
+                onClick={() => {
+                  if (plan.id === 'basic') handleFreePlan();
+                  if (plan.id === PRO_PLAN_ID && hasPaidProSubscription) handleRestoreProPlan();
+                }}
+                disabled={(isPro && plan.id === PRO_PLAN_ID) || (isFree && plan.id === 'basic') || isActivatingPro}
+                className={`w-full py-4 rounded-2xl font-black text-[10px] uppercase tracking-widest transition-all ${plan.popular ? 'bg-black text-white hover:bg-zinc-800' : 'bg-white text-black hover:bg-zinc-200'} disabled:opacity-50 disabled:cursor-not-allowed`}
+              >
+                {isActivatingPro && plan.id === PRO_PLAN_ID ? 'Activating...' : isPro && plan.id === PRO_PLAN_ID ? 'Current Plan' : isFree && plan.id === 'basic' ? 'Current Plan' : plan.cta}
+              </button>
+            )}
           </motion.div>
         ))}
       </div>
@@ -1027,6 +1177,58 @@ const PricingView = () => (
     </div>
   </section>
 );
+
+const TrialEndedModal = ({ isOpen, onClose, onUpgrade }: { isOpen: boolean; onClose: () => void; onUpgrade: () => void }) => {
+  if (!isOpen) return null;
+
+  return (
+    <AnimatePresence>
+      {isOpen && (
+        <motion.div
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          exit={{ opacity: 0 }}
+          className="fixed inset-0 bg-black/50 backdrop-blur-sm z-[100] flex items-center justify-center p-4"
+          onClick={onClose}
+        >
+          <motion.div
+            initial={{ scale: 0.9, opacity: 0, y: 20 }}
+            animate={{ scale: 1, opacity: 1, y: 0 }}
+            exit={{ scale: 0.9, opacity: 0, y: 20 }}
+            onClick={(e) => e.stopPropagation()}
+            className="bg-zinc-900 border border-zinc-800 rounded-3xl p-8 max-w-md w-full shadow-2xl"
+          >
+            <div className="text-center space-y-4">
+              <div className="w-16 h-16 bg-amber-500/20 rounded-full flex items-center justify-center mx-auto mb-6">
+                <span className="text-3xl">⏰</span>
+              </div>
+              <h2 className="text-2xl font-bold text-white tracking-tight">
+                Free Trial Ended
+              </h2>
+              <p className="text-zinc-400 text-sm">
+                Your 7-day free trial for premium features has expired. Upgrade to Pro to continue using Link Detonator and Secure Chat.
+              </p>
+              <div className="pt-4 space-y-3">
+                <button
+                  onClick={onUpgrade}
+                  className="w-full bg-cyan-500 hover:bg-cyan-600 text-black py-3 rounded-xl font-bold text-sm uppercase tracking-wider transition-all"
+                >
+                  Upgrade to Pro
+                </button>
+                <button
+                  onClick={onClose}
+                  className="w-full bg-zinc-800 hover:bg-zinc-700 text-white py-3 rounded-xl font-bold text-sm uppercase tracking-wider transition-all"
+                >
+                  Continue as Free User
+                </button>
+              </div>
+            </div>
+          </motion.div>
+        </motion.div>
+      )}
+    </AnimatePresence>
+  );
+};
 
 const WhyUsView = () => (
   <section className="relative pt-40 pb-20 px-6 min-h-screen overflow-hidden">
@@ -1125,9 +1327,401 @@ const WhyUsView = () => (
   </section>
 );
 
-export default function App() {
+function AppContent() {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [activeView, setActiveView] = useState<ViewType>('home');
+  const [showTrialEndedModal, setShowTrialEndedModal] = useState(false);
+  const [localPlan, setLocalPlan] = useState<'free' | 'pro' | null>(null);
+  const [isActivatingPro, setIsActivatingPro] = useState(false);
+  const [hasPaidProSubscription, setHasPaidProSubscription] = useState(false);
+  const { user, isLoaded } = useUser();
+  const clerk = useClerk();
+  const { getToken } = useAuth();
+  
+  // Robust subscription detection
+  const checkIfPro = (loadedUser: any): boolean => {
+    if (!loadedUser) return false;
+    
+    // Check all possible subscription indicators
+    const unsafeMeta = loadedUser?.unsafeMetadata || {};
+    const publicMeta = loadedUser?.publicMetadata || {};
+    
+    // Log the full user object structure for debugging
+    console.log('Full user object for subscription check:', {
+      unsafeMeta,
+      publicMeta,
+      subscriptions: (loadedUser as any)?.subscriptions,
+      orgMemberships: (loadedUser as any)?.organizationMemberships,
+      userId: loadedUser?.id,
+      email: loadedUser?.primaryEmailAddress?.emailAddress,
+    });
+    
+    // Direct plan checks
+    if (unsafeMeta.plan === 'pro' || publicMeta.plan === 'pro') {
+      console.log('✓ Pro detected via plan metadata');
+      return true;
+    }
+    if (unsafeMeta.subscription === 'active' || publicMeta.subscription === 'active') {
+      console.log('✓ Pro detected via subscription metadata');
+      return true;
+    }
+    
+    // Check if Clerk's internal subscription array exists
+    const subs = (loadedUser as any)?.subscriptions;
+    if (Array.isArray(subs) && subs.length > 0) {
+      console.log('✓ Pro detected via subscriptions array:', subs);
+      return true;
+    }
+    
+    // Check if user has org ID with premium access (alternative Clerk indicator)
+    if ((loadedUser as any)?.organizationMemberships?.length > 0) {
+      console.log('✓ Pro detected via organization memberships');
+      return true;
+    }
+    
+    // Fallback: check if any subscription-related fields exist
+    const allKeys = Object.keys(loadedUser || {});
+    const subscriptionKeys = allKeys.filter(k => 
+      k.toLowerCase().includes('subscription') || 
+      k.toLowerCase().includes('plan') ||
+      k.toLowerCase().includes('billing')
+    );
+    
+    if (subscriptionKeys.length > 0) {
+      console.log('Found subscription-related keys:', subscriptionKeys);
+      subscriptionKeys.forEach(key => {
+        console.log(`  ${key}:`, (loadedUser as any)[key]);
+      });
+    }
+    
+    console.log('✗ No pro subscription detected');
+    return false;
+  };
+
+  const metadataPlan = user?.unsafeMetadata?.plan;
+  const isPro = localPlan ? localPlan === 'pro' : metadataPlan === 'pro' || (user ? checkIfPro(user) : false);
+  const isFree = localPlan ? localPlan === 'free' : metadataPlan === 'free' || (!isPro && !!user);
+  const trialStartDate = user?.unsafeMetadata?.trialStartDate as string | undefined;
+
+  // Calculate if trial is active (7 days = 604800000 ms)
+  const isTrialActive = (() => {
+    if (!trialStartDate || isPro) return false;
+    const startTime = new Date(trialStartDate).getTime();
+    const currentTime = new Date().getTime();
+    const sevenDaysMs = 7 * 24 * 60 * 60 * 1000;
+    return (currentTime - startTime) < sevenDaysMs;
+  })();
+
+  // Keep metadata in sync with subscription status
+  useEffect(() => {
+    if (!user || !isLoaded || !isPro) return;
+
+    const syncMetadata = async () => {
+      try {
+        const currentMeta = user.unsafeMetadata || {};
+        if (currentMeta.plan !== 'pro') {
+          console.log('🔄 Syncing user metadata to pro plan');
+          await user.update({
+            unsafeMetadata: {
+              ...currentMeta,
+              plan: 'pro',
+              syncedAt: new Date().toISOString()
+            }
+          });
+          
+          // Force reload to get fresh user data
+          await user.reload?.();
+          console.log('✓ Metadata synced and user reloaded');
+        }
+      } catch (error) {
+        console.error('✗ Error syncing metadata:', error);
+      }
+    };
+
+    syncMetadata();
+  }, [user, isLoaded, isPro]);
+
+  // Watch for explicit plan changes and reload user
+  useEffect(() => {
+    if (!user || !isLoaded) return;
+
+    let reloadCount = 0;
+    const reloadInterval = setInterval(async () => {
+      reloadCount++;
+      try {
+        // Reload user from Clerk server every 2 seconds to catch plan changes
+        await user.reload?.();
+        
+        if (reloadCount >= 15) {
+          // Stop after 30 seconds
+          clearInterval(reloadInterval);
+        }
+      } catch (error) {
+        console.error('Error reloading user:', error);
+      }
+    }, 2000);
+
+    return () => clearInterval(reloadInterval);
+  }, [user, isLoaded]);
+
+  const wait = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
+
+  const subscriptionHasProPlan = (subscription: any): boolean => {
+    const items = subscription?.subscriptionItems;
+    if (!Array.isArray(items)) return false;
+
+    return items.some((item: any) => {
+      const plan = item?.plan || {};
+      const isActive = item?.status === 'active' && !item?.canceledAt;
+      const isProPlan = plan.id === PRO_PLAN_ID || plan.slug === 'pro' || plan.name?.toLowerCase?.() === 'pro';
+      return isActive && isProPlan;
+    });
+  };
+
+  const refreshPaidProSubscription = async (): Promise<boolean> => {
+    try {
+      const subscription = await (clerk as any).billing?.getSubscription?.({});
+      const hasProSubscription = subscriptionHasProPlan(subscription);
+      setHasPaidProSubscription(hasProSubscription);
+      return hasProSubscription;
+    } catch (error) {
+      console.error('Error checking Clerk subscription:', error);
+      return false;
+    }
+  };
+
+  useEffect(() => {
+    if (!user || !isLoaded) return;
+    refreshPaidProSubscription();
+  }, [user, isLoaded]);
+
+  const reloadUserUntilSubscriptionAppears = async () => {
+    if (!user) return null;
+
+    let latestUser: any = user;
+    for (let attempt = 0; attempt < 6; attempt++) {
+      latestUser = await user.reload?.() || user;
+      const hasPaidSubscription = await refreshPaidProSubscription();
+
+      if (hasPaidSubscription || checkIfPro(latestUser)) {
+        return latestUser;
+      }
+
+      await wait(800);
+    }
+
+    return latestUser;
+  };
+
+  const handleProSubscriptionComplete = async () => {
+    if (!user) return;
+
+    setIsActivatingPro(true);
+    try {
+      const latestUser: any = await reloadUserUntilSubscriptionAppears();
+      const metadataUser = latestUser || user;
+
+      await metadataUser.update?.({
+        unsafeMetadata: {
+          ...(metadataUser.unsafeMetadata || {}),
+          plan: 'pro',
+          activatedAt: new Date().toISOString(),
+          activationSource: 'checkout',
+        },
+      });
+
+      await user.reload?.();
+      setHasPaidProSubscription(true);
+      setLocalPlan('pro');
+      setActiveView('home');
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    } catch (error) {
+      console.error('Error activating Pro after checkout:', error);
+    } finally {
+      setIsActivatingPro(false);
+    }
+  };
+
+  const handleRestoreProPlan = async () => {
+    if (!user) return;
+
+    setIsActivatingPro(true);
+    try {
+      const hasPaidSubscription = await refreshPaidProSubscription();
+      if (!hasPaidSubscription) return;
+
+      await user.update({
+        unsafeMetadata: {
+          ...(user.unsafeMetadata || {}),
+          plan: 'pro',
+          restoredAt: new Date().toISOString(),
+          activationSource: 'existing_subscription',
+        },
+      });
+
+      await user.reload?.();
+      setLocalPlan('pro');
+      setActiveView('home');
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    } catch (error) {
+      console.error('Error restoring Pro UI:', error);
+    } finally {
+      setIsActivatingPro(false);
+    }
+  };
+
+  useEffect(() => {
+    if (!user || !isLoaded || isPro || isActivatingPro) return;
+
+    const params = new URLSearchParams(window.location.search);
+    if (params.get('checkout') !== 'complete') return;
+
+    window.history.replaceState(null, '', window.location.pathname);
+    handleProSubscriptionComplete();
+  }, [user, isLoaded, isPro, isActivatingPro]);
+
+  // Open Pro checkout - handles both first-time payment and existing subscriptions
+  const openCheckout = async (planId: string) => {
+    try {
+      console.log('🔍 Opening Pro checkout...');
+      
+      // Open Clerk checkout modal
+      (window as any).Clerk?.__internal_openCheckout?.({ planId, planPeriod: 'month' });
+
+      let checkCount = 0;
+      const maxChecks = 30; // Check for 30 seconds
+      
+      const monitorCheckout = setInterval(async () => {
+        checkCount++;
+        
+        // Check 1: Look for "already active" message (existing subscription)
+        const modalText = document.body.innerText;
+        const isAlreadyActive = modalText.includes('already active') || modalText.includes('already purchased');
+        
+        if (isAlreadyActive) {
+          console.log('✅ Found "already active" message! User has existing Pro subscription.');
+          clearInterval(monitorCheckout);
+          
+          // Close modal
+          const closeButton = document.querySelector('[aria-label="Close"]') as HTMLButtonElement;
+          if (closeButton) closeButton.click();
+          
+          // Update website to Pro
+          setTimeout(async () => {
+            if (user) {
+              console.log('✅ Activating existing Pro subscription on website...');
+              await user.update({
+                unsafeMetadata: {
+                  ...user.unsafeMetadata,
+                  plan: 'pro',
+                  activatedAt: new Date().toISOString()
+                }
+              });
+              await user.reload?.();
+              console.log('✅ Website now shows PRO!');
+            }
+          }, 500);
+          return;
+        }
+        
+        // Check 2: Look for modal close (means payment completed or user closed it)
+        const modal = document.querySelector('[role="dialog"], .cl-modal, .cl-checkout');
+        const isModalVisible = modal !== null;
+        
+        if (!isModalVisible && checkCount > 5) {
+          console.log('✅ Modal closed! Payment likely completed.');
+          clearInterval(monitorCheckout);
+          
+          // Wait a moment for Clerk to update on their servers, then reload user
+          setTimeout(async () => {
+            if (user) {
+              console.log('🔄 Reloading user to check for new subscription...');
+              const reloadedUser = await user.reload?.();
+              
+              if (reloadedUser) {
+                // Check if they now have a subscription
+                const subs = (reloadedUser as any)?.subscriptions || [];
+                const hasSubs = subs.length > 0;
+                const hasPlan = reloadedUser.unsafeMetadata?.plan === 'pro' || reloadedUser.publicMetadata?.plan === 'pro';
+                
+                console.log('Subscription check:', {
+                  hasSubscriptions: hasSubs,
+                  hasPlanMetadata: hasPlan,
+                  subscriptions: subs
+                });
+                
+                if (hasSubs || hasPlan) {
+                  console.log('✅ NEW Pro subscription detected! Updating website...');
+                  await reloadedUser.update({
+                    unsafeMetadata: {
+                      ...reloadedUser.unsafeMetadata,
+                      plan: 'pro',
+                      activatedAt: new Date().toISOString()
+                    }
+                  });
+                  await reloadedUser.reload?.();
+                  console.log('✅ Website now shows PRO!');
+                } else {
+                  console.log('⚠️ No subscription found. User may have closed without paying.');
+                }
+              }
+            }
+          }, 2000); // Wait 2 seconds before checking
+          
+          return;
+        }
+        
+        // Stop after 30 seconds
+        if (checkCount >= maxChecks) {
+          clearInterval(monitorCheckout);
+          console.log('⏱️ Stopped monitoring checkout');
+        }
+      }, 1000);
+
+    } catch (error) {
+      console.error('❌ Error in checkout:', error);
+    }
+  };
+
+  // Handle Free plan activation
+  const handleFreePlan = async () => {
+    try {
+      console.log('📱 Activating Free plan...');
+      
+      if (user) {
+        await user.update({ 
+          unsafeMetadata: { 
+            ...user.unsafeMetadata,
+            plan: 'free',
+            activatedAt: new Date().toISOString()
+          } 
+        });
+        
+        console.log('✅ Free plan activated!');
+        setLocalPlan('free');
+        setActiveView('home');
+      }
+    } catch (error) {
+      console.error('❌ Error enrolling in free plan:', error);
+    }
+  };
+
+  const handlePremiumFeatureAttempt = async () => {
+    if (!trialStartDate && !isPro) {
+      // Start trial on first premium feature attempt
+      try {
+        if (user) {
+          await user.update({ unsafeMetadata: { ...user.unsafeMetadata, trialStartDate: new Date().toISOString() } });
+        }
+      } catch (error) {
+        console.error('Error starting trial:', error);
+      }
+    } else if (!isTrialActive && !isPro) {
+      // Trial has ended
+      setShowTrialEndedModal(true);
+    }
+  };
+
 
   useEffect(() => {
     if (isMenuOpen) {
@@ -1178,7 +1772,19 @@ export default function App() {
     }
   }, []);
 
+
+
+  const premiumFeatures: ViewType[] = ['detonator', 'chat'];
+
   const navigateTo = (view: ViewType) => {
+    const isPremium = premiumFeatures.includes(view);
+    
+    // Check if user is trying to access premium feature without access
+    if (isPremium && !isPro && !isTrialActive) {
+      handlePremiumFeatureAttempt();
+      return;
+    }
+    
     resetSessionState();
     setRoomToJoin(null); // Clear room when navigating away
     setActiveView(view);
@@ -1374,12 +1980,30 @@ export default function App() {
   };
 
   return (
-    <div className="min-h-screen bg-black text-zinc-400 overflow-x-hidden selection:bg-cyan-500/30 selection:text-cyan-200">
+    <>
+      <SignedOut>
+        <AuthPage />
+      </SignedOut>
+      <SignedIn>
+        <div className="min-h-screen bg-black text-zinc-400 overflow-x-hidden selection:bg-cyan-500/30 selection:text-cyan-200">
       <Navbar
         activeView={activeView}
         navigateTo={navigateTo}
         isMenuOpen={isMenuOpen}
         setIsMenuOpen={setIsMenuOpen}
+        isPro={isPro}
+        isFree={isFree}
+        isTrialActive={isTrialActive}
+        onPremiumFeatureAttempt={handlePremiumFeatureAttempt}
+      />
+
+      <TrialEndedModal
+        isOpen={showTrialEndedModal}
+        onClose={() => setShowTrialEndedModal(false)}
+        onUpgrade={() => {
+          setShowTrialEndedModal(false);
+          navigateTo('pricing');
+        }}
       />
 
       <AnimatePresence>
@@ -1484,7 +2108,17 @@ export default function App() {
                 onReset={resetSessionState}
               />
             )}
-            {activeView === 'pricing' && <PricingView />}
+            {activeView === 'pricing' && (
+              <PricingView
+                handleFreePlan={handleFreePlan}
+                handleProSubscriptionComplete={handleProSubscriptionComplete}
+                handleRestoreProPlan={handleRestoreProPlan}
+                hasPaidProSubscription={hasPaidProSubscription}
+                isActivatingPro={isActivatingPro}
+                isPro={isPro}
+                isFree={isFree}
+              />
+            )}
             {activeView === 'whyus' && <WhyUsView />}
             {activeView === 'detonator' && <DetonatorView />}
             {activeView === 'chat' && (
@@ -1493,6 +2127,7 @@ export default function App() {
                 initialKey={roomToJoin?.key}
               />
             )}
+            {activeView === 'storage' && <SecureStorageRoom />}
 
 
             {/* Global CTA & Footer Sections (Always visible) */}
@@ -1609,5 +2244,15 @@ export default function App() {
         </div>
       </footer>
     </div>
+      </SignedIn>
+    </>
   );
+}
+
+export default function App() {
+  if (window.location.pathname === '/sso-callback') {
+    return <AuthenticateWithRedirectCallback />;
+  }
+
+  return <AppContent />;
 }

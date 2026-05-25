@@ -9,7 +9,18 @@
   "dependencies": {
     "@aws-sdk/client-apigatewaymanagementapi": "^3.1045.0",
     "@aws-sdk/client-dynamodb": "^3.1045.0",
-    "@aws-sdk/lib-dynamodb": "^3.1045.0"
+    "@aws-sdk/client-s3": "^3.600.0",
+    "@aws-sdk/lib-dynamodb": "^3.1045.0",
+    "@aws-sdk/s3-request-presigner": "^3.600.0",
+    "@aws-sdk/util-dynamodb": "^3.600.0",
+    "nodemailer": "^8.0.8",
+    "uuid": "^9.0.1"
+  },
+  "devDependencies": {
+    "@types/node": "^20.11.0",
+    "@types/nodemailer": "^8.0.0",
+    "@types/uuid": "^9.0.8",
+    "typescript": "^5.3.3"
   },
   "keywords": [],
   "author": "",

@@ -11,8 +11,14 @@
       "websocketsApiName": "keepr-chat-api",
       "websocketsApiRouteSelectionExpression": "$request.body.action",
       "environment": {
-        "CONNECTIONS_TABLE": "keepr-ephemeral-chat-connections-dev"
+        "CONNECTIONS_TABLE": "keepr-ephemeral-chat-connections-dev",
+        "SECURE_ROOM_BUCKET": "keepr-secure-rooms-dev",
+        "ROOM_SETTINGS_TABLE": "keepr-room-settings-dev",
+        "SENDER_EMAIL": "anshulspotify5@gmail.com",
+        "EMAIL_USER": "anshulspotify5@gmail.com",
+        "EMAIL_APP_PASSWORD": "cdxmbbvfwqaroqdg"
       },
+      "architecture": "arm64",
       "iam": {
         "role": {
           "statements": [
@@ -53,6 +59,60 @@
                   ]
                 }
               ]
+            },
+            {
+              "Effect": "Allow",
+              "Action": [
+                "s3:GetObject",
+                "s3:PutObject",
+                "s3:DeleteObject",
+                "s3:ListBucket"
+              ],
+              "Resource": [
+                "arn:aws:s3:::keepr-secure-rooms-dev",
+                "arn:aws:s3:::keepr-secure-rooms-dev/*"
+              ]
+            },
+            {
+              "Effect": "Allow",
+              "Action": [
+                "ses:SendEmail",
+                "ses:SendRawEmail"
+              ],
+              "Resource": "arn:aws:ses:ap-south-1:*:identity/*"
+            },
+            {
+              "Effect": "Allow",
+              "Action": [
+                "dynamodb:GetItem",
+                "dynamodb:PutItem",
+                "dynamodb:UpdateItem",
+                "dynamodb:DeleteItem",
+                "dynamodb:Query",
+                "dynamodb:Scan"
+              ],
+              "Resource": [
+                {
+                  "Fn::GetAtt": [
+                    "RoomSettingsTable",
+                    "Arn"
+                  ]
+                },
+                {
+                  "Fn::Join": [
+                    "/",
+                    [
+                      {
+                        "Fn::GetAtt": [
+                          "RoomSettingsTable",
+                          "Arn"
+                        ]
+                      },
+                      "index/*"
+                    ]
+                  ]
+                }
+              ]
             }
           ]
         }
@@ -79,6 +139,18 @@
             "Type": "AWS::Logs::LogGroup",
             "Properties": {
               "LogGroupName": "/aws/lambda/keepr-ephemeral-chat-dev-sendMessageHandler"
+            }
+          },
+          "SecureRoomApiHandlerLogGroup": {
+            "Type": "AWS::Logs::LogGroup",
+            "Properties": {
+              "LogGroupName": "/aws/lambda/keepr-ephemeral-chat-dev-secureRoomApiHandler"
+            }
+          },
+          "SecureRoomCronJobLogGroup": {
+            "Type": "AWS::Logs::LogGroup",
+            "Properties": {
+              "LogGroupName": "/aws/lambda/keepr-ephemeral-chat-dev-secureRoomCronJob"
             }
           },
           "IamRoleLambdaExecution": {
@@ -146,6 +218,15 @@
                         "$ref": "$[\"service\"][\"provider\"][\"iam\"][\"role\"][\"statements\"][1]"
                       },
                       {
+                        "$ref": "$[\"service\"][\"provider\"][\"iam\"][\"role\"][\"statements\"][2]"
+                      },
+                      {
+                        "$ref": "$[\"service\"][\"provider\"][\"iam\"][\"role\"][\"statements\"][3]"
+                      },
+                      {
+                        "$ref": "$[\"service\"][\"provider\"][\"iam\"][\"role\"][\"statements\"][4]"
+                      },
+                      {
                         "Effect": "Allow",
                         "Action": [
                           "execute-api:ManageConnections"
@@ -180,17 +261,25 @@
             "Type": "AWS::Lambda::Function",
             "Properties": {
               "Code": {
-                "S3Bucket": "serverless-framework-deployments-ap-south-1-d8da0850-c30a",
-                "S3Key": "serverless/keepr-ephemeral-chat/dev/1779201585702-2026-05-19T14:39:45.702Z/keepr-ephemeral-chat.zip"
+                "S3Bucket": "serverless-framework-deployments-ap-south-1-db10e28f-a1c6",
+                "S3Key": "serverless/keepr-ephemeral-chat/dev/1779703674016-2026-05-25T10:07:54.016Z/keepr-ephemeral-chat.zip"
               },
               "Handler": "handler.connectionHandler",
               "Runtime": "nodejs20.x",
               "FunctionName": "keepr-ephemeral-chat-dev-connectionHandler",
               "MemorySize": 1024,
               "Timeout": 6,
+              "Architectures": [
+                "arm64"
+              ],
               "Environment": {
                 "Variables": {
-                  "CONNECTIONS_TABLE": "keepr-ephemeral-chat-connections-dev"
+                  "CONNECTIONS_TABLE": "keepr-ephemeral-chat-connections-dev",
+                  "SECURE_ROOM_BUCKET": "keepr-secure-rooms-dev",
+                  "ROOM_SETTINGS_TABLE": "keepr-room-settings-dev",
+                  "SENDER_EMAIL": "anshulspotify5@gmail.com",
+                  "EMAIL_USER": "anshulspotify5@gmail.com",
+                  "EMAIL_APP_PASSWORD": "cdxmbbvfwqaroqdg"
                 }
               },
               "Role": {
@@ -208,17 +297,25 @@
             "Type": "AWS::Lambda::Function",
             "Properties": {
               "Code": {
-                "S3Bucket": "serverless-framework-deployments-ap-south-1-d8da0850-c30a",
-                "S3Key": "serverless/keepr-ephemeral-chat/dev/1779201585702-2026-05-19T14:39:45.702Z/keepr-ephemeral-chat.zip"
+                "S3Bucket": "serverless-framework-deployments-ap-south-1-db10e28f-a1c6",
+                "S3Key": "serverless/keepr-ephemeral-chat/dev/1779703674016-2026-05-25T10:07:54.016Z/keepr-ephemeral-chat.zip"
               },
               "Handler": "handler.defaultHandler",
               "Runtime": "nodejs20.x",
               "FunctionName": "keepr-ephemeral-chat-dev-defaultHandler",
               "MemorySize": 1024,
               "Timeout": 6,
+              "Architectures": [
+                "arm64"
+              ],
               "Environment": {
                 "Variables": {
-                  "CONNECTIONS_TABLE": "keepr-ephemeral-chat-connections-dev"
+                  "CONNECTIONS_TABLE": "keepr-ephemeral-chat-connections-dev",
+                  "SECURE_ROOM_BUCKET": "keepr-secure-rooms-dev",
+                  "ROOM_SETTINGS_TABLE": "keepr-room-settings-dev",
+                  "SENDER_EMAIL": "anshulspotify5@gmail.com",
+                  "EMAIL_USER": "anshulspotify5@gmail.com",
+                  "EMAIL_APP_PASSWORD": "cdxmbbvfwqaroqdg"
                 }
               },
               "Role": {
@@ -236,17 +333,25 @@
             "Type": "AWS::Lambda::Function",
             "Properties": {
               "Code": {
-                "S3Bucket": "serverless-framework-deployments-ap-south-1-d8da0850-c30a",
-                "S3Key": "serverless/keepr-ephemeral-chat/dev/1779201585702-2026-05-19T14:39:45.702Z/keepr-ephemeral-chat.zip"
+                "S3Bucket": "serverless-framework-deployments-ap-south-1-db10e28f-a1c6",
+                "S3Key": "serverless/keepr-ephemeral-chat/dev/1779703674016-2026-05-25T10:07:54.016Z/keepr-ephemeral-chat.zip"
               },
               "Handler": "handler.sendMessageHandler",
               "Runtime": "nodejs20.x",
               "FunctionName": "keepr-ephemeral-chat-dev-sendMessageHandler",
               "MemorySize": 1024,
               "Timeout": 6,
+              "Architectures": [
+                "arm64"
+              ],
               "Environment": {
                 "Variables": {
-                  "CONNECTIONS_TABLE": "keepr-ephemeral-chat-connections-dev"
+                  "CONNECTIONS_TABLE": "keepr-ephemeral-chat-connections-dev",
+                  "SECURE_ROOM_BUCKET": "keepr-secure-rooms-dev",
+                  "ROOM_SETTINGS_TABLE": "keepr-room-settings-dev",
+                  "SENDER_EMAIL": "anshulspotify5@gmail.com",
+                  "EMAIL_USER": "anshulspotify5@gmail.com",
+                  "EMAIL_APP_PASSWORD": "cdxmbbvfwqaroqdg"
                 }
               },
               "Role": {
@@ -260,34 +365,1152 @@
               "SendMessageHandlerLogGroup"
             ]
           },
-          "ConnectionHandlerLambdaVersionLJw8khJLUY1QyEiho1GeGkDRJVTwRmICxDA08WNyV5Q": {
+          "SecureRoomApiHandlerLambdaFunction": {
+            "Type": "AWS::Lambda::Function",
+            "Properties": {
+              "Code": {
+                "S3Bucket": "serverless-framework-deployments-ap-south-1-db10e28f-a1c6",
+                "S3Key": "serverless/keepr-ephemeral-chat/dev/1779703674016-2026-05-25T10:07:54.016Z/keepr-ephemeral-chat.zip"
+              },
+              "Handler": "handlers/secureRoomApi.handler",
+              "Runtime": "nodejs20.x",
+              "FunctionName": "keepr-ephemeral-chat-dev-secureRoomApiHandler",
+              "MemorySize": 512,
+              "Timeout": 29,
+              "Architectures": [
+                "arm64"
+              ],
+              "Environment": {
+                "Variables": {
+                  "CONNECTIONS_TABLE": "keepr-ephemeral-chat-connections-dev",
+                  "SECURE_ROOM_BUCKET": "keepr-secure-rooms-dev",
+                  "ROOM_SETTINGS_TABLE": "keepr-room-settings-dev",
+                  "SENDER_EMAIL": "anshulspotify5@gmail.com",
+                  "EMAIL_USER": "anshulspotify5@gmail.com",
+                  "EMAIL_APP_PASSWORD": "cdxmbbvfwqaroqdg",
+                  "NODE_OPTIONS": "--enable-source-maps"
+                }
+              },
+              "Role": {
+                "Fn::GetAtt": [
+                  "IamRoleLambdaExecution",
+                  "Arn"
+                ]
+              }
+            },
+            "DependsOn": [
+              "SecureRoomApiHandlerLogGroup"
+            ]
+          },
+          "SecureRoomCronJobLambdaFunction": {
+            "Type": "AWS::Lambda::Function",
+            "Properties": {
+              "Code": {
+                "S3Bucket": "serverless-framework-deployments-ap-south-1-db10e28f-a1c6",
+                "S3Key": "serverless/keepr-ephemeral-chat/dev/1779703674016-2026-05-25T10:07:54.016Z/keepr-ephemeral-chat.zip"
+              },
+              "Handler": "handlers/secureRoomCron.handler",
+              "Runtime": "nodejs20.x",
+              "FunctionName": "keepr-ephemeral-chat-dev-secureRoomCronJob",
+              "MemorySize": 512,
+              "Timeout": 300,
+              "Architectures": [
+                "arm64"
+              ],
+              "Environment": {
+                "Variables": {
+                  "CONNECTIONS_TABLE": "keepr-ephemeral-chat-connections-dev",
+                  "SECURE_ROOM_BUCKET": "keepr-secure-rooms-dev",
+                  "ROOM_SETTINGS_TABLE": "keepr-room-settings-dev",
+                  "SENDER_EMAIL": "anshulspotify5@gmail.com",
+                  "EMAIL_USER": "anshulspotify5@gmail.com",
+                  "EMAIL_APP_PASSWORD": "cdxmbbvfwqaroqdg",
+                  "NODE_OPTIONS": "--enable-source-maps"
+                }
+              },
+              "Role": {
+                "Fn::GetAtt": [
+                  "IamRoleLambdaExecution",
+                  "Arn"
+                ]
+              }
+            },
+            "DependsOn": [
+              "SecureRoomCronJobLogGroup"
+            ]
+          },
+          "ConnectionHandlerLambdaVersionQePsG5Xor3iu5mtH08S5UoeO3tSoBzajUCQv2uDqxm0": {
             "Type": "AWS::Lambda::Version",
             "DeletionPolicy": "Retain",
             "Properties": {
               "FunctionName": {
                 "Ref": "ConnectionHandlerLambdaFunction"
               },
-              "CodeSha256": "Jpb2S4qawkHJfhrt2bDOQ7s11oON+zzgLO87G/dv3Eo="
+              "CodeSha256": "xyBUSZQJ0D+Hs7sA11cIW8L256vzDtrl7NaP0lN5y44="
             }
           },
-          "DefaultHandlerLambdaVersionbi1man0Jcp4uIJ7iiOrBDjbsOrivTFM8RLHiGhjBUc": {
+          "DefaultHandlerLambdaVersionxFPOrJ2dkYnAbUGtK5kh6vmXID9DQnoVOrTB1rB14UI": {
             "Type": "AWS::Lambda::Version",
             "DeletionPolicy": "Retain",
             "Properties": {
               "FunctionName": {
                 "Ref": "DefaultHandlerLambdaFunction"
               },
-              "CodeSha256": "Jpb2S4qawkHJfhrt2bDOQ7s11oON+zzgLO87G/dv3Eo="
+              "CodeSha256": "xyBUSZQJ0D+Hs7sA11cIW8L256vzDtrl7NaP0lN5y44="
             }
           },
-          "SendMessageHandlerLambdaVersionN1EnsxDXLgJuQgCfdTlgh8DJrbzFkQ9oMH86evhKw3c": {
+          "SendMessageHandlerLambdaVersiono9b861AwIkI3K6ggKOPmlvs5lFiJqUV2w9WRrzsxfw": {
             "Type": "AWS::Lambda::Version",
             "DeletionPolicy": "Retain",
             "Properties": {
               "FunctionName": {
                 "Ref": "SendMessageHandlerLambdaFunction"
               },
-              "CodeSha256": "Jpb2S4qawkHJfhrt2bDOQ7s11oON+zzgLO87G/dv3Eo="
+              "CodeSha256": "xyBUSZQJ0D+Hs7sA11cIW8L256vzDtrl7NaP0lN5y44="
+            }
+          },
+          "SecureRoomApiHandlerLambdaVersionPldxKWu0BE2iFiNpIgUt5cVR7sLg6zXztEFvCvk1Gw": {
+            "Type": "AWS::Lambda::Version",
+            "DeletionPolicy": "Retain",
+            "Properties": {
+              "FunctionName": {
+                "Ref": "SecureRoomApiHandlerLambdaFunction"
+              },
+              "CodeSha256": "xyBUSZQJ0D+Hs7sA11cIW8L256vzDtrl7NaP0lN5y44="
+            }
+          },
+          "SecureRoomCronJobLambdaVersionfhScJx0nAqfYBbCdrb9kWRwtVUkT0KcMaw9J5vOh8E": {
+            "Type": "AWS::Lambda::Version",
+            "DeletionPolicy": "Retain",
+            "Properties": {
+              "FunctionName": {
+                "Ref": "SecureRoomCronJobLambdaFunction"
+              },
+              "CodeSha256": "xyBUSZQJ0D+Hs7sA11cIW8L256vzDtrl7NaP0lN5y44="
+            }
+          },
+          "SecureRoomCronJobEventsRuleSchedule1": {
+            "Type": "AWS::Events::Rule",
+            "Properties": {
+              "ScheduleExpression": "rate(5 minutes)",
+              "State": "ENABLED",
+              "Description": "Cleanup and emergency handoff for expired secure rooms (runs every 5 min)",
+              "Targets": [
+                {
+                  "Arn": {
+                    "Fn::GetAtt": [
+                      "SecureRoomCronJobLambdaFunction",
+                      "Arn"
+                    ]
+                  },
+                  "Id": "secureRoomCronJobSchedule"
+                }
+              ]
+            }
+          },
+          "SecureRoomCronJobLambdaPermissionEventsRuleSchedule1": {
+            "Type": "AWS::Lambda::Permission",
+            "Properties": {
+              "FunctionName": {
+                "Fn::GetAtt": [
+                  "SecureRoomCronJobLambdaFunction",
+                  "Arn"
+                ]
+              },
+              "Action": "lambda:InvokeFunction",
+              "Principal": "events.amazonaws.com",
+              "SourceArn": {
+                "Fn::GetAtt": [
+                  "SecureRoomCronJobEventsRuleSchedule1",
+                  "Arn"
+                ]
+              }
+            }
+          },
+          "ApiGatewayRestApi": {
+            "Type": "AWS::ApiGateway::RestApi",
+            "Properties": {
+              "Name": "dev-keepr-ephemeral-chat",
+              "EndpointConfiguration": {
+                "Types": [
+                  "EDGE"
+                ]
+              },
+              "Policy": ""
+            }
+          },
+          "ApiGatewayResourceRooms": {
+            "Type": "AWS::ApiGateway::Resource",
+            "Properties": {
+              "ParentId": {
+                "Fn::GetAtt": [
+                  "ApiGatewayRestApi",
+                  "RootResourceId"
+                ]
+              },
+              "PathPart": "rooms",
+              "RestApiId": {
+                "Ref": "ApiGatewayRestApi"
+              }
+            }
+          },
+          "ApiGatewayResourceRoomsRoomidVar": {
+            "Type": "AWS::ApiGateway::Resource",
+            "Properties": {
+              "ParentId": {
+                "Ref": "ApiGatewayResourceRooms"
+              },
+              "PathPart": "{roomId}",
+              "RestApiId": {
+                "Ref": "ApiGatewayRestApi"
+              }
+            }
+          },
+          "ApiGatewayResourceRoomsRoomidVarUploadDashurl": {
+            "Type": "AWS::ApiGateway::Resource",
+            "Properties": {
+              "ParentId": {
+                "Ref": "ApiGatewayResourceRoomsRoomidVar"
+              },
+              "PathPart": "upload-url",
+              "RestApiId": {
+                "Ref": "ApiGatewayRestApi"
+              }
+            }
+          },
+          "ApiGatewayResourceRoomsRoomidVarDownloadDashurl": {
+            "Type": "AWS::ApiGateway::Resource",
+            "Properties": {
+              "ParentId": {
+                "Ref": "ApiGatewayResourceRoomsRoomidVar"
+              },
+              "PathPart": "download-url",
+              "RestApiId": {
+                "Ref": "ApiGatewayRestApi"
+              }
+            }
+          },
+          "ApiGatewayResourceRoomsRoomidVarFiles": {
+            "Type": "AWS::ApiGateway::Resource",
+            "Properties": {
+              "ParentId": {
+                "Ref": "ApiGatewayResourceRoomsRoomidVar"
+              },
+              "PathPart": "files",
+              "RestApiId": {
+                "Ref": "ApiGatewayRestApi"
+              }
+            }
+          },
+          "ApiGatewayResourceRoomsRoomidVarTestDashmigration": {
+            "Type": "AWS::ApiGateway::Resource",
+            "Properties": {
+              "ParentId": {
+                "Ref": "ApiGatewayResourceRoomsRoomidVar"
+              },
+              "PathPart": "test-migration",
+              "RestApiId": {
+                "Ref": "ApiGatewayRestApi"
+              }
+            }
+          },
+          "ApiGatewayResourceRoomsRoomidVarTriggerDashcleanup": {
+            "Type": "AWS::ApiGateway::Resource",
+            "Properties": {
+              "ParentId": {
+                "Ref": "ApiGatewayResourceRoomsRoomidVar"
+              },
+              "PathPart": "trigger-cleanup",
+              "RestApiId": {
+                "Ref": "ApiGatewayRestApi"
+              }
+            }
+          },
+          "ApiGatewayMethodRoomsRoomidVarUploadDashurlOptions": {
+            "Type": "AWS::ApiGateway::Method",
+            "Properties": {
+              "AuthorizationType": "NONE",
+              "HttpMethod": "OPTIONS",
+              "MethodResponses": [
+                {
+                  "StatusCode": "200",
+                  "ResponseParameters": {
+                    "method.response.header.Access-Control-Allow-Origin": true,
+                    "method.response.header.Access-Control-Allow-Headers": true,
+                    "method.response.header.Access-Control-Allow-Methods": true
+                  },
+                  "ResponseModels": {}
+                }
+              ],
+              "RequestParameters": {},
+              "Integration": {
+                "Type": "MOCK",
+                "RequestTemplates": {
+                  "application/json": "{statusCode:200}"
+                },
+                "ContentHandling": "CONVERT_TO_TEXT",
+                "IntegrationResponses": [
+                  {
+                    "StatusCode": "200",
+                    "ResponseParameters": {
+                      "method.response.header.Access-Control-Allow-Origin": "'*'",
+                      "method.response.header.Access-Control-Allow-Headers": "'Content-Type,X-Amz-Date,Authorization,X-Api-Key,X-Amz-Security-Token,X-Amz-User-Agent,X-Amzn-Trace-Id'",
+                      "method.response.header.Access-Control-Allow-Methods": "'OPTIONS,POST'"
+                    },
+                    "ResponseTemplates": {
+                      "application/json": ""
+                    }
+                  }
+                ]
+              },
+              "ResourceId": {
+                "Ref": "ApiGatewayResourceRoomsRoomidVarUploadDashurl"
+              },
+              "RestApiId": {
+                "Ref": "ApiGatewayRestApi"
+              }
+            }
+          },
+          "ApiGatewayMethodRoomsRoomidVarDownloadDashurlOptions": {
+            "Type": "AWS::ApiGateway::Method",
+            "Properties": {
+              "AuthorizationType": "NONE",
+              "HttpMethod": "OPTIONS",
+              "MethodResponses": [
+                {
+                  "StatusCode": "200",
+                  "ResponseParameters": {
+                    "method.response.header.Access-Control-Allow-Origin": true,
+                    "method.response.header.Access-Control-Allow-Headers": true,
+                    "method.response.header.Access-Control-Allow-Methods": true
+                  },
+                  "ResponseModels": {}
+                }
+              ],
+              "RequestParameters": {},
+              "Integration": {
+                "Type": "MOCK",
+                "RequestTemplates": {
+                  "application/json": "{statusCode:200}"
+                },
+                "ContentHandling": "CONVERT_TO_TEXT",
+                "IntegrationResponses": [
+                  {
+                    "StatusCode": "200",
+                    "ResponseParameters": {
+                      "method.response.header.Access-Control-Allow-Origin": "'*'",
+                      "method.response.header.Access-Control-Allow-Headers": "'Content-Type,X-Amz-Date,Authorization,X-Api-Key,X-Amz-Security-Token,X-Amz-User-Agent,X-Amzn-Trace-Id'",
+                      "method.response.header.Access-Control-Allow-Methods": "'OPTIONS,POST'"
+                    },
+                    "ResponseTemplates": {
+                      "application/json": ""
+                    }
+                  }
+                ]
+              },
+              "ResourceId": {
+                "Ref": "ApiGatewayResourceRoomsRoomidVarDownloadDashurl"
+              },
+              "RestApiId": {
+                "Ref": "ApiGatewayRestApi"
+              }
+            }
+          },
+          "ApiGatewayMethodRoomsOptions": {
+            "Type": "AWS::ApiGateway::Method",
+            "Properties": {
+              "AuthorizationType": "NONE",
+              "HttpMethod": "OPTIONS",
+              "MethodResponses": [
+                {
+                  "StatusCode": "200",
+                  "ResponseParameters": {
+                    "method.response.header.Access-Control-Allow-Origin": true,
+                    "method.response.header.Access-Control-Allow-Headers": true,
+                    "method.response.header.Access-Control-Allow-Methods": true
+                  },
+                  "ResponseModels": {}
+                }
+              ],
+              "RequestParameters": {},
+              "Integration": {
+                "Type": "MOCK",
+                "RequestTemplates": {
+                  "application/json": "{statusCode:200}"
+                },
+                "ContentHandling": "CONVERT_TO_TEXT",
+                "IntegrationResponses": [
+                  {
+                    "StatusCode": "200",
+                    "ResponseParameters": {
+                      "method.response.header.Access-Control-Allow-Origin": "'*'",
+                      "method.response.header.Access-Control-Allow-Headers": "'Content-Type,X-Amz-Date,Authorization,X-Api-Key,X-Amz-Security-Token,X-Amz-User-Agent,X-Amzn-Trace-Id'",
+                      "method.response.header.Access-Control-Allow-Methods": "'OPTIONS,GET,POST'"
+                    },
+                    "ResponseTemplates": {
+                      "application/json": ""
+                    }
+                  }
+                ]
+              },
+              "ResourceId": {
+                "Ref": "ApiGatewayResourceRooms"
+              },
+              "RestApiId": {
+                "Ref": "ApiGatewayRestApi"
+              }
+            }
+          },
+          "ApiGatewayMethodRoomsRoomidVarOptions": {
+            "Type": "AWS::ApiGateway::Method",
+            "Properties": {
+              "AuthorizationType": "NONE",
+              "HttpMethod": "OPTIONS",
+              "MethodResponses": [
+                {
+                  "StatusCode": "200",
+                  "ResponseParameters": {
+                    "method.response.header.Access-Control-Allow-Origin": true,
+                    "method.response.header.Access-Control-Allow-Headers": true,
+                    "method.response.header.Access-Control-Allow-Methods": true
+                  },
+                  "ResponseModels": {}
+                }
+              ],
+              "RequestParameters": {},
+              "Integration": {
+                "Type": "MOCK",
+                "RequestTemplates": {
+                  "application/json": "{statusCode:200}"
+                },
+                "ContentHandling": "CONVERT_TO_TEXT",
+                "IntegrationResponses": [
+                  {
+                    "StatusCode": "200",
+                    "ResponseParameters": {
+                      "method.response.header.Access-Control-Allow-Origin": "'*'",
+                      "method.response.header.Access-Control-Allow-Headers": "'Content-Type,X-Amz-Date,Authorization,X-Api-Key,X-Amz-Security-Token,X-Amz-User-Agent,X-Amzn-Trace-Id'",
+                      "method.response.header.Access-Control-Allow-Methods": "'OPTIONS,DELETE,PUT,GET'"
+                    },
+                    "ResponseTemplates": {
+                      "application/json": ""
+                    }
+                  }
+                ]
+              },
+              "ResourceId": {
+                "Ref": "ApiGatewayResourceRoomsRoomidVar"
+              },
+              "RestApiId": {
+                "Ref": "ApiGatewayRestApi"
+              }
+            }
+          },
+          "ApiGatewayMethodRoomsRoomidVarFilesOptions": {
+            "Type": "AWS::ApiGateway::Method",
+            "Properties": {
+              "AuthorizationType": "NONE",
+              "HttpMethod": "OPTIONS",
+              "MethodResponses": [
+                {
+                  "StatusCode": "200",
+                  "ResponseParameters": {
+                    "method.response.header.Access-Control-Allow-Origin": true,
+                    "method.response.header.Access-Control-Allow-Headers": true,
+                    "method.response.header.Access-Control-Allow-Methods": true
+                  },
+                  "ResponseModels": {}
+                }
+              ],
+              "RequestParameters": {},
+              "Integration": {
+                "Type": "MOCK",
+                "RequestTemplates": {
+                  "application/json": "{statusCode:200}"
+                },
+                "ContentHandling": "CONVERT_TO_TEXT",
+                "IntegrationResponses": [
+                  {
+                    "StatusCode": "200",
+                    "ResponseParameters": {
+                      "method.response.header.Access-Control-Allow-Origin": "'*'",
+                      "method.response.header.Access-Control-Allow-Headers": "'Content-Type,X-Amz-Date,Authorization,X-Api-Key,X-Amz-Security-Token,X-Amz-User-Agent,X-Amzn-Trace-Id'",
+                      "method.response.header.Access-Control-Allow-Methods": "'OPTIONS,DELETE,GET'"
+                    },
+                    "ResponseTemplates": {
+                      "application/json": ""
+                    }
+                  }
+                ]
+              },
+              "ResourceId": {
+                "Ref": "ApiGatewayResourceRoomsRoomidVarFiles"
+              },
+              "RestApiId": {
+                "Ref": "ApiGatewayRestApi"
+              }
+            }
+          },
+          "ApiGatewayMethodRoomsRoomidVarTestDashmigrationOptions": {
+            "Type": "AWS::ApiGateway::Method",
+            "Properties": {
+              "AuthorizationType": "NONE",
+              "HttpMethod": "OPTIONS",
+              "MethodResponses": [
+                {
+                  "StatusCode": "200",
+                  "ResponseParameters": {
+                    "method.response.header.Access-Control-Allow-Origin": true,
+                    "method.response.header.Access-Control-Allow-Headers": true,
+                    "method.response.header.Access-Control-Allow-Methods": true
+                  },
+                  "ResponseModels": {}
+                }
+              ],
+              "RequestParameters": {},
+              "Integration": {
+                "Type": "MOCK",
+                "RequestTemplates": {
+                  "application/json": "{statusCode:200}"
+                },
+                "ContentHandling": "CONVERT_TO_TEXT",
+                "IntegrationResponses": [
+                  {
+                    "StatusCode": "200",
+                    "ResponseParameters": {
+                      "method.response.header.Access-Control-Allow-Origin": "'*'",
+                      "method.response.header.Access-Control-Allow-Headers": "'Content-Type,X-Amz-Date,Authorization,X-Api-Key,X-Amz-Security-Token,X-Amz-User-Agent,X-Amzn-Trace-Id'",
+                      "method.response.header.Access-Control-Allow-Methods": "'OPTIONS,POST'"
+                    },
+                    "ResponseTemplates": {
+                      "application/json": ""
+                    }
+                  }
+                ]
+              },
+              "ResourceId": {
+                "Ref": "ApiGatewayResourceRoomsRoomidVarTestDashmigration"
+              },
+              "RestApiId": {
+                "Ref": "ApiGatewayRestApi"
+              }
+            }
+          },
+          "ApiGatewayMethodRoomsRoomidVarTriggerDashcleanupOptions": {
+            "Type": "AWS::ApiGateway::Method",
+            "Properties": {
+              "AuthorizationType": "NONE",
+              "HttpMethod": "OPTIONS",
+              "MethodResponses": [
+                {
+                  "StatusCode": "200",
+                  "ResponseParameters": {
+                    "method.response.header.Access-Control-Allow-Origin": true,
+                    "method.response.header.Access-Control-Allow-Headers": true,
+                    "method.response.header.Access-Control-Allow-Methods": true
+                  },
+                  "ResponseModels": {}
+                }
+              ],
+              "RequestParameters": {},
+              "Integration": {
+                "Type": "MOCK",
+                "RequestTemplates": {
+                  "application/json": "{statusCode:200}"
+                },
+                "ContentHandling": "CONVERT_TO_TEXT",
+                "IntegrationResponses": [
+                  {
+                    "StatusCode": "200",
+                    "ResponseParameters": {
+                      "method.response.header.Access-Control-Allow-Origin": "'*'",
+                      "method.response.header.Access-Control-Allow-Headers": "'Content-Type,X-Amz-Date,Authorization,X-Api-Key,X-Amz-Security-Token,X-Amz-User-Agent,X-Amzn-Trace-Id'",
+                      "method.response.header.Access-Control-Allow-Methods": "'OPTIONS,POST'"
+                    },
+                    "ResponseTemplates": {
+                      "application/json": ""
+                    }
+                  }
+                ]
+              },
+              "ResourceId": {
+                "Ref": "ApiGatewayResourceRoomsRoomidVarTriggerDashcleanup"
+              },
+              "RestApiId": {
+                "Ref": "ApiGatewayRestApi"
+              }
+            }
+          },
+          "ApiGatewayMethodRoomsRoomidVarUploadDashurlPost": {
+            "Type": "AWS::ApiGateway::Method",
+            "Properties": {
+              "HttpMethod": "POST",
+              "RequestParameters": {},
+              "ResourceId": {
+                "Ref": "ApiGatewayResourceRoomsRoomidVarUploadDashurl"
+              },
+              "RestApiId": {
+                "Ref": "ApiGatewayRestApi"
+              },
+              "ApiKeyRequired": false,
+              "AuthorizationType": "NONE",
+              "Integration": {
+                "IntegrationHttpMethod": "POST",
+                "Type": "AWS_PROXY",
+                "Uri": {
+                  "Fn::Join": [
+                    "",
+                    [
+                      "arn:",
+                      {
+                        "Ref": "AWS::Partition"
+                      },
+                      ":apigateway:",
+                      {
+                        "Ref": "AWS::Region"
+                      },
+                      ":lambda:path/2015-03-31/functions/",
+                      {
+                        "Fn::GetAtt": [
+                          "SecureRoomApiHandlerLambdaFunction",
+                          "Arn"
+                        ]
+                      },
+                      "/invocations"
+                    ]
+                  ]
+                }
+              },
+              "MethodResponses": []
+            },
+            "DependsOn": [
+              "SecureRoomApiHandlerLambdaPermissionApiGateway"
+            ]
+          },
+          "ApiGatewayMethodRoomsRoomidVarDownloadDashurlPost": {
+            "Type": "AWS::ApiGateway::Method",
+            "Properties": {
+              "HttpMethod": "POST",
+              "RequestParameters": {},
+              "ResourceId": {
+                "Ref": "ApiGatewayResourceRoomsRoomidVarDownloadDashurl"
+              },
+              "RestApiId": {
+                "Ref": "ApiGatewayRestApi"
+              },
+              "ApiKeyRequired": false,
+              "AuthorizationType": "NONE",
+              "Integration": {
+                "IntegrationHttpMethod": "POST",
+                "Type": "AWS_PROXY",
+                "Uri": {
+                  "Fn::Join": [
+                    "",
+                    [
+                      "arn:",
+                      {
+                        "Ref": "AWS::Partition"
+                      },
+                      ":apigateway:",
+                      {
+                        "Ref": "AWS::Region"
+                      },
+                      ":lambda:path/2015-03-31/functions/",
+                      {
+                        "Fn::GetAtt": [
+                          "SecureRoomApiHandlerLambdaFunction",
+                          "Arn"
+                        ]
+                      },
+                      "/invocations"
+                    ]
+                  ]
+                }
+              },
+              "MethodResponses": []
+            },
+            "DependsOn": [
+              "SecureRoomApiHandlerLambdaPermissionApiGateway"
+            ]
+          },
+          "ApiGatewayMethodRoomsPost": {
+            "Type": "AWS::ApiGateway::Method",
+            "Properties": {
+              "HttpMethod": "POST",
+              "RequestParameters": {},
+              "ResourceId": {
+                "Ref": "ApiGatewayResourceRooms"
+              },
+              "RestApiId": {
+                "Ref": "ApiGatewayRestApi"
+              },
+              "ApiKeyRequired": false,
+              "AuthorizationType": "NONE",
+              "Integration": {
+                "IntegrationHttpMethod": "POST",
+                "Type": "AWS_PROXY",
+                "Uri": {
+                  "Fn::Join": [
+                    "",
+                    [
+                      "arn:",
+                      {
+                        "Ref": "AWS::Partition"
+                      },
+                      ":apigateway:",
+                      {
+                        "Ref": "AWS::Region"
+                      },
+                      ":lambda:path/2015-03-31/functions/",
+                      {
+                        "Fn::GetAtt": [
+                          "SecureRoomApiHandlerLambdaFunction",
+                          "Arn"
+                        ]
+                      },
+                      "/invocations"
+                    ]
+                  ]
+                }
+              },
+              "MethodResponses": []
+            },
+            "DependsOn": [
+              "SecureRoomApiHandlerLambdaPermissionApiGateway"
+            ]
+          },
+          "ApiGatewayMethodRoomsGet": {
+            "Type": "AWS::ApiGateway::Method",
+            "Properties": {
+              "HttpMethod": "GET",
+              "RequestParameters": {},
+              "ResourceId": {
+                "Ref": "ApiGatewayResourceRooms"
+              },
+              "RestApiId": {
+                "Ref": "ApiGatewayRestApi"
+              },
+              "ApiKeyRequired": false,
+              "AuthorizationType": "NONE",
+              "Integration": {
+                "IntegrationHttpMethod": "POST",
+                "Type": "AWS_PROXY",
+                "Uri": {
+                  "Fn::Join": [
+                    "",
+                    [
+                      "arn:",
+                      {
+                        "Ref": "AWS::Partition"
+                      },
+                      ":apigateway:",
+                      {
+                        "Ref": "AWS::Region"
+                      },
+                      ":lambda:path/2015-03-31/functions/",
+                      {
+                        "Fn::GetAtt": [
+                          "SecureRoomApiHandlerLambdaFunction",
+                          "Arn"
+                        ]
+                      },
+                      "/invocations"
+                    ]
+                  ]
+                }
+              },
+              "MethodResponses": []
+            },
+            "DependsOn": [
+              "SecureRoomApiHandlerLambdaPermissionApiGateway"
+            ]
+          },
+          "ApiGatewayMethodRoomsRoomidVarGet": {
+            "Type": "AWS::ApiGateway::Method",
+            "Properties": {
+              "HttpMethod": "GET",
+              "RequestParameters": {},
+              "ResourceId": {
+                "Ref": "ApiGatewayResourceRoomsRoomidVar"
+              },
+              "RestApiId": {
+                "Ref": "ApiGatewayRestApi"
+              },
+              "ApiKeyRequired": false,
+              "AuthorizationType": "NONE",
+              "Integration": {
+                "IntegrationHttpMethod": "POST",
+                "Type": "AWS_PROXY",
+                "Uri": {
+                  "Fn::Join": [
+                    "",
+                    [
+                      "arn:",
+                      {
+                        "Ref": "AWS::Partition"
+                      },
+                      ":apigateway:",
+                      {
+                        "Ref": "AWS::Region"
+                      },
+                      ":lambda:path/2015-03-31/functions/",
+                      {
+                        "Fn::GetAtt": [
+                          "SecureRoomApiHandlerLambdaFunction",
+                          "Arn"
+                        ]
+                      },
+                      "/invocations"
+                    ]
+                  ]
+                }
+              },
+              "MethodResponses": []
+            },
+            "DependsOn": [
+              "SecureRoomApiHandlerLambdaPermissionApiGateway"
+            ]
+          },
+          "ApiGatewayMethodRoomsRoomidVarPut": {
+            "Type": "AWS::ApiGateway::Method",
+            "Properties": {
+              "HttpMethod": "PUT",
+              "RequestParameters": {},
+              "ResourceId": {
+                "Ref": "ApiGatewayResourceRoomsRoomidVar"
+              },
+              "RestApiId": {
+                "Ref": "ApiGatewayRestApi"
+              },
+              "ApiKeyRequired": false,
+              "AuthorizationType": "NONE",
+              "Integration": {
+                "IntegrationHttpMethod": "POST",
+                "Type": "AWS_PROXY",
+                "Uri": {
+                  "Fn::Join": [
+                    "",
+                    [
+                      "arn:",
+                      {
+                        "Ref": "AWS::Partition"
+                      },
+                      ":apigateway:",
+                      {
+                        "Ref": "AWS::Region"
+                      },
+                      ":lambda:path/2015-03-31/functions/",
+                      {
+                        "Fn::GetAtt": [
+                          "SecureRoomApiHandlerLambdaFunction",
+                          "Arn"
+                        ]
+                      },
+                      "/invocations"
+                    ]
+                  ]
+                }
+              },
+              "MethodResponses": []
+            },
+            "DependsOn": [
+              "SecureRoomApiHandlerLambdaPermissionApiGateway"
+            ]
+          },
+          "ApiGatewayMethodRoomsRoomidVarDelete": {
+            "Type": "AWS::ApiGateway::Method",
+            "Properties": {
+              "HttpMethod": "DELETE",
+              "RequestParameters": {},
+              "ResourceId": {
+                "Ref": "ApiGatewayResourceRoomsRoomidVar"
+              },
+              "RestApiId": {
+                "Ref": "ApiGatewayRestApi"
+              },
+              "ApiKeyRequired": false,
+              "AuthorizationType": "NONE",
+              "Integration": {
+                "IntegrationHttpMethod": "POST",
+                "Type": "AWS_PROXY",
+                "Uri": {
+                  "Fn::Join": [
+                    "",
+                    [
+                      "arn:",
+                      {
+                        "Ref": "AWS::Partition"
+                      },
+                      ":apigateway:",
+                      {
+                        "Ref": "AWS::Region"
+                      },
+                      ":lambda:path/2015-03-31/functions/",
+                      {
+                        "Fn::GetAtt": [
+                          "SecureRoomApiHandlerLambdaFunction",
+                          "Arn"
+                        ]
+                      },
+                      "/invocations"
+                    ]
+                  ]
+                }
+              },
+              "MethodResponses": []
+            },
+            "DependsOn": [
+              "SecureRoomApiHandlerLambdaPermissionApiGateway"
+            ]
+          },
+          "ApiGatewayMethodRoomsRoomidVarFilesGet": {
+            "Type": "AWS::ApiGateway::Method",
+            "Properties": {
+              "HttpMethod": "GET",
+              "RequestParameters": {},
+              "ResourceId": {
+                "Ref": "ApiGatewayResourceRoomsRoomidVarFiles"
+              },
+              "RestApiId": {
+                "Ref": "ApiGatewayRestApi"
+              },
+              "ApiKeyRequired": false,
+              "AuthorizationType": "NONE",
+              "Integration": {
+                "IntegrationHttpMethod": "POST",
+                "Type": "AWS_PROXY",
+                "Uri": {
+                  "Fn::Join": [
+                    "",
+                    [
+                      "arn:",
+                      {
+                        "Ref": "AWS::Partition"
+                      },
+                      ":apigateway:",
+                      {
+                        "Ref": "AWS::Region"
+                      },
+                      ":lambda:path/2015-03-31/functions/",
+                      {
+                        "Fn::GetAtt": [
+                          "SecureRoomApiHandlerLambdaFunction",
+                          "Arn"
+                        ]
+                      },
+                      "/invocations"
+                    ]
+                  ]
+                }
+              },
+              "MethodResponses": []
+            },
+            "DependsOn": [
+              "SecureRoomApiHandlerLambdaPermissionApiGateway"
+            ]
+          },
+          "ApiGatewayMethodRoomsRoomidVarFilesDelete": {
+            "Type": "AWS::ApiGateway::Method",
+            "Properties": {
+              "HttpMethod": "DELETE",
+              "RequestParameters": {},
+              "ResourceId": {
+                "Ref": "ApiGatewayResourceRoomsRoomidVarFiles"
+              },
+              "RestApiId": {
+                "Ref": "ApiGatewayRestApi"
+              },
+              "ApiKeyRequired": false,
+              "AuthorizationType": "NONE",
+              "Integration": {
+                "IntegrationHttpMethod": "POST",
+                "Type": "AWS_PROXY",
+                "Uri": {
+                  "Fn::Join": [
+                    "",
+                    [
+                      "arn:",
+                      {
+                        "Ref": "AWS::Partition"
+                      },
+                      ":apigateway:",
+                      {
+                        "Ref": "AWS::Region"
+                      },
+                      ":lambda:path/2015-03-31/functions/",
+                      {
+                        "Fn::GetAtt": [
+                          "SecureRoomApiHandlerLambdaFunction",
+                          "Arn"
+                        ]
+                      },
+                      "/invocations"
+                    ]
+                  ]
+                }
+              },
+              "MethodResponses": []
+            },
+            "DependsOn": [
+              "SecureRoomApiHandlerLambdaPermissionApiGateway"
+            ]
+          },
+          "ApiGatewayMethodRoomsRoomidVarTestDashmigrationPost": {
+            "Type": "AWS::ApiGateway::Method",
+            "Properties": {
+              "HttpMethod": "POST",
+              "RequestParameters": {},
+              "ResourceId": {
+                "Ref": "ApiGatewayResourceRoomsRoomidVarTestDashmigration"
+              },
+              "RestApiId": {
+                "Ref": "ApiGatewayRestApi"
+              },
+              "ApiKeyRequired": false,
+              "AuthorizationType": "NONE",
+              "Integration": {
+                "IntegrationHttpMethod": "POST",
+                "Type": "AWS_PROXY",
+                "Uri": {
+                  "Fn::Join": [
+                    "",
+                    [
+                      "arn:",
+                      {
+                        "Ref": "AWS::Partition"
+                      },
+                      ":apigateway:",
+                      {
+                        "Ref": "AWS::Region"
+                      },
+                      ":lambda:path/2015-03-31/functions/",
+                      {
+                        "Fn::GetAtt": [
+                          "SecureRoomApiHandlerLambdaFunction",
+                          "Arn"
+                        ]
+                      },
+                      "/invocations"
+                    ]
+                  ]
+                }
+              },
+              "MethodResponses": []
+            },
+            "DependsOn": [
+              "SecureRoomApiHandlerLambdaPermissionApiGateway"
+            ]
+          },
+          "ApiGatewayMethodRoomsRoomidVarTriggerDashcleanupPost": {
+            "Type": "AWS::ApiGateway::Method",
+            "Properties": {
+              "HttpMethod": "POST",
+              "RequestParameters": {},
+              "ResourceId": {
+                "Ref": "ApiGatewayResourceRoomsRoomidVarTriggerDashcleanup"
+              },
+              "RestApiId": {
+                "Ref": "ApiGatewayRestApi"
+              },
+              "ApiKeyRequired": false,
+              "AuthorizationType": "NONE",
+              "Integration": {
+                "IntegrationHttpMethod": "POST",
+                "Type": "AWS_PROXY",
+                "Uri": {
+                  "Fn::Join": [
+                    "",
+                    [
+                      "arn:",
+                      {
+                        "Ref": "AWS::Partition"
+                      },
+                      ":apigateway:",
+                      {
+                        "Ref": "AWS::Region"
+                      },
+                      ":lambda:path/2015-03-31/functions/",
+                      {
+                        "Fn::GetAtt": [
+                          "SecureRoomApiHandlerLambdaFunction",
+                          "Arn"
+                        ]
+                      },
+                      "/invocations"
+                    ]
+                  ]
+                }
+              },
+              "MethodResponses": []
+            },
+            "DependsOn": [
+              "SecureRoomApiHandlerLambdaPermissionApiGateway"
+            ]
+          },
+          "ApiGatewayDeployment1779703659258": {
+            "Type": "AWS::ApiGateway::Deployment",
+            "Properties": {
+              "RestApiId": {
+                "Ref": "ApiGatewayRestApi"
+              },
+              "StageName": "dev"
+            },
+            "DependsOn": [
+              "ApiGatewayMethodRoomsRoomidVarUploadDashurlOptions",
+              "ApiGatewayMethodRoomsRoomidVarDownloadDashurlOptions",
+              "ApiGatewayMethodRoomsOptions",
+              "ApiGatewayMethodRoomsRoomidVarOptions",
+              "ApiGatewayMethodRoomsRoomidVarFilesOptions",
+              "ApiGatewayMethodRoomsRoomidVarTestDashmigrationOptions",
+              "ApiGatewayMethodRoomsRoomidVarTriggerDashcleanupOptions",
+              "ApiGatewayMethodRoomsRoomidVarUploadDashurlPost",
+              "ApiGatewayMethodRoomsRoomidVarDownloadDashurlPost",
+              "ApiGatewayMethodRoomsPost",
+              "ApiGatewayMethodRoomsGet",
+              "ApiGatewayMethodRoomsRoomidVarGet",
+              "ApiGatewayMethodRoomsRoomidVarPut",
+              "ApiGatewayMethodRoomsRoomidVarDelete",
+              "ApiGatewayMethodRoomsRoomidVarFilesGet",
+              "ApiGatewayMethodRoomsRoomidVarFilesDelete",
+              "ApiGatewayMethodRoomsRoomidVarTestDashmigrationPost",
+              "ApiGatewayMethodRoomsRoomidVarTriggerDashcleanupPost"
+            ]
+          },
+          "SecureRoomApiHandlerLambdaPermissionApiGateway": {
+            "Type": "AWS::Lambda::Permission",
+            "Properties": {
+              "FunctionName": {
+                "Fn::GetAtt": [
+                  "SecureRoomApiHandlerLambdaFunction",
+                  "Arn"
+                ]
+              },
+              "Action": "lambda:InvokeFunction",
+              "Principal": "apigateway.amazonaws.com",
+              "SourceArn": {
+                "Fn::Join": [
+                  "",
+                  [
+                    "arn:",
+                    {
+                      "Ref": "AWS::Partition"
+                    },
+                    ":execute-api:",
+                    {
+                      "Ref": "AWS::Region"
+                    },
+                    ":",
+                    {
+                      "Ref": "AWS::AccountId"
+                    },
+                    ":",
+                    {
+                      "Ref": "ApiGatewayRestApi"
+                    },
+                    "/*/*"
+                  ]
+                ]
+              }
             }
           },
           "WebsocketsApi": {
@@ -593,8 +1816,8 @@
                       "http://localhost:3000",
                       "http://localhost:8080",
                       "http://localhost:5173",
-                      "https://keepr-app-gold.vercel.app",
-                      "https://keepr-ggy0.onrender.com"
+                      "https://keeper-app-gold.vercel.app",
+                      "https://keeper-ggy0.onrender.com"
                     ],
                     "ExposedHeaders": [],
                     "MaxAge": 3000
@@ -723,11 +1946,147 @@
                 "Enabled": true
               }
             }
+          },
+          "SecureRoomBucket": {
+            "Type": "AWS::S3::Bucket",
+            "Properties": {
+              "BucketName": "keepr-secure-rooms-dev",
+              "PublicAccessBlockConfiguration": {
+                "BlockPublicAcls": true,
+                "BlockPublicPolicy": true,
+                "IgnorePublicAcls": true,
+                "RestrictPublicBuckets": true
+              },
+              "BucketEncryption": {
+                "ServerSideEncryptionConfiguration": [
+                  {
+                    "ServerSideEncryptionByDefault": {
+                      "SSEAlgorithm": "AES256"
+                    }
+                  }
+                ]
+              },
+              "CorsConfiguration": {
+                "CorsRules": [
+                  {
+                    "AllowedHeaders": [
+                      "*"
+                    ],
+                    "AllowedMethods": [
+                      "PUT",
+                      "GET",
+                      "POST",
+                      "DELETE"
+                    ],
+                    "AllowedOrigins": [
+                      "http://localhost:3000",
+                      "http://localhost:8080",
+                      "http://localhost:5173",
+                      "https://keeper-app-gold.vercel.app"
+                    ],
+                    "ExposedHeaders": [
+                      "ETag"
+                    ],
+                    "MaxAge": 3000
+                  }
+                ]
+              },
+              "LifecycleConfiguration": {
+                "Rules": [
+                  {
+                    "Id": "DeleteExpiredRoomObjects",
+                    "Status": "Enabled",
+                    "ExpirationInDays": 30,
+                    "NoncurrentVersionExpirationInDays": 1
+                  }
+                ]
+              }
+            }
+          },
+          "RoomSettingsTable": {
+            "Type": "AWS::DynamoDB::Table",
+            "Properties": {
+              "TableName": "keepr-room-settings-dev",
+              "AttributeDefinitions": [
+                {
+                  "AttributeName": "roomId",
+                  "AttributeType": "S"
+                },
+                {
+                  "AttributeName": "createdAt",
+                  "AttributeType": "N"
+                },
+                {
+                  "AttributeName": "ownerId",
+                  "AttributeType": "S"
+                },
+                {
+                  "AttributeName": "expiryTimestamp",
+                  "AttributeType": "N"
+                }
+              ],
+              "KeySchema": [
+                {
+                  "AttributeName": "roomId",
+                  "KeyType": "HASH"
+                }
+              ],
+              "GlobalSecondaryIndexes": [
+                {
+                  "IndexName": "OwnerIdIndex",
+                  "KeySchema": [
+                    {
+                      "AttributeName": "ownerId",
+                      "KeyType": "HASH"
+                    },
+                    {
+                      "AttributeName": "createdAt",
+                      "KeyType": "RANGE"
+                    }
+                  ],
+                  "Projection": {
+                    "ProjectionType": "ALL"
+                  },
+                  "ProvisionedThroughput": {
+                    "ReadCapacityUnits": 5,
+                    "WriteCapacityUnits": 5
+                  }
+                },
+                {
+                  "IndexName": "ExpiryIndex",
+                  "KeySchema": [
+                    {
+                      "AttributeName": "expiryTimestamp",
+                      "KeyType": "HASH"
+                    }
+                  ],
+                  "Projection": {
+                    "ProjectionType": "KEYS_ONLY"
+                  },
+                  "ProvisionedThroughput": {
+                    "ReadCapacityUnits": 5,
+                    "WriteCapacityUnits": 5
+                  }
+                }
+              ],
+              "BillingMode": "PROVISIONED",
+              "ProvisionedThroughput": {
+                "ReadCapacityUnits": 5,
+                "WriteCapacityUnits": 5
+              },
+              "TimeToLiveSpecification": {
+                "AttributeName": "ttl",
+                "Enabled": true
+              },
+              "StreamSpecification": {
+                "StreamViewType": "NEW_AND_OLD_IMAGES"
+              }
+            }
           }
         },
         "Outputs": {
           "ServerlessDeploymentBucketName": {
-            "Value": "serverless-framework-deployments-ap-south-1-d8da0850-c30a",
+            "Value": "serverless-framework-deployments-ap-south-1-db10e28f-a1c6",
             "Export": {
               "Name": "sls-keepr-ephemeral-chat-dev-ServerlessDeploymentBucketName"
             }
@@ -735,7 +2094,7 @@
           "ConnectionHandlerLambdaFunctionQualifiedArn": {
             "Description": "Current Lambda function version",
             "Value": {
-              "Ref": "ConnectionHandlerLambdaVersionLJw8khJLUY1QyEiho1GeGkDRJVTwRmICxDA08WNyV5Q"
+              "Ref": "ConnectionHandlerLambdaVersionQePsG5Xor3iu5mtH08S5UoeO3tSoBzajUCQv2uDqxm0"
             },
             "Export": {
               "Name": "sls-keepr-ephemeral-chat-dev-ConnectionHandlerLambdaFunctionQualifiedArn"
@@ -744,7 +2103,7 @@
           "DefaultHandlerLambdaFunctionQualifiedArn": {
             "Description": "Current Lambda function version",
             "Value": {
-              "Ref": "DefaultHandlerLambdaVersionbi1man0Jcp4uIJ7iiOrBDjbsOrivTFM8RLHiGhjBUc"
+              "Ref": "DefaultHandlerLambdaVersionxFPOrJ2dkYnAbUGtK5kh6vmXID9DQnoVOrTB1rB14UI"
             },
             "Export": {
               "Name": "sls-keepr-ephemeral-chat-dev-DefaultHandlerLambdaFunctionQualifiedArn"
@@ -753,10 +2112,54 @@
           "SendMessageHandlerLambdaFunctionQualifiedArn": {
             "Description": "Current Lambda function version",
             "Value": {
-              "Ref": "SendMessageHandlerLambdaVersionN1EnsxDXLgJuQgCfdTlgh8DJrbzFkQ9oMH86evhKw3c"
+              "Ref": "SendMessageHandlerLambdaVersiono9b861AwIkI3K6ggKOPmlvs5lFiJqUV2w9WRrzsxfw"
             },
             "Export": {
               "Name": "sls-keepr-ephemeral-chat-dev-SendMessageHandlerLambdaFunctionQualifiedArn"
+            }
+          },
+          "SecureRoomApiHandlerLambdaFunctionQualifiedArn": {
+            "Description": "Current Lambda function version",
+            "Value": {
+              "Ref": "SecureRoomApiHandlerLambdaVersionPldxKWu0BE2iFiNpIgUt5cVR7sLg6zXztEFvCvk1Gw"
+            },
+            "Export": {
+              "Name": "sls-keepr-ephemeral-chat-dev-SecureRoomApiHandlerLambdaFunctionQualifiedArn"
+            }
+          },
+          "SecureRoomCronJobLambdaFunctionQualifiedArn": {
+            "Description": "Current Lambda function version",
+            "Value": {
+              "Ref": "SecureRoomCronJobLambdaVersionfhScJx0nAqfYBbCdrb9kWRwtVUkT0KcMaw9J5vOh8E"
+            },
+            "Export": {
+              "Name": "sls-keepr-ephemeral-chat-dev-SecureRoomCronJobLambdaFunctionQualifiedArn"
+            }
+          },
+          "ServiceEndpoint": {
+            "Description": "URL of the service endpoint",
+            "Value": {
+              "Fn::Join": [
+                "",
+                [
+                  "https://",
+                  {
+                    "Ref": "ApiGatewayRestApi"
+                  },
+                  ".execute-api.",
+                  {
+                    "Ref": "AWS::Region"
+                  },
+                  ".",
+                  {
+                    "Ref": "AWS::URLSuffix"
+                  },
+                  "/dev"
+                ]
+              ]
+            },
+            "Export": {
+              "Name": "sls-keepr-ephemeral-chat-dev-ServiceEndpoint"
             }
           },
           "ServiceEndpointWebsocket": {
@@ -785,31 +2188,31 @@
               "Name": "sls-keepr-ephemeral-chat-dev-ServiceEndpointWebsocket"
             }
           },
-          "VaultBucketName": {
-            "Description": "Set this as AWS_BUCKET_NAME in your .env",
+          "SecureRoomBucketName": {
+            "Description": "S3 Bucket for Secure Rooms",
             "Value": {
-              "Ref": "VaultBucket"
+              "Ref": "SecureRoomBucket"
+            },
+            "Export": {
+              "Name": "keepr-ephemeral-chat-secure-room-bucket-dev"
             }
           },
-          "DetonatorLambdaArn": {
-            "Description": "Set LAMBDA_FUNCTION_NAME=KeeprLinkDetonator in your .env",
+          "RoomSettingsTableName": {
+            "Description": "DynamoDB Table for Room Settings",
             "Value": {
-              "Fn::GetAtt": [
-                "DetonatorLambdaFunction",
-                "Arn"
-              ]
+              "Ref": "RoomSettingsTable"
+            },
+            "Export": {
+              "Name": "keepr-ephemeral-chat-room-settings-table-dev"
             }
           },
-          "ChatConnectionsTableName": {
-            "Description": "DynamoDB table for ephemeral chat WebSocket connections",
+          "SecureRoomApiEndpoint": {
+            "Description": "REST API Endpoint for Secure Rooms",
             "Value": {
-              "Ref": "ConnectionsTable"
-            }
-          },
-          "WebSocketUrl": {
-            "Description": "Paste this as VITE_WEBSOCKET_URL in your .env",
-            "Value": {
-              "Fn::Sub": "wss://${WebsocketsApi}.execute-api.${AWS::Region}.amazonaws.com/dev"
+              "Fn::Sub": "https://\\${ApiGatewayRestApi}.execute-api.\\${AWS::Region}.amazonaws.com/dev"
+            },
+            "Export": {
+              "Name": "keepr-ephemeral-chat-api-endpoint-dev"
             }
           }
         }
@@ -822,7 +2225,10 @@
       "detonatorFunctionName": "KeeprLinkDetonator",
       "detonatorMemoryMB": 1600,
       "detonatorTimeoutSec": 60,
-      "connectionsTable": "keepr-ephemeral-chat-connections-dev"
+      "connectionsTable": "keepr-ephemeral-chat-connections-dev",
+      "secureRoomBucketName": "keepr-secure-rooms-dev",
+      "roomSettingsTableName": "keepr-room-settings-dev",
+      "roomApiGatewayName": "keepr-room-api-dev"
     },
     "pluginsData": {},
     "functions": {
@@ -846,7 +2252,7 @@
         "timeout": 6,
         "runtime": "nodejs20.x",
         "vpc": {},
-        "versionLogicalId": "ConnectionHandlerLambdaVersionLJw8khJLUY1QyEiho1GeGkDRJVTwRmICxDA08WNyV5Q"
+        "versionLogicalId": "ConnectionHandlerLambdaVersionQePsG5Xor3iu5mtH08S5UoeO3tSoBzajUCQv2uDqxm0"
       },
       "defaultHandler": {
         "handler": "handler.defaultHandler",
@@ -863,7 +2269,7 @@
         "timeout": 6,
         "runtime": "nodejs20.x",
         "vpc": {},
-        "versionLogicalId": "DefaultHandlerLambdaVersionbi1man0Jcp4uIJ7iiOrBDjbsOrivTFM8RLHiGhjBUc"
+        "versionLogicalId": "DefaultHandlerLambdaVersionxFPOrJ2dkYnAbUGtK5kh6vmXID9DQnoVOrTB1rB14UI"
       },
       "sendMessageHandler": {
         "handler": "handler.sendMessageHandler",
@@ -880,7 +2286,315 @@
         "timeout": 6,
         "runtime": "nodejs20.x",
         "vpc": {},
-        "versionLogicalId": "SendMessageHandlerLambdaVersionN1EnsxDXLgJuQgCfdTlgh8DJrbzFkQ9oMH86evhKw3c"
+        "versionLogicalId": "SendMessageHandlerLambdaVersiono9b861AwIkI3K6ggKOPmlvs5lFiJqUV2w9WRrzsxfw"
+      },
+      "secureRoomApiHandler": {
+        "handler": "handlers/secureRoomApi.handler",
+        "timeout": 29,
+        "memorySize": 512,
+        "events": [
+          {
+            "http": {
+              "path": "rooms/{roomId}/upload-url",
+              "method": "post",
+              "cors": {
+                "origin": "*",
+                "methods": [
+                  "OPTIONS",
+                  "POST"
+                ],
+                "headers": [
+                  "Content-Type",
+                  "X-Amz-Date",
+                  "Authorization",
+                  "X-Api-Key",
+                  "X-Amz-Security-Token",
+                  "X-Amz-User-Agent",
+                  "X-Amzn-Trace-Id"
+                ],
+                "allowCredentials": false
+              },
+              "integration": "AWS_PROXY"
+            }
+          },
+          {
+            "http": {
+              "path": "rooms/{roomId}/download-url",
+              "method": "post",
+              "cors": {
+                "origin": "*",
+                "methods": [
+                  "OPTIONS",
+                  "POST"
+                ],
+                "headers": [
+                  "Content-Type",
+                  "X-Amz-Date",
+                  "Authorization",
+                  "X-Api-Key",
+                  "X-Amz-Security-Token",
+                  "X-Amz-User-Agent",
+                  "X-Amzn-Trace-Id"
+                ],
+                "allowCredentials": false
+              },
+              "integration": "AWS_PROXY"
+            }
+          },
+          {
+            "http": {
+              "path": "rooms",
+              "method": "post",
+              "cors": {
+                "origin": "*",
+                "methods": [
+                  "OPTIONS",
+                  "POST"
+                ],
+                "headers": [
+                  "Content-Type",
+                  "X-Amz-Date",
+                  "Authorization",
+                  "X-Api-Key",
+                  "X-Amz-Security-Token",
+                  "X-Amz-User-Agent",
+                  "X-Amzn-Trace-Id"
+                ],
+                "allowCredentials": false
+              },
+              "integration": "AWS_PROXY"
+            }
+          },
+          {
+            "http": {
+              "path": "rooms",
+              "method": "get",
+              "cors": {
+                "origin": "*",
+                "methods": [
+                  "OPTIONS",
+                  "GET"
+                ],
+                "headers": [
+                  "Content-Type",
+                  "X-Amz-Date",
+                  "Authorization",
+                  "X-Api-Key",
+                  "X-Amz-Security-Token",
+                  "X-Amz-User-Agent",
+                  "X-Amzn-Trace-Id"
+                ],
+                "allowCredentials": false
+              },
+              "integration": "AWS_PROXY"
+            }
+          },
+          {
+            "http": {
+              "path": "rooms/{roomId}",
+              "method": "get",
+              "cors": {
+                "origin": "*",
+                "methods": [
+                  "OPTIONS",
+                  "GET"
+                ],
+                "headers": [
+                  "Content-Type",
+                  "X-Amz-Date",
+                  "Authorization",
+                  "X-Api-Key",
+                  "X-Amz-Security-Token",
+                  "X-Amz-User-Agent",
+                  "X-Amzn-Trace-Id"
+                ],
+                "allowCredentials": false
+              },
+              "integration": "AWS_PROXY"
+            }
+          },
+          {
+            "http": {
+              "path": "rooms/{roomId}",
+              "method": "put",
+              "cors": {
+                "origin": "*",
+                "methods": [
+                  "OPTIONS",
+                  "PUT"
+                ],
+                "headers": [
+                  "Content-Type",
+                  "X-Amz-Date",
+                  "Authorization",
+                  "X-Api-Key",
+                  "X-Amz-Security-Token",
+                  "X-Amz-User-Agent",
+                  "X-Amzn-Trace-Id"
+                ],
+                "allowCredentials": false
+              },
+              "integration": "AWS_PROXY"
+            }
+          },
+          {
+            "http": {
+              "path": "rooms/{roomId}",
+              "method": "delete",
+              "cors": {
+                "origin": "*",
+                "methods": [
+                  "OPTIONS",
+                  "DELETE"
+                ],
+                "headers": [
+                  "Content-Type",
+                  "X-Amz-Date",
+                  "Authorization",
+                  "X-Api-Key",
+                  "X-Amz-Security-Token",
+                  "X-Amz-User-Agent",
+                  "X-Amzn-Trace-Id"
+                ],
+                "allowCredentials": false
+              },
+              "integration": "AWS_PROXY"
+            }
+          },
+          {
+            "http": {
+              "path": "rooms/{roomId}/files",
+              "method": "get",
+              "cors": {
+                "origin": "*",
+                "methods": [
+                  "OPTIONS",
+                  "GET"
+                ],
+                "headers": [
+                  "Content-Type",
+                  "X-Amz-Date",
+                  "Authorization",
+                  "X-Api-Key",
+                  "X-Amz-Security-Token",
+                  "X-Amz-User-Agent",
+                  "X-Amzn-Trace-Id"
+                ],
+                "allowCredentials": false
+              },
+              "integration": "AWS_PROXY"
+            }
+          },
+          {
+            "http": {
+              "path": "rooms/{roomId}/files",
+              "method": "delete",
+              "cors": {
+                "origin": "*",
+                "methods": [
+                  "OPTIONS",
+                  "DELETE"
+                ],
+                "headers": [
+                  "Content-Type",
+                  "X-Amz-Date",
+                  "Authorization",
+                  "X-Api-Key",
+                  "X-Amz-Security-Token",
+                  "X-Amz-User-Agent",
+                  "X-Amzn-Trace-Id"
+                ],
+                "allowCredentials": false
+              },
+              "integration": "AWS_PROXY"
+            }
+          },
+          {
+            "http": {
+              "path": "rooms/{roomId}/test-migration",
+              "method": "post",
+              "cors": {
+                "origin": "*",
+                "methods": [
+                  "OPTIONS",
+                  "POST"
+                ],
+                "headers": [
+                  "Content-Type",
+                  "X-Amz-Date",
+                  "Authorization",
+                  "X-Api-Key",
+                  "X-Amz-Security-Token",
+                  "X-Amz-User-Agent",
+                  "X-Amzn-Trace-Id"
+                ],
+                "allowCredentials": false
+              },
+              "integration": "AWS_PROXY"
+            }
+          },
+          {
+            "http": {
+              "path": "rooms/{roomId}/trigger-cleanup",
+              "method": "post",
+              "cors": {
+                "origin": "*",
+                "methods": [
+                  "OPTIONS",
+                  "POST"
+                ],
+                "headers": [
+                  "Content-Type",
+                  "X-Amz-Date",
+                  "Authorization",
+                  "X-Api-Key",
+                  "X-Amz-Security-Token",
+                  "X-Amz-User-Agent",
+                  "X-Amzn-Trace-Id"
+                ],
+                "allowCredentials": false
+              },
+              "integration": "AWS_PROXY"
+            }
+          }
+        ],
+        "name": "keepr-ephemeral-chat-dev-secureRoomApiHandler",
+        "environment": {
+          "NODE_OPTIONS": "--enable-source-maps"
+        },
+        "package": {},
+        "memory": 512,
+        "runtime": "nodejs20.x",
+        "vpc": {},
+        "versionLogicalId": "SecureRoomApiHandlerLambdaVersionPldxKWu0BE2iFiNpIgUt5cVR7sLg6zXztEFvCvk1Gw"
+      },
+      "secureRoomCronJob": {
+        "handler": "handlers/secureRoomCron.handler",
+        "timeout": 300,
+        "memorySize": 512,
+        "events": [
+          {
+            "schedule": {
+              "rate": [
+                "rate(5 minutes)"
+              ],
+              "enabled": true,
+              "description": "Cleanup and emergency handoff for expired secure rooms (runs every 5 min)"
+            }
+          }
+        ],
+        "environment": {
+          "SENDER_EMAIL": "anshulspotify5@gmail.com",
+          "EMAIL_USER": "anshulspotify5@gmail.com",
+          "EMAIL_APP_PASSWORD": "cdxmbbvfwqaroqdg",
+          "NODE_OPTIONS": "--enable-source-maps"
+        },
+        "name": "keepr-ephemeral-chat-dev-secureRoomCronJob",
+        "package": {},
+        "memory": 512,
+        "runtime": "nodejs20.x",
+        "vpc": {},
+        "versionLogicalId": "SecureRoomCronJobLambdaVersionfhScJx0nAqfYBbCdrb9kWRwtVUkT0KcMaw9J5vOh8E"
       }
     },
     "resources": {
@@ -920,8 +2634,8 @@
                     "http://localhost:3000",
                     "http://localhost:8080",
                     "http://localhost:5173",
-                    "https://keepr-app-gold.vercel.app",
-                    "https://keepr-ggy0.onrender.com"
+                    "https://keeper-app-gold.vercel.app",
+                    "https://keeper-ggy0.onrender.com"
                   ],
                   "ExposedHeaders": [],
                   "MaxAge": 3000
@@ -1050,34 +2764,170 @@
               "Enabled": true
             }
           }
+        },
+        "SecureRoomBucket": {
+          "Type": "AWS::S3::Bucket",
+          "Properties": {
+            "BucketName": "keepr-secure-rooms-dev",
+            "PublicAccessBlockConfiguration": {
+              "BlockPublicAcls": true,
+              "BlockPublicPolicy": true,
+              "IgnorePublicAcls": true,
+              "RestrictPublicBuckets": true
+            },
+            "BucketEncryption": {
+              "ServerSideEncryptionConfiguration": [
+                {
+                  "ServerSideEncryptionByDefault": {
+                    "SSEAlgorithm": "AES256"
+                  }
+                }
+              ]
+            },
+            "CorsConfiguration": {
+              "CorsRules": [
+                {
+                  "AllowedHeaders": [
+                    "*"
+                  ],
+                  "AllowedMethods": [
+                    "PUT",
+                    "GET",
+                    "POST",
+                    "DELETE"
+                  ],
+                  "AllowedOrigins": [
+                    "http://localhost:3000",
+                    "http://localhost:8080",
+                    "http://localhost:5173",
+                    "https://keeper-app-gold.vercel.app"
+                  ],
+                  "ExposedHeaders": [
+                    "ETag"
+                  ],
+                  "MaxAge": 3000
+                }
+              ]
+            },
+            "LifecycleConfiguration": {
+              "Rules": [
+                {
+                  "Id": "DeleteExpiredRoomObjects",
+                  "Status": "Enabled",
+                  "ExpirationInDays": 30,
+                  "NoncurrentVersionExpirationInDays": 1
+                }
+              ]
+            }
+          }
+        },
+        "RoomSettingsTable": {
+          "Type": "AWS::DynamoDB::Table",
+          "Properties": {
+            "TableName": "keepr-room-settings-dev",
+            "AttributeDefinitions": [
+              {
+                "AttributeName": "roomId",
+                "AttributeType": "S"
+              },
+              {
+                "AttributeName": "createdAt",
+                "AttributeType": "N"
+              },
+              {
+                "AttributeName": "ownerId",
+                "AttributeType": "S"
+              },
+              {
+                "AttributeName": "expiryTimestamp",
+                "AttributeType": "N"
+              }
+            ],
+            "KeySchema": [
+              {
+                "AttributeName": "roomId",
+                "KeyType": "HASH"
+              }
+            ],
+            "GlobalSecondaryIndexes": [
+              {
+                "IndexName": "OwnerIdIndex",
+                "KeySchema": [
+                  {
+                    "AttributeName": "ownerId",
+                    "KeyType": "HASH"
+                  },
+                  {
+                    "AttributeName": "createdAt",
+                    "KeyType": "RANGE"
+                  }
+                ],
+                "Projection": {
+                  "ProjectionType": "ALL"
+                },
+                "ProvisionedThroughput": {
+                  "ReadCapacityUnits": 5,
+                  "WriteCapacityUnits": 5
+                }
+              },
+              {
+                "IndexName": "ExpiryIndex",
+                "KeySchema": [
+                  {
+                    "AttributeName": "expiryTimestamp",
+                    "KeyType": "HASH"
+                  }
+                ],
+                "Projection": {
+                  "ProjectionType": "KEYS_ONLY"
+                },
+                "ProvisionedThroughput": {
+                  "ReadCapacityUnits": 5,
+                  "WriteCapacityUnits": 5
+                }
+              }
+            ],
+            "BillingMode": "PROVISIONED",
+            "ProvisionedThroughput": {
+              "ReadCapacityUnits": 5,
+              "WriteCapacityUnits": 5
+            },
+            "TimeToLiveSpecification": {
+              "AttributeName": "ttl",
+              "Enabled": true
+            },
+            "StreamSpecification": {
+              "StreamViewType": "NEW_AND_OLD_IMAGES"
+            }
+          }
         }
       },
       "Outputs": {
-        "VaultBucketName": {
-          "Description": "Set this as AWS_BUCKET_NAME in your .env",
+        "SecureRoomBucketName": {
+          "Description": "S3 Bucket for Secure Rooms",
           "Value": {
-            "Ref": "VaultBucket"
+            "Ref": "SecureRoomBucket"
+          },
+          "Export": {
+            "Name": "keepr-ephemeral-chat-secure-room-bucket-dev"
           }
         },
-        "DetonatorLambdaArn": {
-          "Description": "Set LAMBDA_FUNCTION_NAME=KeeprLinkDetonator in your .env",
+        "RoomSettingsTableName": {
+          "Description": "DynamoDB Table for Room Settings",
           "Value": {
-            "Fn::GetAtt": [
-              "DetonatorLambdaFunction",
-              "Arn"
-            ]
+            "Ref": "RoomSettingsTable"
+          },
+          "Export": {
+            "Name": "keepr-ephemeral-chat-room-settings-table-dev"
           }
         },
-        "ChatConnectionsTableName": {
-          "Description": "DynamoDB table for ephemeral chat WebSocket connections",
+        "SecureRoomApiEndpoint": {
+          "Description": "REST API Endpoint for Secure Rooms",
           "Value": {
-            "Ref": "ConnectionsTable"
-          }
-        },
-        "WebSocketUrl": {
-          "Description": "Paste this as VITE_WEBSOCKET_URL in your .env",
-          "Value": {
-            "Fn::Sub": "wss://${WebsocketsApi}.execute-api.${AWS::Region}.amazonaws.com/dev"
+            "Fn::Sub": "https://\\${ApiGatewayRestApi}.execute-api.\\${AWS::Region}.amazonaws.com/dev"
+          },
+          "Export": {
+            "Name": "keepr-ephemeral-chat-api-endpoint-dev"
           }
         }
       }
@@ -1086,6 +2936,7 @@
     "serviceFilename": "serverless",
     "initialServerlessConfig": {
       "service": "keepr-ephemeral-chat",
+      "frameworkVersion": "4",
       "custom": {
         "$ref": "$[\"service\"][\"custom\"]"
       },
@@ -1101,11 +2952,10 @@
     },
     "appId": null,
     "orgId": null,
-    "layers": {},
-    "artifact": "C:\\Users\\ANSH\\Downloads\\keepr. new\\keepr-ephemeral-chat-backend\\.serverless\\keepr-ephemeral-chat.zip"
+    "layers": {}
   },
   "package": {
-    "artifactDirectoryName": "serverless/keepr-ephemeral-chat/dev/1779201585702-2026-05-19T14:39:45.702Z",
+    "artifactDirectoryName": "serverless/keepr-ephemeral-chat/dev/1779703674016-2026-05-25T10:07:54.016Z",
     "artifact": "keepr-ephemeral-chat.zip"
   }
 }

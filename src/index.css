@@ -61,6 +61,7 @@
   background: transparent;
 }
 
+
 /* Chat panel — slightly more visible thumb since it's a tall scroll area */
 .custom-scrollbar::-webkit-scrollbar {
   width: 3px;
@@ -73,5 +74,41 @@
 
 .custom-scrollbar::-webkit-scrollbar-thumb:hover {
   background: rgba(6, 182, 212, 0.45);
+}
+
+/* ── Clerk Modal Z-Index Fix ───────────────────────────────────────────────── */
+/* Ensures Clerk payment/checkout modal appears above the navbar (z-50) */
+
+/* Clerk modal overlay/backdrop */
+[role="alertdialog"],
+[role="dialog"],
+.cl-modal-overlay,
+.cl-modal-backdrop,
+.cl-overlay,
+.cl-backdrop,
+[data-test-id*="modal"],
+[data-test-id*="dialog"] {
+  z-index: 70 !important;
+}
+
+/* Clerk modal container */
+.cl-modal,
+.cl-checkout,
+.cl-dialog,
+.cl-modal-container,
+[role="alertdialog"] > *,
+[role="dialog"] > * {
+  z-index: 71 !important;
+}
+
+/* Additional Clerk elements that might contain the modal */
+.cl-popover,
+.cl-dropdown,
+.cl-menu,
+[class*="cl-"][class*="modal"],
+[class*="cl-"][class*="dialog"],
+[class*="clerk"][class*="modal"],
+[class*="clerk"][class*="dialog"] {
+  z-index: 70 !important;
 }
 

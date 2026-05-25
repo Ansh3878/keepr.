@@ -1,10 +1,27 @@
+# Dependency directories
 node_modules/
-build/
+
+# Production build outputs
 dist/
+build/
 coverage/
-.DS_Store
+.vercel/
+
+# Serverless build files
+.serverless/
+keepr-ephemeral-chat-backend/.serverless/
+
+# Local databases and logs
+rooms.json
+*_logs.json
+logs_*.json
 *.log
+
+# Scratch scripts and credentials
 .env*
 !.env.example
+test_multipart.cjs
 
-.vercel
+# System files
+.DS_Store
+Thumbs.db
