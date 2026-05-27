@@ -145,18 +145,30 @@ export function SecureStorageRoom() {
       });
       if (response.ok) {
         const data = await response.json();
-        const mappedRooms: SecureRoom[] = (data.rooms || []).map((r: any) => ({
-          id: r.roomId,
-          name: r.name,
-          pin: r.pin,
-          encryptionKeyHash: r.encryptionKey || r.passkey || '',
-          safetyStrategy: r.safetyStrategy,
-          inactivityDays: r.inactivityDays,
-          transferEmail: r.transferEmail,
-          files: [], // we will fetch files when a room is unlocked/selected
-          createdAt: r.createdAt.substring(0, 10),
-        }));
-        setRooms(mappedRooms);
+        setRooms(prevRooms => {
+          return (data.rooms || []).map((r: any) => {
+            const existingRoom = prevRooms.find(existing => existing.id === r.roomId);
+            return {
+              id: r.roomId,
+              name: r.name,
+              pin: r.pin,
+              encryptionKeyHash: r.encryptionKey || r.passkey || '',
+              safetyStrategy: r.safetyStrategy,
+              inactivityDays: r.inactivityDays,
+              transferEmail: r.transferEmail,
+              files: existingRoom ? existingRoom.files : [],
+              createdAt: r.createdAt ? (typeof r.createdAt === 'string' ? r.createdAt.substring(0, 10) : new Date(r.createdAt).toISOString().substring(0, 10)) : new Date().toISOString().substring(0, 10),
+            };
+          });
+        });
+
+        // If a chamber is currently unlocked, refresh its files list from S3 as well!
+        if (activeRoomId) {
+          fetchRoomFiles(activeRoomId).then(refreshedFiles => {
+            setFiles(refreshedFiles);
+            setRooms(prev => prev.map(r => r.id === activeRoomId ? { ...r, files: refreshedFiles } : r));
+          }).catch(err => console.error("Error auto-refreshing active room files:", err));
+        }
       } else {
         console.error("Failed to fetch rooms from backend:", response.statusText);
       }
@@ -2274,7 +2286,7 @@ export function SecureStorageRoom() {
                   <div className="w-12 h-12 rounded-2xl bg-red-500/10 border border-red-500/20 flex items-center justify-center shrink-0">
                     <ShieldAlert className="w-6 h-6 text-red-400" />
                   </div>
-                  <h2 className="text-xl md:text-2xl font-bold text-white tracking-tight truncate select-none leading-none">
+                  <h2 className="text-sm md:text-base font-bold text-white tracking-tight select-none leading-snug break-words">
                     Migrate {roomName}
                   </h2>
                 </div>
