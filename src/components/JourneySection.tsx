@@ -367,7 +367,7 @@ export const JourneySection: React.FC = () => {
         {/* 3D Core Card Slider Frame */}
         <div className="relative w-[300px] md:w-[350px] h-[400px] flex items-center justify-center">
           {cards.map((card, idx) => {
-            const { x, scale, rotateY, opacity, zIndex, isActive } = getCardProps(idx);
+            const { x, scale, opacity, zIndex, isActive } = getCardProps(idx);
 
             const prevOffset = getCardOffset(idx, prevActiveIndex);
             const currentOffset = getCardOffset(idx, activeIndex);
