@@ -2128,7 +2128,18 @@ export function SecureStorageRoom() {
             <div className="space-y-6">
               <div className="flex items-center justify-between gap-4 flex-wrap">
                 <div className="space-y-1">
-                  <h2 className="text-2xl font-bold text-white tracking-tighter">Active Vaults</h2>
+                  <div className="flex items-center gap-3">
+                    <h2 className="text-2xl font-bold text-white tracking-tighter">Active Vaults</h2>
+                    <button
+                      type="button"
+                      onClick={fetchRoomsFromBackend}
+                      disabled={isLoadingRooms}
+                      title="Refresh Vaults list from cloud database"
+                      className="p-2 bg-zinc-900/60 hover:bg-zinc-800 border border-zinc-800 hover:border-zinc-700 text-zinc-400 hover:text-white rounded-xl transition-all cursor-pointer outline-none active:scale-95 disabled:opacity-50 shrink-0"
+                    >
+                      <RefreshCw className={`w-3.5 h-3.5 ${isLoadingRooms ? 'animate-spin' : ''}`} />
+                    </button>
+                  </div>
                   <p className="text-sm text-zinc-500 font-light font-sans">Select any configured cipher box below to trigger memory decipher nodes.</p>
                 </div>
                 
@@ -2258,23 +2269,19 @@ export function SecureStorageRoom() {
               <div className="absolute -top-20 left-1/2 -translate-x-1/2 w-48 h-48 bg-red-500/5 blur-[80px] rounded-full pointer-events-none" />
 
               {/* Header strip */}
-              <div className="relative flex items-center gap-4 px-6 pt-7 pb-6 border-b border-white/5">
-                <div className="w-11 h-11 rounded-2xl bg-red-500/10 border border-red-500/20 flex items-center justify-center shrink-0">
-                  <ShieldAlert className="w-5.5 h-5.5 text-red-400" />
-                </div>
-                <div className="flex-1 min-w-0">
-                  <div className="flex items-center gap-2">
-                    <span className="text-[9px] font-black uppercase tracking-[0.2em] text-red-400 bg-red-500/10 border border-red-500/20 px-2.5 py-0.5 rounded-md">
-                      Timer Expired
-                    </span>
+              <div className="relative flex items-center justify-between gap-4 px-6 pt-7 pb-6 border-b border-white/5">
+                <div className="flex items-center gap-3.5 min-w-0">
+                  <div className="w-12 h-12 rounded-2xl bg-red-500/10 border border-red-500/20 flex items-center justify-center shrink-0">
+                    <ShieldAlert className="w-6 h-6 text-red-400" />
                   </div>
-                  <h2 className="text-lg font-bold text-white tracking-tight mt-1.5 flex items-center flex-wrap">
-                    Migrate 
-                    <span className="font-mono font-medium text-red-300 bg-red-500/5 px-2 py-0.5 rounded border border-red-500/10 text-xs ml-1.5 shrink-0 select-all">
-                      {roomName}
-                    </span>
+                  <h2 className="text-xl md:text-2xl font-bold text-white tracking-tight truncate select-none leading-none">
+                    Migrate {roomName}
                   </h2>
                 </div>
+                
+                <span className="text-[9px] font-black uppercase tracking-[0.2em] text-red-400 bg-red-500/10 border border-red-500/20 px-2.5 py-1 rounded-md shrink-0 select-none">
+                  Timer Expired
+                </span>
               </div>
 
               {/* Status details - Sleek premium capsules */}
@@ -2427,13 +2434,7 @@ export function SecureStorageRoom() {
               )}
             </AnimatePresence>
 
-            {/* Rearrange Tip */}
-            {viewMode === 'grid' && filteredFiles.length > 0 && (
-              <div className="flex items-center gap-2 px-3 py-1.5 bg-cyan-500/5 border border-cyan-500/15 rounded-full text-[11px] text-cyan-400 font-mono w-fit shadow-inner select-none font-sans">
-                <span className="w-1.5 h-1.5 rounded-full bg-cyan-400 shrink-0" />
-                <span>💡 Tip: Drag and drop files in grid view to manually rearrange their storage order.</span>
-              </div>
-            )}
+
 
             {/* SECURED FILE VIEWER CASES */}
             {filteredFiles.length === 0 ? (
