@@ -1262,6 +1262,7 @@ export function SecureStorageRoom() {
             inactivityDays: inactivityDays,
             safetyStrategy: safetyStrategy,
             transferEmail: transferEmail,
+            userEmail: user?.primaryEmailAddress?.emailAddress || '',
           };
 
           // Add a 10-second timeout so the button never gets stuck if backend hangs
@@ -1872,8 +1873,28 @@ export function SecureStorageRoom() {
                     <div className="space-y-1">
                       <h3 className="text-sm font-semibold text-white">Safety Switch Setup</h3>
                       <p className="text-xs text-zinc-400">
-                        Choose the emergency trigger strategy that fires if you choose not to log in for more than 30 consecutive days.
+                        Choose your inactivity timeout and emergency trigger strategy that fires if you do not log in.
                       </p>
+                    </div>
+
+                    <div className="space-y-2">
+                      <label className="text-[10px] text-zinc-500 font-mono uppercase tracking-wider font-bold block">Inactivity Timeout Limit</label>
+                      <div className="relative">
+                        <select
+                          value={newRoomInactivityDays}
+                          onChange={(e) => setNewRoomInactivityDays(Number(e.target.value))}
+                          className="w-full appearance-none bg-zinc-900/50 border border-zinc-800 focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500 rounded-xl px-4 py-3 text-sm text-white transition-all outline-none cursor-pointer"
+                        >
+                          <option value={0} className="bg-zinc-950">1 Minute (Test Mode)</option>
+                          <option value={1} className="bg-zinc-950">1 Day</option>
+                          <option value={7} className="bg-zinc-950">7 Days</option>
+                          <option value={30} className="bg-zinc-950">30 Days</option>
+                          <option value={90} className="bg-zinc-950">90 Days</option>
+                        </select>
+                        <div className="absolute inset-y-0 right-0 flex items-center pr-4 pointer-events-none text-zinc-500">
+                          <svg className="w-4.5 h-4.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 9l-7 7-7-7" /></svg>
+                        </div>
+                      </div>
                     </div>
 
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-3.5 pt-1">

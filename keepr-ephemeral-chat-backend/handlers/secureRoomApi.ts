@@ -36,6 +36,7 @@ import {
   sendPurgeEmail,
   listRoomFileNames,
   sendCreationEmail,
+  sendUpdateEmail,
 } from "./secureRoomCron";
 
 const s3Client = new S3Client({ region: process.env.AWS_REGION });
@@ -527,7 +528,10 @@ async function updateRoom(event: any, roomId: string, userId: string) {
     }
 
     // Update fields while protecting keys
-    const newInactivityDays = body.inactivityDays !== undefined ? body.inactivityDays : room.inactivityDays;
+    const oldInactivityDays = room.inactivityDays !== undefined ? Number(room.inactivityDays) : 30;
+    const newInactivityDays = body.inactivityDays !== undefined ? Number(body.inactivityDays) : oldInactivityDays;
+    const hasTimerChanged = body.inactivityDays !== undefined && newInactivityDays !== oldInactivityDays;
+
     const now = Date.now();
     // Recalculate expiry from NOW: 0 = 1 minute test mode, otherwise N days
     const newExpiryTimestamp = newInactivityDays === 0
@@ -550,6 +554,17 @@ async function updateRoom(event: any, roomId: string, userId: string) {
         Item: marshall(updatedRoom),
       })
     );
+
+    // If inactivity timer has changed, trigger settings update notification email!
+    if (hasTimerChanged) {
+      const userEmail = body.userEmail || room.transferEmail || "";
+      if (userEmail) {
+        console.log(`[Update Room] Inactivity timer changed from ${oldInactivityDays} to ${newInactivityDays}. Sending update email to ${userEmail}.`);
+        sendUpdateEmail(room, oldInactivityDays, newInactivityDays, userEmail).catch(err => {
+          console.error("Failed to send settings update email:", err.message);
+        });
+      }
+    }
 
     return response(200, {
       message: "Room settings updated successfully",

@@ -493,6 +493,75 @@ Keepr Security • Zero-Knowledge Secure Storage
 }
 
 // ─────────────────────────────────────────────────────────────────
+// HELPER: Send settings update notification email
+// ─────────────────────────────────────────────────────────────────
+async function sendUpdateEmail(room: any, oldInactivityDays: number, newInactivityDays: number, userEmail: string): Promise<void> {
+  const toEmail = userEmail || room.transferEmail || SENDER_EMAIL;
+  if (!toEmail) {
+    console.warn("No recipient email provided for room settings update email, skipping.");
+    return;
+  }
+
+  const oldTimerStr = oldInactivityDays === 0 ? '1 min (test mode)' : oldInactivityDays + ' days';
+  const newTimerStr = newInactivityDays === 0 ? '1 min (test mode)' : newInactivityDays + ' days';
+
+  const subject = `⚙️ Vault "${room.name}" Settings Updated — Keepr`;
+  const bodyText = `
+Your secure room "${room.name}" settings have been updated on Keepr.
+
+Vault ID: ${room.roomId}
+Inactivity Timer: Updated from ${oldTimerStr} to ${newTimerStr}
+
+Keepr Security • Zero-Knowledge Secure Storage
+`;
+
+  const bodyHtml = `
+<!DOCTYPE html>
+<html>
+<head><meta charset="UTF-8"></head>
+<body style="font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;background:#040405;color:#e4e4e7;padding:32px;margin:0;">
+  <div style="max-width:560px;margin:0 auto;background:#0b0b0f;border:1px solid #1f1f2e;border-radius:20px;overflow:hidden;">
+    <div style="background:linear-gradient(135deg,#3b82f6,#2563eb);padding:28px 32px;">
+      <h1 style="margin:0;color:#fff;font-size:20px;font-weight:800;letter-spacing:0.04em;">⚙️ Settings Updated</h1>
+    </div>
+    <div style="padding:32px;">
+      <p style="color:#fff;font-size:15px;font-weight:600;margin:0 0 20px;">Your secure room <strong>${room.name}</strong> settings have been updated.</p>
+      <table style="width:100%;border-collapse:collapse;background:#12121a;border-radius:12px;overflow:hidden;border:1px solid #27273a;">
+        <tr>
+          <td style="color:#71717a;font-size:11px;font-weight:700;text-transform:uppercase;padding:10px 16px;">Vault ID</td>
+          <td style="color:#fff;font-size:12px;font-family:monospace;padding:10px 16px;">${room.roomId}</td>
+        </tr>
+        <tr style="border-top:1px solid #27273a;">
+          <td style="color:#71717a;font-size:11px;font-weight:700;text-transform:uppercase;padding:10px 16px;">Old Timeout</td>
+          <td style="color:#f43f5e;font-size:12px;font-weight:700;padding:10px 16px;">${oldTimerStr}</td>
+        </tr>
+        <tr style="border-top:1px solid #27273a;">
+          <td style="color:#71717a;font-size:11px;font-weight:700;text-transform:uppercase;padding:10px 16px;">New Timeout</td>
+          <td style="color:#10b981;font-size:12px;font-weight:700;padding:10px 16px;">${newTimerStr}</td>
+        </tr>
+      </table>
+      <p style="color:#52525b;font-size:11px;margin-top:28px;border-top:1px solid #1f1f2e;padding-top:16px;text-align:center;">Keepr Security • Zero-Knowledge Secure Storage</p>
+    </div>
+  </div>
+</body>
+</html>
+`;
+
+  try {
+    await mailTransporter.sendMail({
+      from: `"Keepr Security" <${process.env.EMAIL_USER || SENDER_EMAIL}>`,
+      to: toEmail,
+      subject: subject,
+      text: bodyText,
+      html: bodyHtml,
+    });
+    console.log(`✓ settings update email sent to ${toEmail}`);
+  } catch (err: any) {
+    console.error(`✗ Failed to send settings update email to ${toEmail}:`, err.message);
+  }
+}
+
+// ─────────────────────────────────────────────────────────────────
 // EXPORTED HELPERS (used by secureRoomApi.ts for on-demand triggers)
 // ─────────────────────────────────────────────────────────────────
 export {
@@ -502,5 +571,6 @@ export {
   sendPurgeEmail,
   listRoomFileNames,
   sendCreationEmail,
+  sendUpdateEmail,
 };
 
