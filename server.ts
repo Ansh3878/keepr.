@@ -75,15 +75,9 @@ async function startServer() {
         return res.status(400).json({ error: 'Missing required parameters: userEmail or roomDetails' });
       }
 
-      const {
-        roomId,
-        name,
-        safetyStrategy,
-        inactivityDays,
-        transferEmail,
-        rawVaultKey,
-      } = roomDetails;
+      const { roomId, name, safetyStrategy, inactivityDays, transferEmail } = roomDetails;
 
+      // Only send the room-created confirmation to the owner
       const senderEmail = process.env.EMAIL_USER || process.env.SENDER_EMAIL || "anshulspotify5@gmail.com";
       const emailPassword = process.env.EMAIL_APP_PASSWORD;
 
@@ -92,224 +86,73 @@ async function startServer() {
         return res.status(500).json({ error: 'Email service not configured: EMAIL_APP_PASSWORD is missing on the server.' });
       }
 
-      // Explicit SMTP: port 587 STARTTLS + family:4 to force IPv4
-      // Render's network blocks outbound IPv6 — smtp.gmail.com resolves to IPv6 by default
-      // causing ENETUNREACH. family:4 pins resolution to IPv4 (74.125.x.x) which Render allows.
+      if (type !== 'create') {
+        // Only 'create' emails are supported — expiry emails are sent by the AWS Lambda cron
+        return res.json({ success: true, message: 'Email type skipped (not create)' });
+      }
+
       const transporter = nodemailer.createTransport({
         host: 'smtp.gmail.com',
         port: 587,
-        secure: false, // STARTTLS
-        family: 4,     // ← CRITICAL: force IPv4, Render blocks outbound IPv6
-        auth: {
-          user: senderEmail,
-          pass: emailPassword,
-        },
-        tls: {
-          rejectUnauthorized: false,
-        },
+        secure: false,
+        family: 4,
+        auth: { user: senderEmail, pass: emailPassword },
+        tls: { rejectUnauthorized: false },
       } as any);
 
       const isMigration = safetyStrategy === 'migration';
 
-      if (type === 'create') {
-        if (isMigration && transferEmail && rawVaultKey) {
-          const receiverMailOptions = {
-            from: `"Keepr Security" <${senderEmail}>`,
-            to: transferEmail,
-            subject: '🔐 Action Required: Keeper Secure Vault Key Handoff',
-            text: `You have been designated as a trusted backup receiver for a Secure Vault created by ${userEmail}.
-
-CRITICAL SECURITY INFORMATION:
-Your Vault Key is: ${rawVaultKey}
-
-Please store this key somewhere safe immediately (like a password manager). 
-
-When the vault creator goes inactive, you will receive a second email containing a handoff link to securely download the vault contents. You will need this key to unlock it.
-
-Stay safe,
-Keepr Security Team`,
-            html: `
-              <!DOCTYPE html>
-              <html>
-              <head><meta charset="UTF-8"></head>
-              <body style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background:#040405; color:#e4e4e7; padding:32px; margin:0;">
-                <div style="max-width:600px; margin:0 auto; background:#0b0b0f; border:1px solid #1f1f2e; border-radius:24px; overflow:hidden; box-shadow: 0 20px 40px rgba(0, 0, 0, 0.8);">
-                  <div style="background:linear-gradient(135deg, #0891b2, #0284c7); padding:32px; text-align: center;">
-                    <span style="font-size: 36px;">🔑</span>
-                    <h1 style="margin:12px 0 0; color:#ffffff; font-size:22px; font-weight:800; text-transform:uppercase; letter-spacing:0.05em;">Backup Key Assigned</h1>
-                  </div>
-                  <div style="padding:40px 32px;">
-                    <p style="color:#ffffff; font-size:16px; font-weight: 600; margin-top:0; line-height: 1.6;">You have been designated as a trusted backup receiver for a Secure Vault created by <strong>${userEmail}</strong>.</p>
-                    <p style="color:#a1a1aa; font-size:14px; line-height:1.6; margin-bottom: 24px;">To guarantee security under our zero-knowledge architecture, the vault encryption key has been handed off to you now. Please secure it immediately.</p>
-                    
-                    <div style="background:#12121a; border:1px solid #27273a; border-radius:16px; padding:24px; margin-bottom:24px; text-align:center;">
-                      <p style="margin:0 0 12px; color:#06b6d4; font-size:11px; font-weight:800; text-transform:uppercase; letter-spacing:0.05em;">Your Vault Decryption Key</p>
-                      <div style="font-family:monospace; font-size:18px; color:#10b981; font-weight:bold; letter-spacing:1px; background:#09090f; padding:12px; border-radius:8px; border:1px dashed #10b981; display:inline-block; word-break:break-all;">
-                        ${rawVaultKey}
-                      </div>
-                      <p style="margin:12px 0 0; color:#71717a; font-size:12px;">Store this key somewhere secure (like a password manager).</p>
-                    </div>
-                    
-                    <div style="background:#1c1917; border:1px solid #44403c; border-radius:16px; padding:20px; margin-bottom:24px;">
-                      <p style="margin:0; color:#d6d3d1; font-size:13px; line-height:1.6;">
-                        <strong>How does this work?</strong><br/>
-                        When the vault owner goes inactive, you will receive a second email containing a secure handoff link to download the vault contents. You will need this key to unlock and decrypt the files.
-                      </p>
-                    </div>
-                    
-                    <p style="color:#52525b; font-size:11px; margin-top:32px; border-top:1px solid #1f1f2e; padding-top:20px; text-align: center; line-height: 1.5;">
-                      This is an automated zero-knowledge security notification from Keepr. For security, we do not store this key and cannot retrieve it if lost.
-                    </p>
-                  </div>
-                </div>
-              </body>
-              </html>
-            `,
-          };
-          await transporter.sendMail(receiverMailOptions);
-        }
-
-        const ownerMailOptions = {
-          from: `"Keepr Security" <${senderEmail}>`,
-          to: userEmail,
-          subject: `🔐 Secure Vault "${name}" Created Successfully`,
-          text: `Hello,
-
-Your secure vault "${name}" has been successfully created.
-
-Vault Settings:
-- Vault ID: ${roomId}
-- Safety Strategy: ${safetyStrategy}
-- Inactivity Period: ${inactivityDays} days
-${isMigration ? `- Designated Receiver: ${transferEmail}` : ''}
-
-Your vault is secure and fully end-to-end encrypted.
-
-Stay safe,
-Keepr Security Team`,
-          html: `
-            <!DOCTYPE html>
-            <html>
-            <head><meta charset="UTF-8"></head>
-            <body style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background:#040405; color:#e4e4e7; padding:32px; margin:0;">
-              <div style="max-width:600px; margin:0 auto; background:#0b0b0f; border:1px solid #1f1f2e; border-radius:24px; overflow:hidden; box-shadow: 0 20px 40px rgba(0, 0, 0, 0.8);">
-                <div style="background:linear-gradient(135deg, #10b981, #059669); padding:32px; text-align: center;">
-                  <span style="font-size: 36px;">🔐</span>
-                  <h1 style="margin:12px 0 0; color:#ffffff; font-size:22px; font-weight:800; text-transform:uppercase; letter-spacing:0.05em;">Vault Active</h1>
-                </div>
-                <div style="padding:40px 32px;">
-                  <p style="color:#ffffff; font-size:16px; font-weight: 600; margin-top:0; line-height: 1.6;">Your secure room "${name}" is now online and secured.</p>
-                  
-                  <div style="background:#12121a; border:1px solid #27273a; border-radius:16px; padding:24px; margin-bottom:24px;">
-                    <table style="width:100%; border-collapse:collapse;">
-                      <tr>
-                        <td style="color:#71717a; font-size:12px; font-weight:700; text-transform:uppercase; padding:6px 0; width:150px;">Vault ID</td>
-                        <td style="color:#ffffff; font-size:13px; font-family:monospace; font-weight:700;">${roomId}</td>
-                      </tr>
-                      <tr>
-                        <td style="color:#71717a; font-size:12px; font-weight:700; text-transform:uppercase; padding:6px 0;">Safety Strategy</td>
-                        <td style="color:#10b981; font-size:13px; font-weight:700; text-transform:uppercase;">${safetyStrategy}</td>
-                      </tr>
-                      <tr>
-                        <td style="color:#71717a; font-size:12px; font-weight:700; text-transform:uppercase; padding:6px 0;">Inactivity Limit</td>
-                        <td style="color:#e4e4e7; font-size:13px;">${inactivityDays} days</td>
-                      </tr>
-                      ${isMigration ? `
-                      <tr>
-                        <td style="color:#71717a; font-size:12px; font-weight:700; text-transform:uppercase; padding:6px 0;">Backup Receiver</td>
-                        <td style="color:#e4e4e7; font-size:13px; font-weight:700;">${transferEmail}</td>
-                      </tr>
-                      ` : ''}
-                    </table>
-                  </div>
-                  
-                  <p style="color:#a1a1aa; font-size:14px; line-height:1.6; margin-bottom:0;">All data uploaded to this room is secured with absolute end-to-end encryption. The dead-man's switch is armed according to your inactivity configuration.</p>
-                  
-                  <p style="color:#52525b; font-size:11px; margin-top:32px; border-top:1px solid #1f1f2e; padding-top:20px; text-align: center; line-height: 1.5;">
-                    Keepr Security Team • Zero-Knowledge Secure Storage
-                  </p>
-                </div>
+      const ownerMailOptions = {
+        from: `"Keepr Security" <${senderEmail}>`,
+        to: userEmail,
+        subject: `🔐 Vault "${name}" Created — Keepr`,
+        html: `
+          <!DOCTYPE html>
+          <html>
+          <head><meta charset="UTF-8"></head>
+          <body style="font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;background:#040405;color:#e4e4e7;padding:32px;margin:0;">
+            <div style="max-width:560px;margin:0 auto;background:#0b0b0f;border:1px solid #1f1f2e;border-radius:20px;overflow:hidden;">
+              <div style="background:linear-gradient(135deg,#10b981,#059669);padding:28px 32px;">
+                <h1 style="margin:0;color:#fff;font-size:20px;font-weight:800;letter-spacing:0.04em;">🔐 Vault Created</h1>
               </div>
-            </body>
-            </html>
-          `,
-        };
-        await transporter.sendMail(ownerMailOptions);
-
-      } else if (type === 'update') {
-        const updateMailOptions = {
-          from: `"Keepr Security" <${senderEmail}>`,
-          to: userEmail,
-          subject: `🔄 Secure Vault "${name}" Settings Updated`,
-          text: `Hello,
-
-Your secure vault "${name}" settings have been successfully updated.
-
-New Vault Settings:
-- Safety Strategy: ${safetyStrategy}
-- Inactivity Period: ${inactivityDays} days
-${isMigration ? `- Designated Receiver: ${transferEmail}` : ''}
-
-Your vault is secure and fully end-to-end encrypted.
-
-Stay safe,
-Keepr Security Team`,
-          html: `
-            <!DOCTYPE html>
-            <html>
-            <head><meta charset="UTF-8"></head>
-            <body style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background:#040405; color:#e4e4e7; padding:32px; margin:0;">
-              <div style="max-width:600px; margin:0 auto; background:#0b0b0f; border:1px solid #1f1f2e; border-radius:24px; overflow:hidden; box-shadow: 0 20px 40px rgba(0, 0, 0, 0.8);">
-                <div style="background:linear-gradient(135deg, #3b82f6, #1d4ed8); padding:32px; text-align: center;">
-                  <span style="font-size: 36px;">🔄</span>
-                  <h1 style="margin:12px 0 0; color:#ffffff; font-size:22px; font-weight:800; text-transform:uppercase; letter-spacing:0.05em;">Settings Updated</h1>
-                </div>
-                <div style="padding:40px 32px;">
-                  <p style="color:#ffffff; font-size:16px; font-weight: 600; margin-top:0; line-height: 1.6;">Settings for secure room "${name}" have been modified.</p>
-                  
-                  <div style="background:#12121a; border:1px solid #27273a; border-radius:16px; padding:24px; margin-bottom:24px;">
-                    <table style="width:100%; border-collapse:collapse;">
-                      <tr>
-                        <td style="color:#71717a; font-size:12px; font-weight:700; text-transform:uppercase; padding:6px 0; width:150px;">Vault ID</td>
-                        <td style="color:#ffffff; font-size:13px; font-family:monospace; font-weight:700;">${roomId}</td>
-                      </tr>
-                      <tr>
-                        <td style="color:#71717a; font-size:12px; font-weight:700; text-transform:uppercase; padding:6px 0;">Safety Strategy</td>
-                        <td style="color:#3b82f6; font-size:13px; font-weight:700; text-transform:uppercase;">${safetyStrategy}</td>
-                      </tr>
-                      <tr>
-                        <td style="color:#71717a; font-size:12px; font-weight:700; text-transform:uppercase; padding:6px 0;">Inactivity Limit</td>
-                        <td style="color:#e4e4e7; font-size:13px;">${inactivityDays} days</td>
-                      </tr>
-                      ${isMigration ? `
-                      <tr>
-                        <td style="color:#71717a; font-size:12px; font-weight:700; text-transform:uppercase; padding:6px 0;">Backup Receiver</td>
-                        <td style="color:#e4e4e7; font-size:13px; font-weight:700;">${transferEmail}</td>
-                      </tr>
-                      ` : ''}
-                    </table>
-                  </div>
-                  
-                  <p style="color:#a1a1aa; font-size:14px; line-height:1.6; margin-bottom:0;">These parameters are now active. If you did not make this change, please log in and audit your room settings immediately.</p>
-                  
-                  <p style="color:#52525b; font-size:11px; margin-top:32px; border-top:1px solid #1f1f2e; padding-top:20px; text-align: center; line-height: 1.5;">
-                    Keepr Security Team • Zero-Knowledge Secure Storage
-                  </p>
-                </div>
+              <div style="padding:32px;">
+                <p style="color:#fff;font-size:15px;font-weight:600;margin:0 0 20px;">Your secure room <strong>${name}</strong> is live and armed.</p>
+                <table style="width:100%;border-collapse:collapse;background:#12121a;border-radius:12px;overflow:hidden;border:1px solid #27273a;">
+                  <tr>
+                    <td style="color:#71717a;font-size:11px;font-weight:700;text-transform:uppercase;padding:10px 16px;">Vault ID</td>
+                    <td style="color:#fff;font-size:12px;font-family:monospace;padding:10px 16px;">${roomId}</td>
+                  </tr>
+                  <tr style="border-top:1px solid #27273a;">
+                    <td style="color:#71717a;font-size:11px;font-weight:700;text-transform:uppercase;padding:10px 16px;">Safety</td>
+                    <td style="color:#10b981;font-size:12px;font-weight:700;text-transform:uppercase;padding:10px 16px;">${safetyStrategy}</td>
+                  </tr>
+                  <tr style="border-top:1px solid #27273a;">
+                    <td style="color:#71717a;font-size:11px;font-weight:700;text-transform:uppercase;padding:10px 16px;">Inactivity Timer</td>
+                    <td style="color:#e4e4e7;font-size:12px;padding:10px 16px;">${inactivityDays === 0 ? '1 min (test mode)' : inactivityDays + ' days'}</td>
+                  </tr>
+                  ${isMigration && transferEmail ? `
+                  <tr style="border-top:1px solid #27273a;">
+                    <td style="color:#71717a;font-size:11px;font-weight:700;text-transform:uppercase;padding:10px 16px;">Backup Receiver</td>
+                    <td style="color:#e4e4e7;font-size:12px;padding:10px 16px;">${transferEmail}</td>
+                  </tr>` : ''}
+                </table>
+                <p style="color:#52525b;font-size:11px;margin-top:28px;border-top:1px solid #1f1f2e;padding-top:16px;text-align:center;">Keepr Security • Zero-Knowledge Secure Storage</p>
               </div>
-            </body>
-            </html>
-          `,
-        };
-        await transporter.sendMail(updateMailOptions);
-      }
+            </div>
+          </body>
+          </html>
+        `,
+      };
 
-      res.json({ success: true, message: 'Email dispatched successfully' });
+      await transporter.sendMail(ownerMailOptions);
+
+      res.json({ success: true, message: 'Room creation email sent to owner' });
     } catch (err: any) {
       console.error("Email API Route Error:", err);
       res.status(500).json({ error: "Failed to send email", details: err.message });
     }
   });
+
 
 
   // FEATURE 1: ZERO-TRUST VAULT (AWS S3)

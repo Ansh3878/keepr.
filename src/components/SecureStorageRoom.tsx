@@ -630,27 +630,6 @@ export function SecureStorageRoom() {
             const data = await response.json();
             createdRoomId = data.roomId;
             hasBackendSuccess = true;
-
-            // Fire-and-forget: send email in background, do NOT await it
-            // Awaiting this caused 3-4 min delays when SMTP was slow/failing
-            fetch('/api/send-email', {
-              method: 'POST',
-              headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify({
-                type: 'create',
-                userEmail: user?.primaryEmailAddress?.emailAddress || import.meta.env.VITE_EMAIL_USER || '',
-                roomDetails: {
-                  roomId: createdRoomId,
-                  name: newRoomName.trim(),
-                  safetyStrategy: newRoomStrategy,
-                  inactivityDays: newRoomInactivityDays,
-                  transferEmail: newRoomTransferEmail,
-                  rawVaultKey: newRoomStrategy === 'migration' ? roomKey : undefined,
-                }
-              })
-            }).catch(err => {
-              console.error("Failed to trigger creation email notification:", err);
-            });
           } else {
             const errText = await response.text();
             throw new Error(errText || response.statusText);
@@ -1302,25 +1281,6 @@ export function SecureStorageRoom() {
 
             if (response.ok) {
               hasBackendSuccess = true;
-
-              // Trigger email notification for settings update in background (non-blocking)
-              fetch('/api/send-email', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                  type: 'update',
-                  userEmail: user?.primaryEmailAddress?.emailAddress || import.meta.env.VITE_EMAIL_USER || '',
-                  roomDetails: {
-                    roomId: activeRoomId,
-                    name: roomName,
-                    safetyStrategy: safetyStrategy,
-                    inactivityDays: inactivityDays,
-                    transferEmail: transferEmail,
-                  }
-                })
-              }).catch(err => {
-                console.error("Failed to trigger update email notification:", err);
-              });
             } else {
               console.error("Failed to update room settings in backend:", response.statusText);
             }
