@@ -560,9 +560,11 @@ async function updateRoom(event: any, roomId: string, userId: string) {
       const userEmail = body.userEmail || room.transferEmail || "";
       if (userEmail) {
         console.log(`[Update Room] Inactivity timer changed from ${oldInactivityDays} to ${newInactivityDays}. Sending update email to ${userEmail}.`);
-        sendUpdateEmail(room, oldInactivityDays, newInactivityDays, userEmail).catch(err => {
+        try {
+          await sendUpdateEmail(room, oldInactivityDays, newInactivityDays, userEmail);
+        } catch (err: any) {
           console.error("Failed to send settings update email:", err.message);
-        });
+        }
       }
     }
 
