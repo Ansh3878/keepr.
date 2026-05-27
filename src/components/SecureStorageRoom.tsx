@@ -2247,70 +2247,79 @@ export function SecureStorageRoom() {
           )
         ) : activeRoomStrategy === 'handoff_unlocked' ? (
           /* EMERGENCY DATA HANDOFF PANEL */
-          <div className="max-w-lg mx-auto my-8">
+          <div className="max-w-md mx-auto my-8">
             <motion.div
               initial={{ opacity: 0, y: 16 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.4, ease: 'easeOut' }}
-              className="relative bg-zinc-950 border border-red-500/25 rounded-[2rem] overflow-hidden shadow-2xl shadow-black/60"
+              className="relative bg-zinc-950 border border-red-500/20 rounded-[2rem] overflow-hidden shadow-2xl shadow-black/60"
             >
-              {/* Subtle glow */}
-              <div className="absolute -top-20 left-1/2 -translate-x-1/2 w-48 h-48 bg-red-500/8 blur-[80px] rounded-full pointer-events-none" />
+              {/* Subtle top glow */}
+              <div className="absolute -top-20 left-1/2 -translate-x-1/2 w-48 h-48 bg-red-500/5 blur-[80px] rounded-full pointer-events-none" />
 
               {/* Header strip */}
-              <div className="relative flex items-center gap-3 px-6 pt-6 pb-5 border-b border-white/5">
-                <div className="w-10 h-10 rounded-2xl bg-red-500/10 border border-red-500/25 flex items-center justify-center shrink-0">
-                  <ShieldAlert className="w-5 h-5 text-red-400" />
+              <div className="relative flex items-center gap-4 px-6 pt-7 pb-6 border-b border-white/5">
+                <div className="w-11 h-11 rounded-2xl bg-red-500/10 border border-red-500/20 flex items-center justify-center shrink-0">
+                  <ShieldAlert className="w-5.5 h-5.5 text-red-400" />
                 </div>
                 <div className="flex-1 min-w-0">
-                  <div className="flex items-center gap-2 flex-wrap">
-                    <span className="text-[9px] font-black uppercase tracking-[0.25em] text-red-400 bg-red-500/10 border border-red-500/20 px-2 py-0.5 rounded-full">
+                  <div className="flex items-center gap-2">
+                    <span className="text-[9px] font-black uppercase tracking-[0.2em] text-red-400 bg-red-500/10 border border-red-500/20 px-2.5 py-0.5 rounded-md">
                       Timer Expired
                     </span>
-                    <span className="w-1 h-1 rounded-full bg-red-500 animate-ping" />
                   </div>
-                  <h2 className="text-base font-bold text-white tracking-tight mt-1 truncate">
-                    Migrate <span className="font-serif italic font-light text-zinc-400">{roomName}</span>
+                  <h2 className="text-lg font-bold text-white tracking-tight mt-1.5 flex items-center flex-wrap">
+                    Migrate 
+                    <span className="font-mono font-medium text-red-300 bg-red-500/5 px-2 py-0.5 rounded border border-red-500/10 text-xs ml-1.5 shrink-0 select-all">
+                      {roomName}
+                    </span>
                   </h2>
                 </div>
               </div>
 
-              {/* Status rows */}
-              <div className="px-6 py-4 space-y-2.5 border-b border-white/5">
-                <div className="flex items-center justify-between text-xs">
-                  <span className="text-zinc-500 uppercase tracking-widest font-black text-[9px]">Status</span>
-                  <span className="text-red-400 font-bold flex items-center gap-1.5">
-                    <span className="w-1.5 h-1.5 bg-red-500 rounded-full animate-pulse" />
+              {/* Status details - Sleek premium capsules */}
+              <div className="px-6 py-5 space-y-3.5 border-b border-white/5 bg-white/[0.01]">
+                {/* Status Bar */}
+                <div className="flex items-center justify-between bg-zinc-900/30 border border-white/[0.02] px-4.5 py-3.5 rounded-2xl">
+                  <span className="text-zinc-500 uppercase tracking-wider font-bold text-[9px]">Vault Status</span>
+                  <span className="text-red-400 text-xs font-bold flex items-center gap-2">
+                    <span className="w-2 h-2 bg-red-500 rounded-full" />
                     Locked for Handoff
                   </span>
                 </div>
-                <div className="flex items-center justify-between text-xs">
-                  <span className="text-zinc-500 uppercase tracking-widest font-black text-[9px]">Window Remaining</span>
-                  <span className="text-zinc-200 font-mono font-semibold">72 Hours</span>
-                </div>
-                <div className="flex items-center justify-between text-xs">
-                  <span className="text-zinc-500 uppercase tracking-widest font-black text-[9px]">Encrypted Buffers</span>
-                  <span className="text-cyan-400 font-mono font-semibold">{files.length} File{files.length !== 1 ? 's' : ''}</span>
+                
+                {/* Secondary indicators */}
+                <div className="grid grid-cols-2 gap-3.5">
+                  <div className="bg-zinc-900/30 border border-white/[0.02] px-4.5 py-3.5 rounded-2xl flex flex-col gap-1">
+                    <span className="text-zinc-500 uppercase tracking-wider font-bold text-[9px]">Time Remaining</span>
+                    <span className="text-zinc-100 font-mono font-bold text-sm">72 Hours</span>
+                  </div>
+                  <div className="bg-zinc-900/30 border border-white/[0.02] px-4.5 py-3.5 rounded-2xl flex flex-col gap-1">
+                    <span className="text-zinc-500 uppercase tracking-wider font-bold text-[9px]">Encrypted Buffers</span>
+                    <span className="text-cyan-400 font-mono font-bold text-sm">
+                      {files.length} File{files.length !== 1 ? 's' : ''}
+                    </span>
+                  </div>
                 </div>
               </div>
 
-              {/* Warning */}
-              <div className="px-6 py-4 border-b border-white/5">
-                <div className="flex items-start gap-2.5 p-3 bg-amber-500/5 border border-amber-500/15 rounded-xl">
-                  <AlertTriangle className="w-4 h-4 text-amber-500 shrink-0 mt-0.5" />
-                  <p className="text-[10px] text-zinc-400 leading-relaxed">
+              {/* Warning Card */}
+              <div className="px-6 py-4.5 border-b border-white/5">
+                <div className="flex items-start gap-3 p-3.5 bg-amber-500/5 border border-amber-500/10 rounded-2xl">
+                  <AlertTriangle className="w-4.5 h-4.5 text-amber-500 shrink-0 mt-0.5" />
+                  <p className="text-[10.5px] text-zinc-400 leading-relaxed font-medium">
                     All vault operations are locked. Download your files as a ZIP — the room will be{' '}
-                    <span className="text-amber-400 font-semibold">permanently destroyed</span> immediately after.
+                    <span className="text-amber-400 font-bold">permanently destroyed</span> immediately after.
                   </p>
                 </div>
               </div>
 
               {/* Actions */}
-              <div className="px-6 py-5 flex gap-3">
+              <div className="px-6 py-5.5 flex gap-3.5">
                 <button
                   type="button"
                   onClick={handleExitRoom}
-                  className="flex-1 py-3 bg-zinc-900 hover:bg-zinc-800 text-zinc-400 hover:text-white rounded-xl text-[10px] uppercase font-black tracking-widest border border-zinc-800 hover:border-zinc-700 transition-all cursor-pointer"
+                  className="flex-1 py-3.5 bg-zinc-900/60 hover:bg-zinc-800 text-zinc-400 hover:text-white rounded-xl text-[10px] uppercase font-bold tracking-widest border border-zinc-800 hover:border-zinc-700 transition-all cursor-pointer outline-none active:scale-[0.98]"
                 >
                   Exit
                 </button>
@@ -2318,7 +2327,7 @@ export function SecureStorageRoom() {
                   type="button"
                   onClick={triggerNow}
                   disabled={isTriggeringNow}
-                  className="flex-[2] py-3 bg-red-500 hover:bg-red-400 disabled:opacity-60 text-white rounded-xl text-[10px] uppercase font-black tracking-widest transition-all cursor-pointer shadow-lg shadow-red-500/15 flex items-center justify-center gap-2"
+                  className="flex-[2.2] py-3.5 bg-gradient-to-r from-red-500 to-rose-600 hover:from-red-400 hover:to-rose-500 disabled:opacity-60 text-white rounded-xl text-[10px] uppercase font-bold tracking-widest transition-all cursor-pointer shadow-lg shadow-red-500/10 flex items-center justify-center gap-2 outline-none active:scale-[0.98]"
                 >
                   {isTriggeringNow ? (
                     <>
@@ -2327,7 +2336,7 @@ export function SecureStorageRoom() {
                     </>
                   ) : (
                     <>
-                      <Download className="w-3.5 h-3.5" />
+                      <Download className="w-3.5 h-3.5 shrink-0" />
                       <span>Download ZIP & Destroy</span>
                     </>
                   )}

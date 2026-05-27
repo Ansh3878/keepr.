@@ -124,11 +124,11 @@ Keepr Security System
       </div>
       
       <!-- File list preview -->
-      \${migratedFiles.length > 0 ? \`
+      ${migratedFiles.length > 0 ? `
       <div style="background:#09090f; border:1px solid #1f1f2e; border-radius:16px; padding:20px; margin-bottom:24px;">
         <p style="margin:0 0 12px; color:#06b6d4; font-size:11px; font-weight:800; text-transform:uppercase; letter-spacing:0.05em;">Pending Safe Files</p>
-        \${migratedFiles.map(f => \`<p style="margin:6px 0; color:#e2e8f0; font-size:13px; font-family:monospace; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">• \${f}</p>\`).join('')}
-      </div>\` : ''}
+        ${migratedFiles.map(f => `<p style="margin:6px 0; color:#e2e8f0; font-size:13px; font-family:monospace; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">• ${f}</p>`).join('')}
+      </div>` : ''}
       
       <!-- Warning box -->
       <div style="background:#450a0a; border:1px solid #991b1b; border-radius:16px; padding:20px; margin-bottom:32px;">
