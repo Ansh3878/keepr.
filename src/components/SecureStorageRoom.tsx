@@ -130,12 +130,15 @@ export function SecureStorageRoom() {
 
   // Fetch Rooms from AWS DynamoDB via REST API
   const fetchRoomsFromBackend = async () => {
-    if (!SECURE_ROOM_API_ENDPOINT || SECURE_ROOM_API_ENDPOINT.includes('REPLACE_WITH_YOUR_API_ID')) {
-      console.warn("REST API endpoint not configured yet. Fallback to offline mode.");
-      return;
-    }
     setIsLoadingRooms(true);
+    const startTime = Date.now();
     try {
+      if (!SECURE_ROOM_API_ENDPOINT || SECURE_ROOM_API_ENDPOINT.includes('REPLACE_WITH_YOUR_API_ID')) {
+        console.warn("REST API endpoint not configured yet. Fallback to offline mode.");
+        // Simulated organic delay for offline fallback to keep UI interactive
+        await new Promise(resolve => setTimeout(resolve, 600));
+        return;
+      }
       const token = await getToken();
       if (!token) return;
       const response = await fetch(`${SECURE_ROOM_API_ENDPOINT}/rooms`, {
@@ -175,6 +178,11 @@ export function SecureStorageRoom() {
     } catch (e) {
       console.error("Error fetching rooms:", e);
     } finally {
+      const elapsed = Date.now() - startTime;
+      const minDuration = 1000; // 1000ms guarantees a full satisfying 360-degree rotation!
+      if (elapsed < minDuration) {
+        await new Promise(resolve => setTimeout(resolve, minDuration - elapsed));
+      }
       setIsLoadingRooms(false);
     }
   };
