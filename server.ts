@@ -64,94 +64,37 @@ async function startServer() {
       console.log('✅ Gmail SMTP Ready (IPv4) — emails will be delivered successfully.');
     }
   });
-  // ───────────────────────────────────────────────────────────────────
-
-  // SMTP Email Dispatch Route via Nodemailer
-  app.post('/api/send-email', async (req: any, res: any) => {
+  // ── Quick SMTP test endpoint — hit GET /api/test-email in browser to verify ──
+  app.get('/api/test-email', async (req: any, res: any) => {
+    const senderEmail = process.env.EMAIL_USER || process.env.SENDER_EMAIL || 'anshulspotify5@gmail.com';
+    const emailPassword = process.env.EMAIL_APP_PASSWORD;
+    console.log('[TEST-EMAIL] EMAIL_USER:', senderEmail);
+    console.log('[TEST-EMAIL] EMAIL_APP_PASSWORD set?', !!emailPassword);
+    if (!emailPassword) {
+      return res.json({ ok: false, error: 'EMAIL_APP_PASSWORD not set on server' });
+    }
     try {
-      const { type, userEmail, roomDetails } = req.body;
-
-      if (!userEmail || !roomDetails) {
-        return res.status(400).json({ error: 'Missing required parameters: userEmail or roomDetails' });
-      }
-
-      const { roomId, name, safetyStrategy, inactivityDays, transferEmail } = roomDetails;
-
-      // Only send the room-created confirmation to the owner
-      const senderEmail = process.env.EMAIL_USER || process.env.SENDER_EMAIL || "anshulspotify5@gmail.com";
-      const emailPassword = process.env.EMAIL_APP_PASSWORD;
-
-      if (!emailPassword) {
-        console.error('❌ EMAIL_APP_PASSWORD environment variable is NOT set on this server!');
-        return res.status(500).json({ error: 'Email service not configured: EMAIL_APP_PASSWORD is missing on the server.' });
-      }
-
-      if (type !== 'create') {
-        // Only 'create' emails are supported — expiry emails are sent by the AWS Lambda cron
-        return res.json({ success: true, message: 'Email type skipped (not create)' });
-      }
-
-      const transporter = nodemailer.createTransport({
-        host: 'smtp.gmail.com',
-        port: 587,
-        secure: false,
-        family: 4,
+      const t = nodemailer.createTransport({
+        host: 'smtp.gmail.com', port: 465, secure: true, family: 4,
         auth: { user: senderEmail, pass: emailPassword },
         tls: { rejectUnauthorized: false },
       } as any);
-
-      const isMigration = safetyStrategy === 'migration';
-
-      const ownerMailOptions = {
-        from: `"Keepr Security" <${senderEmail}>`,
-        to: userEmail,
-        subject: `🔐 Vault "${name}" Created — Keepr`,
-        html: `
-          <!DOCTYPE html>
-          <html>
-          <head><meta charset="UTF-8"></head>
-          <body style="font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;background:#040405;color:#e4e4e7;padding:32px;margin:0;">
-            <div style="max-width:560px;margin:0 auto;background:#0b0b0f;border:1px solid #1f1f2e;border-radius:20px;overflow:hidden;">
-              <div style="background:linear-gradient(135deg,#10b981,#059669);padding:28px 32px;">
-                <h1 style="margin:0;color:#fff;font-size:20px;font-weight:800;letter-spacing:0.04em;">🔐 Vault Created</h1>
-              </div>
-              <div style="padding:32px;">
-                <p style="color:#fff;font-size:15px;font-weight:600;margin:0 0 20px;">Your secure room <strong>${name}</strong> is live and armed.</p>
-                <table style="width:100%;border-collapse:collapse;background:#12121a;border-radius:12px;overflow:hidden;border:1px solid #27273a;">
-                  <tr>
-                    <td style="color:#71717a;font-size:11px;font-weight:700;text-transform:uppercase;padding:10px 16px;">Vault ID</td>
-                    <td style="color:#fff;font-size:12px;font-family:monospace;padding:10px 16px;">${roomId}</td>
-                  </tr>
-                  <tr style="border-top:1px solid #27273a;">
-                    <td style="color:#71717a;font-size:11px;font-weight:700;text-transform:uppercase;padding:10px 16px;">Safety</td>
-                    <td style="color:#10b981;font-size:12px;font-weight:700;text-transform:uppercase;padding:10px 16px;">${safetyStrategy}</td>
-                  </tr>
-                  <tr style="border-top:1px solid #27273a;">
-                    <td style="color:#71717a;font-size:11px;font-weight:700;text-transform:uppercase;padding:10px 16px;">Inactivity Timer</td>
-                    <td style="color:#e4e4e7;font-size:12px;padding:10px 16px;">${inactivityDays === 0 ? '1 min (test mode)' : inactivityDays + ' days'}</td>
-                  </tr>
-                  ${isMigration && transferEmail ? `
-                  <tr style="border-top:1px solid #27273a;">
-                    <td style="color:#71717a;font-size:11px;font-weight:700;text-transform:uppercase;padding:10px 16px;">Backup Receiver</td>
-                    <td style="color:#e4e4e7;font-size:12px;padding:10px 16px;">${transferEmail}</td>
-                  </tr>` : ''}
-                </table>
-                <p style="color:#52525b;font-size:11px;margin-top:28px;border-top:1px solid #1f1f2e;padding-top:16px;text-align:center;">Keepr Security • Zero-Knowledge Secure Storage</p>
-              </div>
-            </div>
-          </body>
-          </html>
-        `,
-      };
-
-      await transporter.sendMail(ownerMailOptions);
-
-      res.json({ success: true, message: 'Room creation email sent to owner' });
+      await t.verify();
+      await t.sendMail({
+        from: `"Keepr Test" <${senderEmail}>`,
+        to: senderEmail,
+        subject: 'Keepr SMTP Test — Render',
+        text: 'If you got this, SMTP works on Render.',
+      });
+      console.log('[TEST-EMAIL] ✅ Test email sent successfully to', senderEmail);
+      return res.json({ ok: true, message: `Test email sent to ${senderEmail}` });
     } catch (err: any) {
-      console.error("Email API Route Error:", err);
-      res.status(500).json({ error: "Failed to send email", details: err.message });
+      console.error('[TEST-EMAIL] ❌ FAILED:', err.message);
+      return res.json({ ok: false, error: err.message });
     }
   });
+
+
 
 
 

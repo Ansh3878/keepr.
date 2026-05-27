@@ -419,6 +419,80 @@ async function deleteRoomSettings(roomId: string): Promise<void> {
 }
 
 // ─────────────────────────────────────────────────────────────────
+// HELPER: Send creation notification email
+// ─────────────────────────────────────────────────────────────────
+async function sendCreationEmail(room: any, userEmail: string): Promise<void> {
+  const toEmail = userEmail || room.transferEmail || SENDER_EMAIL;
+  if (!toEmail) {
+    console.warn("No recipient email provided for room creation email, skipping.");
+    return;
+  }
+
+  const isMigration = room.safetyStrategy === 'migration';
+  const subject = `🔐 Vault "${room.name}" Created — Keepr`;
+  const bodyText = `
+Your secure room "${room.name}" is live and armed on Keepr.
+
+Vault ID: ${room.roomId}
+Safety Strategy: ${room.safetyStrategy}
+Inactivity Timer: ${room.inactivityDays === 0 ? '1 min (test mode)' : room.inactivityDays + ' days'}
+${isMigration && room.transferEmail ? `Backup Receiver: ${room.transferEmail}` : ''}
+
+Keepr Security • Zero-Knowledge Secure Storage
+`;
+
+  const bodyHtml = `
+<!DOCTYPE html>
+<html>
+<head><meta charset="UTF-8"></head>
+<body style="font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;background:#040405;color:#e4e4e7;padding:32px;margin:0;">
+  <div style="max-width:560px;margin:0 auto;background:#0b0b0f;border:1px solid #1f1f2e;border-radius:20px;overflow:hidden;">
+    <div style="background:linear-gradient(135deg,#10b981,#059669);padding:28px 32px;">
+      <h1 style="margin:0;color:#fff;font-size:20px;font-weight:800;letter-spacing:0.04em;">🔐 Vault Created</h1>
+    </div>
+    <div style="padding:32px;">
+      <p style="color:#fff;font-size:15px;font-weight:600;margin:0 0 20px;">Your secure room <strong>${room.name}</strong> is live and armed.</p>
+      <table style="width:100%;border-collapse:collapse;background:#12121a;border-radius:12px;overflow:hidden;border:1px solid #27273a;">
+        <tr>
+          <td style="color:#71717a;font-size:11px;font-weight:700;text-transform:uppercase;padding:10px 16px;">Vault ID</td>
+          <td style="color:#fff;font-size:12px;font-family:monospace;padding:10px 16px;">${room.roomId}</td>
+        </tr>
+        <tr style="border-top:1px solid #27273a;">
+          <td style="color:#71717a;font-size:11px;font-weight:700;text-transform:uppercase;padding:10px 16px;">Safety</td>
+          <td style="color:#10b981;font-size:12px;font-weight:700;text-transform:uppercase;padding:10px 16px;">${room.safetyStrategy}</td>
+        </tr>
+        <tr style="border-top:1px solid #27273a;">
+          <td style="color:#71717a;font-size:11px;font-weight:700;text-transform:uppercase;padding:10px 16px;">Inactivity Timer</td>
+          <td style="color:#e4e4e7;font-size:12px;padding:10px 16px;">${room.inactivityDays === 0 ? '1 min (test mode)' : room.inactivityDays + ' days'}</td>
+        </tr>
+        ${isMigration && room.transferEmail ? `
+        <tr style="border-top:1px solid #27273a;">
+          <td style="color:#71717a;font-size:11px;font-weight:700;text-transform:uppercase;padding:10px 16px;">Backup Receiver</td>
+          <td style="color:#e4e4e7;font-size:12px;padding:10px 16px;">${room.transferEmail}</td>
+        </tr>` : ''}
+      </table>
+      <p style="color:#52525b;font-size:11px;margin-top:28px;border-top:1px solid #1f1f2e;padding-top:16px;text-align:center;">Keepr Security • Zero-Knowledge Secure Storage</p>
+    </div>
+  </div>
+</body>
+</html>
+`;
+
+  try {
+    await mailTransporter.sendMail({
+      from: `"Keepr Security" <${process.env.EMAIL_USER || SENDER_EMAIL}>`,
+      to: toEmail,
+      subject: subject,
+      text: bodyText,
+      html: bodyHtml,
+    });
+    console.log(`✓ Creation email sent to ${toEmail}`);
+  } catch (err: any) {
+    console.error(`✗ Failed to send creation email to ${toEmail}:`, err.message);
+  }
+}
+
+// ─────────────────────────────────────────────────────────────────
 // EXPORTED HELPERS (used by secureRoomApi.ts for on-demand triggers)
 // ─────────────────────────────────────────────────────────────────
 export {
@@ -427,4 +501,6 @@ export {
   sendHandoffEmail,
   sendPurgeEmail,
   listRoomFileNames,
+  sendCreationEmail,
 };
+

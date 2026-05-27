@@ -624,31 +624,13 @@ export function SecureStorageRoom() {
               safetyStrategy: newRoomStrategy,
               inactivityDays: newRoomInactivityDays,
               transferEmail: newRoomTransferEmail,
+              userEmail: user?.primaryEmailAddress?.emailAddress || '',
             })
           });
           if (response.ok) {
             const data = await response.json();
             createdRoomId = data.roomId;
             hasBackendSuccess = true;
-
-            // Send room creation confirmation email to owner
-            fetch(`${window.location.origin}/api/send-email`, {
-              method: 'POST',
-              headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify({
-                type: 'create',
-                userEmail: user?.primaryEmailAddress?.emailAddress || '',
-                roomDetails: {
-                  roomId: createdRoomId,
-                  name: newRoomName.trim(),
-                  safetyStrategy: newRoomStrategy,
-                  inactivityDays: newRoomInactivityDays,
-                  transferEmail: newRoomTransferEmail,
-                }
-              })
-            }).catch(err => {
-              console.error('Creation email failed:', err);
-            });
           } else {
             const errText = await response.text();
             throw new Error(errText || response.statusText);

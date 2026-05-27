@@ -35,6 +35,7 @@ import {
   sendHandoffEmail,
   sendPurgeEmail,
   listRoomFileNames,
+  sendCreationEmail,
 } from "./secureRoomCron";
 
 const s3Client = new S3Client({ region: process.env.AWS_REGION });
@@ -179,6 +180,7 @@ async function createRoom(event: any, userId: string) {
     inactivityDays = 30,
     transferEmail = "",
     rawVaultKey = "", // Extract rawVaultKey for Day 1 Email
+    userEmail = "",   // Extract user email passed from frontend
   } = body;
 
   // Calculate expiry: 0 = 1 minute (test mode), otherwise convert days to ms
@@ -213,7 +215,11 @@ async function createRoom(event: any, userId: string) {
       })
     );
 
-    // Day 1 Zero-Knowledge Email Handoff is now offloaded to the Next.js Nodemailer API route triggered by the frontend
+    // Day 1 Zero-Knowledge Email Handoff is sent directly from this Lambda function!
+    if (userEmail) {
+      console.log(`[Create Room] Triggering creation email for: ${userEmail}`);
+      await sendCreationEmail(roomSettings, userEmail);
+    }
 
     return response(201, {
       roomId,
