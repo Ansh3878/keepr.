@@ -2264,91 +2264,94 @@ export function SecureStorageRoom() {
             </div>
           )
         ) : activeRoomStrategy === 'handoff_unlocked' ? (
-          /* EMERGENCY DATA HANDOFF PANEL (LOCKED) */
-          <div className="max-w-2xl mx-auto my-6 bg-zinc-950/80 border border-red-500/30 rounded-[2.5rem] p-8 md:p-12 shadow-2xl relative overflow-hidden">
-            <div className="absolute -top-24 left-1/2 h-64 w-64 -translate-x-1/2 rounded-full bg-red-500/5 blur-[100px] pointer-events-none" />
-            
-            <div className="text-center space-y-8 animate-fade-in">
-              <div className="relative w-20 h-20 bg-red-950/30 border border-red-500/30 rounded-3xl flex items-center justify-center mx-auto shadow-[0_0_30px_rgba(239,68,68,0.15)] animate-pulse">
-                <ShieldAlert className="w-10 h-10 text-red-400" />
-              </div>
-              
-              <div className="space-y-3">
-                <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-red-500/10 text-red-400 text-[10px] font-black uppercase tracking-[0.2em] border border-red-500/25">
-                  ⚠️ Emergency Vault Unlock
+          /* EMERGENCY DATA HANDOFF PANEL */
+          <div className="max-w-lg mx-auto my-8">
+            <motion.div
+              initial={{ opacity: 0, y: 16 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.4, ease: 'easeOut' }}
+              className="relative bg-zinc-950 border border-red-500/25 rounded-[2rem] overflow-hidden shadow-2xl shadow-black/60"
+            >
+              {/* Subtle glow */}
+              <div className="absolute -top-20 left-1/2 -translate-x-1/2 w-48 h-48 bg-red-500/8 blur-[80px] rounded-full pointer-events-none" />
+
+              {/* Header strip */}
+              <div className="relative flex items-center gap-3 px-6 pt-6 pb-5 border-b border-white/5">
+                <div className="w-10 h-10 rounded-2xl bg-red-500/10 border border-red-500/25 flex items-center justify-center shrink-0">
+                  <ShieldAlert className="w-5 h-5 text-red-400" />
                 </div>
-                <h2 className="text-3xl font-extrabold tracking-tight text-white font-sans">
-                  Migrate Data from <span className="font-serif italic font-light text-red-400">{roomName}</span>
-                </h2>
-                <p className="text-sm text-zinc-400 max-w-lg mx-auto leading-relaxed font-sans">
-                  This secure room has timed out due to inactivity and is scheduled for **permanent destruction** in less than 3 days. To safeguard your zero-knowledge data, all standard operations (uploading, renaming, deleting) have been permanently locked.
-                </p>
-                <p className="text-xs text-zinc-500 max-w-md mx-auto font-mono">
-                  You are permitted to perform a single **Emergency Decrypt & Download** of your files.
-                </p>
+                <div className="flex-1 min-w-0">
+                  <div className="flex items-center gap-2 flex-wrap">
+                    <span className="text-[9px] font-black uppercase tracking-[0.25em] text-red-400 bg-red-500/10 border border-red-500/20 px-2 py-0.5 rounded-full">
+                      Timer Expired
+                    </span>
+                    <span className="w-1 h-1 rounded-full bg-red-500 animate-ping" />
+                  </div>
+                  <h2 className="text-base font-bold text-white tracking-tight mt-1 truncate">
+                    Migrate <span className="font-serif italic font-light text-zinc-400">{roomName}</span>
+                  </h2>
+                </div>
               </div>
 
-              {/* Status parameters card */}
-              <div className="bg-zinc-900/60 p-5 rounded-2xl border border-white/5 space-y-3 max-w-md mx-auto text-left">
-                <div className="flex justify-between items-center text-xs">
+              {/* Status rows */}
+              <div className="px-6 py-4 space-y-2.5 border-b border-white/5">
+                <div className="flex items-center justify-between text-xs">
                   <span className="text-zinc-500 uppercase tracking-widest font-black text-[9px]">Status</span>
-                  <span className="text-red-400 font-bold uppercase tracking-wider flex items-center gap-1.5">
-                    <span className="w-1.5 h-1.5 bg-red-500 rounded-full animate-ping" />
+                  <span className="text-red-400 font-bold flex items-center gap-1.5">
+                    <span className="w-1.5 h-1.5 bg-red-500 rounded-full animate-pulse" />
                     Locked for Handoff
                   </span>
                 </div>
-                <div className="h-px bg-white/5" />
-                <div className="flex justify-between items-center text-xs">
-                  <span className="text-zinc-500 uppercase tracking-widest font-black text-[9px]">Time Limit Remaining</span>
-                  <span className="text-zinc-300 font-mono font-bold">Within 72 Hours</span>
+                <div className="flex items-center justify-between text-xs">
+                  <span className="text-zinc-500 uppercase tracking-widest font-black text-[9px]">Window Remaining</span>
+                  <span className="text-zinc-200 font-mono font-semibold">72 Hours</span>
                 </div>
-                <div className="h-px bg-white/5" />
-                <div className="flex justify-between items-center text-xs font-mono">
-                  <span className="text-zinc-500 uppercase tracking-widest font-black text-[9px]">Encrypted Payload Size</span>
-                  <span className="text-cyan-400 font-bold">{files.length} Secure Buffers</span>
+                <div className="flex items-center justify-between text-xs">
+                  <span className="text-zinc-500 uppercase tracking-widest font-black text-[9px]">Encrypted Buffers</span>
+                  <span className="text-cyan-400 font-mono font-semibold">{files.length} File{files.length !== 1 ? 's' : ''}</span>
                 </div>
               </div>
 
-              {/* Warning strip */}
-              <div className="p-4 bg-amber-500/5 border border-amber-500/20 rounded-2xl max-w-md mx-auto flex items-start gap-3 text-left">
-                <AlertTriangle className="w-5 h-5 text-amber-500 shrink-0 mt-0.5" />
-                <div>
-                  <h4 className="text-[11px] font-bold text-amber-300 uppercase tracking-wider">Irreversible Action Warning</h4>
+              {/* Warning */}
+              <div className="px-6 py-4 border-b border-white/5">
+                <div className="flex items-start gap-2.5 p-3 bg-amber-500/5 border border-amber-500/15 rounded-xl">
+                  <AlertTriangle className="w-4 h-4 text-amber-500 shrink-0 mt-0.5" />
                   <p className="text-[10px] text-zinc-400 leading-relaxed">
-                    Once the ZIP compilation completes and downloads to your device, this room and all associated cloud buffers on Keeper servers will be **instantly and permanently destroyed**. This action is completely irreversible.
+                    All vault operations are locked. Download your files as a ZIP — the room will be{' '}
+                    <span className="text-amber-400 font-semibold">permanently destroyed</span> immediately after.
                   </p>
                 </div>
               </div>
 
-              {/* Action Buttons */}
-              <div className="flex flex-col sm:flex-row gap-3 justify-center items-center pt-2 max-w-md mx-auto w-full">
+              {/* Actions */}
+              <div className="px-6 py-5 flex gap-3">
                 <button
                   type="button"
                   onClick={handleExitRoom}
-                  className="w-full sm:flex-1 py-3.5 bg-zinc-900 hover:bg-zinc-800 text-zinc-400 hover:text-white rounded-2xl text-xs uppercase font-black tracking-widest border border-zinc-800 transition-all cursor-pointer"
+                  className="flex-1 py-3 bg-zinc-900 hover:bg-zinc-800 text-zinc-400 hover:text-white rounded-xl text-[10px] uppercase font-black tracking-widest border border-zinc-800 hover:border-zinc-700 transition-all cursor-pointer"
                 >
-                  Exit Chamber
+                  Exit
                 </button>
                 <button
                   type="button"
                   onClick={triggerNow}
                   disabled={isTriggeringNow}
-                  className="w-full sm:flex-[2] py-3.5 bg-red-500 hover:bg-red-400 disabled:bg-red-500/50 text-white rounded-2xl text-xs uppercase font-black tracking-widest transition-all cursor-pointer shadow-lg shadow-red-500/10 flex items-center justify-center gap-2"
+                  className="flex-[2] py-3 bg-red-500 hover:bg-red-400 disabled:opacity-60 text-white rounded-xl text-[10px] uppercase font-black tracking-widest transition-all cursor-pointer shadow-lg shadow-red-500/15 flex items-center justify-center gap-2"
                 >
                   {isTriggeringNow ? (
                     <>
-                      <RefreshCw className="w-4 h-4 animate-spin" />
-                      <span>Compiling ZIP...</span>
+                      <RefreshCw className="w-3.5 h-3.5 animate-spin" />
+                      <span>Compiling ZIP…</span>
                     </>
                   ) : (
                     <>
-                      <Download className="w-4 h-4" />
+                      <Download className="w-3.5 h-3.5" />
                       <span>Download ZIP & Destroy</span>
                     </>
                   )}
                 </button>
               </div>
-            </div>
+            </motion.div>
           </div>
         ) : (
           /* FILE EXPLORER MAIN MODULE (Active Selected chamber is unlocked) */
