@@ -3,11 +3,12 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useState, useRef, useEffect, lazy, Suspense } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import {
   Lock,
   Shield,
+  ShieldCheck,
   Upload,
   Share2,
   Globe,
@@ -23,18 +24,79 @@ import {
   ChevronDown,
   Search,
   Link as LinkIcon,
-  Zap
+  Zap,
+  Check,
+  Copy,
+  File as FileIcon,
+  AlertTriangle,
+  KeyRound,
+  ScanSearch
 } from 'lucide-react';
-import { DetonatorView } from './components/DetonatorView';
-import { EphemeralChat } from './components/EphemeralChat';
-import { SecureStorageRoom } from './components/SecureStorageRoom';
 import { AuthenticateWithRedirectCallback, SignedIn, SignedOut, UserButton, useClerk, useUser, useAuth } from '@clerk/clerk-react';
 import { CheckoutButton } from '@clerk/clerk-react/experimental';
 import { AuthPage } from './components/AuthPage';
-import PixelBlast from './components/PixelBlast';
-import { JourneySection } from './components/JourneySection';
+import { TiltCard } from './components/TiltCard';
+import { MouseAurora } from './components/MouseAurora';
+
+// Heavy / route-specific components are lazy-loaded so they aren't part of the
+// initial home-page payload. Silk pulls in three.js (~600 KB), chat/detonator
+// pull socket.io, storage pulls jszip — none of which the landing page needs.
+const Silk = lazy(() => import('./components/Silk'));
+const JourneySection = lazy(() => import('./components/JourneySection').then(m => ({ default: m.JourneySection })));
+const WhyUsView = lazy(() => import('./components/WhyUs').then(m => ({ default: m.WhyUsView })));
+const DetonatorView = lazy(() => import('./components/DetonatorView').then(m => ({ default: m.DetonatorView })));
+const EphemeralChat = lazy(() => import('./components/EphemeralChat').then(m => ({ default: m.EphemeralChat })));
+const SecureStorageRoom = lazy(() => import('./components/SecureStorageRoom').then(m => ({ default: m.SecureStorageRoom })));
 
 const PRO_PLAN_ID = 'cplan_3DxALr3WcHcdWjgUQNny6lyq6Bm';
+
+// Lightweight fallback shown while a lazy-loaded view chunk is fetched.
+const ViewLoader = () => (
+  <div className="min-h-screen flex items-center justify-center">
+    <motion.div
+      animate={{ rotate: 360 }}
+      transition={{ repeat: Infinity, duration: 0.9, ease: 'linear' }}
+      className="w-8 h-8 border-2 border-cyan-500 border-t-transparent rounded-full"
+    />
+  </div>
+);
+
+// Defers mounting the (heavy, three.js-backed) Silk background until the page is
+// idle, so three.js never blocks first paint or interactivity. The black
+// background shows instantly; silk fades in once its chunk has loaded. Skipped
+// when the user prefers reduced motion.
+const DeferredSilk = (props: React.ComponentProps<typeof Silk>) => {
+  const [show, setShow] = useState(false);
+
+  useEffect(() => {
+    if (typeof window !== 'undefined' &&
+        window.matchMedia?.('(prefers-reduced-motion: reduce)').matches) {
+      return; // respect reduced-motion: keep the static black background
+    }
+    const ric: typeof window.requestIdleCallback | undefined = (window as any).requestIdleCallback;
+    const handle = ric
+      ? ric(() => setShow(true), { timeout: 2000 })
+      : window.setTimeout(() => setShow(true), 600);
+    return () => {
+      if (ric && (window as any).cancelIdleCallback) (window as any).cancelIdleCallback(handle);
+      else clearTimeout(handle as number);
+    };
+  }, []);
+
+  if (!show) return <div className="absolute inset-0 bg-black" />;
+  return (
+    <Suspense fallback={<div className="absolute inset-0 bg-black" />}>
+      <motion.div
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        transition={{ duration: 1.2, ease: 'easeOut' }}
+        className="absolute inset-0"
+      >
+        <Silk {...props} />
+      </motion.div>
+    </Suspense>
+  );
+};
 
 const bufferToBase64 = (buffer: ArrayBuffer): string => {
   const bytes = new Uint8Array(buffer);
@@ -112,9 +174,18 @@ const Navbar = ({ activeView, navigateTo, isMenuOpen, setIsMenuOpen, isPro, isFr
     <nav className="fixed top-0 left-0 right-0 z-50 px-6 py-4">
       <div className="max-w-7xl mx-auto flex items-center justify-between glass rounded-full px-6 py-3">
         <button onClick={() => navigateTo('home')} className="flex items-center gap-2 group cursor-pointer">
-          <div className="w-8 h-8 bg-white flex items-center justify-center rounded-lg group-hover:scale-110 transition-transform">
-            <Lock className="w-5 h-5 text-black" strokeWidth={2.5} />
-          </div>
+          <motion.div
+            initial={false}
+            whileHover={{ scale: 1.1 }}
+            transition={{ duration: 0.18, ease: 'easeOut' }}
+            className="relative w-8 h-8 bg-white rounded-lg shrink-0 transform-gpu"
+            style={{ transformOrigin: 'center center', willChange: 'transform', backfaceVisibility: 'hidden' }}
+          >
+            <Lock
+              className="absolute inset-0 m-auto w-5 h-5 text-black"
+              strokeWidth={2.5}
+            />
+          </motion.div>
           <span className="text-white font-bold text-xl tracking-tighter transition-colors group-hover:text-cyan-400">Keepr.</span>
         </button>
 
@@ -276,10 +347,10 @@ const Navbar = ({ activeView, navigateTo, isMenuOpen, setIsMenuOpen, isPro, isFr
             )}
           </div>
           <button
-            onClick={() => isPro ? navigateTo('storage') : navigateTo('pricing')}
+            onClick={() => navigateTo('send')}
             className="hidden sm:flex items-center gap-2 bg-white text-black px-6 py-2 rounded-full text-sm font-bold hover:bg-zinc-200 transition-all hover:scale-105 active:scale-95 shadow-[0_0_20px_rgba(255,255,255,0.2)] cursor-pointer"
           >
-            Open Vault
+            Send File
             <ChevronRight className="w-4 h-4" />
           </button>
           <button
@@ -294,65 +365,48 @@ const Navbar = ({ activeView, navigateTo, isMenuOpen, setIsMenuOpen, isPro, isFr
   );
 };
 
-const HomeView = ({ navigateTo }: { navigateTo: (v: ViewType) => void }) => (
-
-  <>
-    <section className="relative pt-40 pb-20 px-6 overflow-hidden">
+const HomeHero = ({ navigateTo }: { navigateTo: (v: ViewType) => void }) => (
+  <section className="relative px-6">
+    {/* Silk spans the hero AND the transition gap below; fade lives only at the very bottom (below the fold) */}
+    <div className="absolute inset-0 z-0">
       <div className="absolute inset-0 top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[800px] h-[800px] bg-cyan-500/5 blur-[120px] rounded-full pointer-events-none" />
-      <div className="absolute inset-0">
-        <PixelBlast
-          variant="circle"
-          pixelSize={4}
-          color="#00d3f2"
-          patternScale={2}
-          patternDensity={1}
-          pixelSizeJitter={0}
-          enableRipples
-          rippleSpeed={0.3}
-          rippleThickness={0.08}
-          rippleIntensityScale={1.2}
-          liquid={false}
-          liquidStrength={0.12}
-          liquidRadius={1.2}
-          liquidWobbleSpeed={5}
-          speed={0.5}
-          edgeFade={0.25}
-          transparent
-        />
-      </div>
-      <div className="relative max-w-4xl mx-auto text-center flex flex-col items-center pointer-events-none">
+      <DeferredSilk
+        speed={0.7}
+        scale={0.8}
+        color="#1f6b7d"
+        noiseIntensity={1.4}
+        rotation={0}
+      />
+      {/* Gradual fade only in the lower transition zone — silk dissolves to black before "How It Works" */}
+      <div className="absolute inset-x-0 bottom-0 h-[45vh] bg-gradient-to-t from-black via-black/85 to-transparent pointer-events-none" />
+    </div>
+
+    {/* First screen — full silk, content centered, exactly as before */}
+    <div className="relative z-10 min-h-screen flex flex-col justify-center items-center pt-28 pb-10">
+      <div className="max-w-4xl mx-auto text-center flex flex-col items-center pointer-events-none">
         <motion.h1
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
-          className="text-6xl md:text-8xl font-bold tracking-tight mb-4"
+          className="text-5xl md:text-7xl font-bold tracking-tight mb-3 bg-gradient-to-b from-white via-zinc-200 to-zinc-500 bg-clip-text text-transparent drop-shadow-[0_2px_8px_rgba(255,255,255,0.08)]"
         >
-          Share Files <span className="text-white">Securely.</span>
+          Share Files <span className="bg-gradient-to-b from-white via-zinc-100 to-zinc-400 bg-clip-text text-transparent">Securely.</span>
         </motion.h1>
         <motion.p
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.1 }}
-          className="font-serif italic text-3xl md:text-5xl text-zinc-400 mb-8"
+          className="font-serif italic text-2xl md:text-4xl text-zinc-400"
         >
           Uncompromising Zero-Trust Privacy.
-        </motion.p>
-        <motion.p
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.2 }}
-          className="max-w-xl text-lg mb-12 text-zinc-400"
-        >
-          Store, share, and protect your data with end-to-end client-side encryption.
-          No complicated setup, no limits. Your privacy is our architecture.
         </motion.p>
 
         <motion.div
           initial={{ scale: 0.9, opacity: 0 }}
           animate={{ scale: 1, opacity: 1 }}
           transition={{ duration: 1, ease: [0.22, 1, 0.36, 1] }}
-          className="relative mt-8 mb-20 flex flex-col items-center justify-center p-12"
+          className="relative mt-6 flex flex-col items-center justify-center p-6 pointer-events-auto"
         >
-          <div className="relative w-[300px] h-[300px] md:w-[450px] md:h-[450px] flex items-center justify-center">
+          <div className="relative w-[260px] h-[260px] md:w-[340px] md:h-[340px] flex items-center justify-center">
             <div className="absolute inset-0 rounded-full bg-zinc-900 shadow-2xl border border-zinc-800" />
             <div className="absolute w-[85%] h-[85%] rounded-full bg-zinc-950 shadow-inner border border-zinc-900 overflow-hidden flex flex-col items-center justify-center">
               <motion.div
@@ -369,7 +423,7 @@ const HomeView = ({ navigateTo }: { navigateTo: (v: ViewType) => void }) => (
               </motion.div>
               <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
                 <div className="bg-zinc-900/40 p-4 rounded-full backdrop-blur-sm border border-black/20 shadow-lg">
-                  <Lock className="w-16 h-16 md:w-20 md:h-20 text-zinc-900 brightness-75 drop-shadow-lg" strokeWidth={2} />
+                  <Lock className="w-12 h-12 md:w-16 md:h-16 text-zinc-900 brightness-75 drop-shadow-lg" strokeWidth={2} />
                 </div>
               </div>
               <motion.button
@@ -377,99 +431,104 @@ const HomeView = ({ navigateTo }: { navigateTo: (v: ViewType) => void }) => (
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: 0.8 }}
                 onClick={() => navigateTo('send')}
-                className="absolute bottom-6 bg-zinc-800/80 border border-zinc-600/50 text-white px-6 py-2 rounded-lg text-sm font-medium hover:bg-zinc-700 hover:border-zinc-500 transition-all backdrop-blur-sm shadow-xl active:scale-95 pointer-events-auto"
+                className="absolute bottom-5 bg-zinc-800/80 border border-zinc-600/50 text-white px-5 py-1.5 rounded-lg text-sm font-medium hover:bg-zinc-700 hover:border-zinc-500 transition-all backdrop-blur-sm shadow-xl active:scale-95 pointer-events-auto"
               >
                 Get Started
               </motion.button>
             </div>
           </div>
-          <div className="absolute -bottom-8 w-[60%] h-8 bg-cyan-500/10 blur-3xl rounded-full" />
+          <div className="absolute -bottom-6 w-[60%] h-8 bg-cyan-500/10 blur-3xl rounded-full" />
         </motion.div>
       </div>
-    </section>
+    </div>
 
-    <section className="py-24 px-6">
-      <div className="max-w-7xl mx-auto">
-        <div className="mb-16">
-          <h2 className="text-4xl md:text-5xl font-bold mb-4">How It <span className="font-serif italic font-extralight opacity-60">Works.</span></h2>
-          <p className="text-zinc-500 max-w-lg">
-            Privacy shouldn't be complicated. We built Keepr. to be as intuitive as it is secure.
-          </p>
-        </div>
+    {/* Transition gap — silk continues here and fades to black before the next section */}
+    <div className="relative z-10 h-[45vh]" />
+  </section>
+);
 
-        <div className="grid grid-cols-1 md:grid-cols-6 lg:grid-cols-4 gap-4">
-          <motion.div whileHover={{ y: -5 }} className="md:col-span-3 lg:col-span-2 bg-zinc-900 border border-zinc-800 rounded-3xl p-8 group hover:border-cyan-500/30 transition-all flex flex-col justify-between min-h-[320px]">
-            <div>
-              <div className="w-12 h-12 bg-zinc-800 rounded-xl flex items-center justify-center mb-6 border border-zinc-700 group-hover:border-cyan-500/50 transition-colors">
-                <Upload className="w-6 h-6 text-white" />
-              </div>
-              <h3 className="text-2xl font-bold mb-3 group-hover:text-cyan-400 transition-colors">Upload with Ease</h3>
-              <p className="text-zinc-500 font-thin italic">
-                Simply drag and drop your files into the vault. Our system encrypts them instantly before they ever leave your device.
-              </p>
-            </div>
-            <div className="mt-8 flex justify-end">
-              <div className="w-32 h-32 bg-gradient-to-br from-zinc-800 to-transparent rounded-2xl rotate-12 flex items-center justify-center opacity-30 group-hover:opacity-100 transition-all">
-                <Upload className="w-16 h-16 text-zinc-600 group-hover:text-cyan-500" />
-              </div>
-            </div>
-          </motion.div>
-
-          <motion.div whileHover={{ y: -5 }} className="md:col-span-3 lg:col-span-1 bg-zinc-900 border border-zinc-800 rounded-3xl p-8 group hover:border-cyan-500/30 transition-all min-h-[320px]">
-            <div className="w-12 h-12 bg-zinc-800 rounded-xl flex items-center justify-center mb-6 border border-zinc-700 group-hover:border-cyan-500/50 transition-colors">
-              <Shield className="w-6 h-6 text-white" />
-            </div>
-            <h3 className="text-2xl font-bold mb-3 group-hover:text-cyan-400 transition-colors">Keep It Safe</h3>
-            <p className="text-zinc-500">
-              Zero-knowledge architecture ensures that even we haven't seen your data. Your keys, your files.
-            </p>
-          </motion.div>
-
-          <motion.div whileHover={{ y: -5 }} className="md:col-span-3 lg:col-span-1 bg-zinc-900 border border-zinc-800 rounded-3xl p-8 group hover:border-cyan-500/30 transition-all min-h-[320px]">
-            <div className="w-12 h-12 bg-zinc-800 rounded-xl flex items-center justify-center mb-6 border border-zinc-700 group-hover:border-cyan-500/50 transition-colors">
-              <Share2 className="w-6 h-6 text-white" />
-            </div>
-            <h3 className="text-2xl font-bold mb-3 group-hover:text-cyan-400 transition-colors">Share Instantly</h3>
-            <p className="text-zinc-500">
-              Generate secure single-use links or password-protected galleries in seconds.
-            </p>
-          </motion.div>
-
-          <motion.div whileHover={{ y: -5 }} className="md:col-span-6 lg:col-span-2 bg-zinc-950 border border-zinc-800 rounded-3xl p-8 group hover:border-cyan-500/30 transition-all flex items-center justify-between min-h-[200px]">
-            <div className="max-w-xs">
-              <div className="w-12 h-12 bg-zinc-800 rounded-xl flex items-center justify-center mb-6 border border-zinc-700 group-hover:border-cyan-500/50 transition-colors">
-                <Globe className="w-6 h-6 text-white" />
-              </div>
-              <h3 className="text-2xl font-bold mb-3 group-hover:text-cyan-400 transition-colors">Access Anywhere</h3>
-              <p className="text-zinc-500">
-                Sync your vault across all your devices with seamless cross-platform support and native apps.
-              </p>
-            </div>
-            <div className="hidden sm:block">
-              <div className="w-40 h-40 bg-[radial-gradient(circle_at_center,_var(--tw-gradient-stops))] from-zinc-800 via-transparent to-transparent opacity-50 group-hover:opacity-100 group-hover:from-cyan-900/40 transition-all rounded-full flex items-center justify-center">
-                <Globe className="w-20 h-20 text-zinc-700 group-hover:text-cyan-400" />
-              </div>
-            </div>
-          </motion.div>
-
-          <motion.div whileHover={{ y: -5 }} className="md:col-span-6 lg:col-span-2 bg-zinc-900/50 border border-zinc-800 rounded-3xl p-8 flex flex-wrap gap-12 items-center justify-around group hover:border-cyan-500/30 transition-all">
-            <div className="text-center">
-              <div className="text-4xl font-bold text-white mb-1 group-hover:text-cyan-400 transition-colors">256-bit</div>
-              <div className="text-xs uppercase tracking-widest text-zinc-600 font-bold">AES Encryption</div>
-            </div>
-            <div className="text-center">
-              <div className="text-4xl font-bold text-white mb-1 group-hover:text-cyan-400 transition-colors">0%</div>
-              <div className="text-xs uppercase tracking-widest text-zinc-600 font-bold">Data Leak History</div>
-            </div>
-            <div className="text-center">
-              <div className="text-4xl font-bold text-white mb-1 group-hover:text-cyan-400 transition-colors">10M+</div>
-              <div className="text-xs uppercase tracking-widest text-zinc-600 font-bold">Safe Transfers</div>
-            </div>
-          </motion.div>
-        </div>
+const HomeBelow = () => (
+  <section className="relative z-10 py-24 px-6 bg-black">
+    <div className="max-w-7xl mx-auto">
+      <div className="mb-16">
+        <h2 className="text-4xl md:text-5xl font-bold mb-4">How It <span className="font-serif italic text-zinc-400">Works.</span></h2>
+        <p className="text-zinc-500 max-w-lg">
+          Privacy shouldn't be complicated. We built Keepr. to be as intuitive as it is secure.
+        </p>
       </div>
-    </section>
-  </>
+
+      <div className="grid grid-cols-1 md:grid-cols-6 lg:grid-cols-4 gap-4" style={{ perspective: 1200 }}>
+        <TiltCard className="md:col-span-3 lg:col-span-2 min-h-[320px]" contentClassName="p-8 flex flex-col justify-between">
+          <div>
+            <div className="w-12 h-12 bg-zinc-800 rounded-xl flex items-center justify-center mb-6 border border-zinc-700 group-hover:border-cyan-500/50 transition-colors">
+              <Upload className="w-6 h-6 text-white" />
+            </div>
+            <h3 className="text-2xl font-bold mb-3 group-hover:text-cyan-400 transition-colors">Upload with Ease</h3>
+            <p className="text-zinc-500 font-thin italic">
+              Simply drag and drop your files into the vault. Our system encrypts them instantly before they ever leave your device.
+            </p>
+          </div>
+          <div className="mt-8 flex justify-end">
+            <div className="w-32 h-32 bg-gradient-to-br from-zinc-800 to-transparent rounded-2xl rotate-12 flex items-center justify-center opacity-30 group-hover:opacity-100 transition-all">
+              <Upload className="w-16 h-16 text-zinc-600 group-hover:text-cyan-500" />
+            </div>
+          </div>
+        </TiltCard>
+
+        <TiltCard className="md:col-span-3 lg:col-span-1 min-h-[320px]" contentClassName="p-8">
+          <div className="w-12 h-12 bg-zinc-800 rounded-xl flex items-center justify-center mb-6 border border-zinc-700 group-hover:border-cyan-500/50 transition-colors">
+            <Shield className="w-6 h-6 text-white" />
+          </div>
+          <h3 className="text-2xl font-bold mb-3 group-hover:text-cyan-400 transition-colors">Keep It Safe</h3>
+          <p className="text-zinc-500">
+            Zero-knowledge architecture ensures that even we haven't seen your data. Your keys, your files.
+          </p>
+        </TiltCard>
+
+        <TiltCard className="md:col-span-3 lg:col-span-1 min-h-[320px]" contentClassName="p-8">
+          <div className="w-12 h-12 bg-zinc-800 rounded-xl flex items-center justify-center mb-6 border border-zinc-700 group-hover:border-cyan-500/50 transition-colors">
+            <Share2 className="w-6 h-6 text-white" />
+          </div>
+          <h3 className="text-2xl font-bold mb-3 group-hover:text-cyan-400 transition-colors">Share Instantly</h3>
+          <p className="text-zinc-500">
+            Generate secure single-use links or password-protected galleries in seconds.
+          </p>
+        </TiltCard>
+
+        <TiltCard className="md:col-span-6 lg:col-span-2 min-h-[200px]" contentClassName="p-8 flex items-center justify-between">
+          <div className="max-w-xs">
+            <div className="w-12 h-12 bg-zinc-800 rounded-xl flex items-center justify-center mb-6 border border-zinc-700 group-hover:border-cyan-500/50 transition-colors">
+              <Globe className="w-6 h-6 text-white" />
+            </div>
+            <h3 className="text-2xl font-bold mb-3 group-hover:text-cyan-400 transition-colors">Access Anywhere</h3>
+            <p className="text-zinc-500">
+              Sync your vault across all your devices with seamless cross-platform support and native apps.
+            </p>
+          </div>
+          <div className="hidden sm:block">
+            <div className="w-40 h-40 bg-[radial-gradient(circle_at_center,_var(--tw-gradient-stops))] from-zinc-800 via-transparent to-transparent opacity-50 group-hover:opacity-100 group-hover:from-cyan-900/40 transition-all rounded-full flex items-center justify-center">
+              <Globe className="w-20 h-20 text-zinc-700 group-hover:text-cyan-400" />
+            </div>
+          </div>
+        </TiltCard>
+
+        <TiltCard className="md:col-span-6 lg:col-span-2 min-h-[200px]" contentClassName="p-8 h-full flex flex-wrap gap-12 items-center justify-around">
+          <div className="text-center">
+            <div className="text-4xl font-bold text-white mb-1 group-hover:text-cyan-400 transition-colors">256-bit</div>
+            <div className="text-xs uppercase tracking-widest text-zinc-600 font-bold">AES Encryption</div>
+          </div>
+          <div className="text-center">
+            <div className="text-4xl font-bold text-white mb-1 group-hover:text-cyan-400 transition-colors">0%</div>
+            <div className="text-xs uppercase tracking-widest text-zinc-600 font-bold">Data Leak History</div>
+          </div>
+          <div className="text-center">
+            <div className="text-4xl font-bold text-white mb-1 group-hover:text-cyan-400 transition-colors">10M+</div>
+            <div className="text-xs uppercase tracking-widest text-zinc-600 font-bold">Safe Transfers</div>
+          </div>
+        </TiltCard>
+      </div>
+    </div>
+  </section>
 );
 
 const SendView = ({
@@ -491,190 +550,279 @@ const SendView = ({
 }) => {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [isCopied, setIsCopied] = useState(false);
+  const [isDragging, setIsDragging] = useState(false);
 
   const onDrop = (e: React.DragEvent) => {
     e.preventDefault();
+    setIsDragging(false);
     const droppedFile = e.dataTransfer.files[0];
     if (droppedFile) setFile(droppedFile);
   };
 
+  const onDragEnter = (e: React.DragEvent) => {
+    e.preventDefault();
+    setIsDragging(true);
+  };
+
+  const onDragLeave = (e: React.DragEvent) => {
+    e.preventDefault();
+    // Only flip off when leaving the dropzone container (not its children)
+    if (e.currentTarget === e.target) setIsDragging(false);
+  };
+
+  const formatBytes = (bytes: number) => {
+    if (bytes < 1024) return `${bytes} B`;
+    if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
+    if (bytes < 1024 * 1024 * 1024) return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
+    return `${(bytes / (1024 * 1024 * 1024)).toFixed(2)} GB`;
+  };
+
+  const fileExt = file?.name.split('.').pop()?.toUpperCase() || 'FILE';
+
   return (
-    <section className="relative pt-40 pb-20 px-6 min-h-screen overflow-hidden">
-      <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[1000px] h-[1000px] bg-cyan-500/[0.03] blur-[150px] rounded-full pointer-events-none" />
+    <section className="relative pt-32 pb-20 px-6 min-h-screen overflow-hidden">
+      <div className="max-w-6xl mx-auto">
+        {/* Hero */}
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="text-center mb-14"
+        >
+          <h1 className="text-5xl md:text-7xl font-bold tracking-tight bg-gradient-to-b from-white via-zinc-200 to-zinc-500 bg-clip-text text-transparent drop-shadow-[0_2px_8px_rgba(255,255,255,0.08)]">
+            Send a file <span className="font-serif font-extralight italic text-zinc-300">privately.</span>
+          </h1>
+        </motion.div>
 
-      <div className="max-w-6xl mx-auto grid grid-cols-1 lg:grid-cols-12 gap-16 items-center">
-        <div className="lg:col-span-12 text-center mb-12">
-          <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="space-y-6">
-            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-cyan-500/10 border border-cyan-500/20 text-cyan-400 text-xs font-bold uppercase tracking-widest mx-auto">
-              <Shield className="w-3 h-3" strokeWidth={3} /> Zero-Trust Transmit
-            </div>
-            <h1 className="text-6xl md:text-8xl font-bold tracking-tight">
-              Transmit with <br />
-              <span className="text-white">Absolute Privacy.</span>
-            </h1>
-            <p className="font-serif italic text-3xl md:text-4xl text-zinc-400">
-              End-to-End Encrypted File Transfer.
-            </p>
-          </motion.div>
-        </div>
-
-        <div className="lg:col-span-8 lg:col-start-3">
+        {status === 'success' ? (
+          /* ─────── SUCCESS STATE ─────── */
           <motion.div
-            initial={{ opacity: 0, scale: 0.95 }}
-            animate={{ opacity: 1, scale: 1 }}
-            className="relative p-1 rounded-[2.5rem] bg-gradient-to-br from-zinc-700 to-zinc-950 shadow-2xl overflow-hidden group/container"
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="max-w-2xl mx-auto bg-zinc-950 border border-zinc-800 rounded-[2.5rem] p-10 md:p-14 relative overflow-hidden"
           >
-            <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[200%] aspect-square bg-[conic-gradient(from_0deg,transparent_0deg,transparent_300deg,#06B6D4_360deg)] opacity-0 group-hover/container:opacity-40 transition-opacity duration-1000 animate-[spin_6s_linear_infinite]" />
+            <div className="absolute top-0 right-0 w-64 h-64 bg-cyan-500/[0.08] blur-[80px] rounded-full pointer-events-none" />
 
-            <div className="bg-zinc-950 rounded-[2.2rem] p-12 md:p-20 border border-black/50 relative z-10">
-              {status === 'success' ? (
-                <div className="text-center space-y-8 py-10">
-                  <button
-                    onClick={() => {
-                      if (navigator.share) {
-                        navigator.share({
-                          title: 'Keepr Secure Transfer',
-                          text: 'I sent you an encrypted file via Keepr.',
-                          url: shareLink
-                        }).catch(() => { });
-                      } else {
-                        alert('Native sharing is not supported on this browser.');
-                      }
-                    }}
-                    className="w-20 h-20 bg-cyan-500/20 hover:bg-cyan-500/30 active:scale-95 transition-all cursor-pointer rounded-full flex items-center justify-center mx-auto border border-cyan-500/30 group"
-                    title="Share via App"
+            <div className="relative text-center space-y-8">
+              <div className="inline-flex items-center justify-center w-16 h-16 rounded-2xl bg-cyan-500/10 border border-cyan-500/30">
+                <ShieldCheck className="w-7 h-7 text-cyan-400" strokeWidth={2} />
+              </div>
+
+              <div className="space-y-2">
+                <h2 className="text-3xl font-bold text-white tracking-tight">File secured</h2>
+                <p className="text-zinc-500 text-sm">
+                  Share this zero-knowledge link with your recipient.
+                </p>
+              </div>
+
+              <div className="relative">
+                <input
+                  readOnly
+                  value={shareLink}
+                  className="w-full bg-zinc-900 border border-zinc-800 rounded-2xl pl-5 pr-28 py-4 text-sm text-zinc-300 focus:outline-none focus:border-cyan-500/50 font-mono"
+                />
+                <button
+                  onClick={() => {
+                    navigator.clipboard.writeText(shareLink);
+                    setIsCopied(true);
+                    setTimeout(() => setIsCopied(false), 2000);
+                  }}
+                  className={`absolute right-2 top-2 bottom-2 w-[100px] rounded-xl text-[10px] font-black uppercase tracking-widest transition-all duration-300 flex items-center justify-center gap-1.5 ${isCopied ? 'bg-cyan-500 text-black' : 'bg-white text-black hover:bg-zinc-200'}`}
+                >
+                  <AnimatePresence mode="wait">
+                    {isCopied ? (
+                      <motion.span key="copied" initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -10 }} className="flex items-center gap-1.5">
+                        <Check className="w-3 h-3" strokeWidth={3} /> Copied
+                      </motion.span>
+                    ) : (
+                      <motion.span key="copy" initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -10 }} className="flex items-center gap-1.5">
+                        <Copy className="w-3 h-3" strokeWidth={3} /> Copy
+                      </motion.span>
+                    )}
+                  </AnimatePresence>
+                </button>
+              </div>
+
+              {/* Security note */}
+              <div className="flex items-center justify-center gap-2 text-[10px] uppercase tracking-[0.25em] text-zinc-600 font-black">
+                <Lock className="w-3 h-3" /> Self-destructs on first download
+              </div>
+
+              <div className="flex flex-col sm:flex-row gap-3 pt-2">
+                <button
+                  onClick={() => {
+                    if (navigator.share) {
+                      navigator.share({
+                        title: 'Keepr Secure Transfer',
+                        text: 'I sent you an encrypted file via Keepr.',
+                        url: shareLink
+                      }).catch(() => { });
+                    }
+                  }}
+                  className="flex-1 bg-zinc-900 border border-zinc-800 hover:border-cyan-500/40 text-white py-3.5 rounded-2xl text-sm font-bold transition-colors flex items-center justify-center gap-2"
+                >
+                  <Share2 className="w-4 h-4" /> Share via app
+                </button>
+                <button
+                  onClick={onReset}
+                  className="flex-1 bg-white text-black py-3.5 rounded-2xl text-sm font-bold hover:bg-zinc-200 transition-colors"
+                >
+                  Send another
+                </button>
+              </div>
+            </div>
+          </motion.div>
+        ) : (
+          /* ─────── DROP / ENCRYPT STATE ─────── */
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="max-w-3xl mx-auto"
+          >
+            <div
+              onClick={() => fileInputRef.current?.click()}
+              onDragOver={(e) => e.preventDefault()}
+              onDragEnter={onDragEnter}
+              onDragLeave={onDragLeave}
+              onDrop={onDrop}
+              className={`relative bg-zinc-950 border rounded-[2.5rem] p-10 md:p-14 cursor-pointer transition-colors duration-300 min-h-[420px] flex flex-col items-center justify-center overflow-hidden ${isDragging
+                  ? 'border-cyan-500/60 bg-cyan-500/[0.04]'
+                  : file
+                    ? 'border-cyan-500/30'
+                    : 'border-zinc-800 hover:border-zinc-700'
+                }`}
+            >
+              {/* Animated dotted grid backdrop */}
+              <div className={`absolute inset-0 bg-[radial-gradient(circle_at_1px_1px,rgba(103,232,249,0.08)_1px,transparent_1px)] bg-[size:20px_20px] [mask-image:radial-gradient(ellipse_60%_60%_at_50%_50%,#000_50%,transparent_100%)] transition-opacity duration-300 ${isDragging ? 'opacity-100' : 'opacity-40'
+                }`} />
+
+              {/* Active drag glow */}
+              {isDragging && (
+                <div className="absolute inset-0 bg-gradient-to-br from-cyan-500/[0.08] via-transparent to-cyan-500/[0.04] pointer-events-none" />
+              )}
+
+              <input
+                type="file"
+                className="hidden"
+                ref={fileInputRef}
+                onChange={(e) => setFile(e.target.files?.[0] || null)}
+              />
+
+              <div className="relative z-10 w-full flex flex-col items-center">
+                <AnimatePresence mode="wait" initial={false}>
+                {file ? (
+                  /* File selected — preview */
+                  <motion.div
+                    key="file-preview"
+                    initial={{ opacity: 0, y: 8 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    exit={{ opacity: 0, y: -8 }}
+                    transition={{ duration: 0.22, ease: [0.4, 0, 0.2, 1] }}
+                    className="w-full max-w-md flex items-center gap-5 bg-zinc-900 border border-zinc-800 rounded-2xl p-5"
                   >
-                    <Share2 className="w-10 h-10 text-cyan-400 group-hover:scale-110 transition-transform" />
-                  </button>
-                  <div className="space-y-2">
-                    <h2 className="text-3xl font-bold text-white uppercase tracking-tighter">File Secured</h2>
-                    <p className="text-zinc-500 font-serif italic">Share this zero-knowledge link with your recipient</p>
-                  </div>
-                  <div className="relative group">
-                    <input
-                      readOnly
-                      value={shareLink}
-                      className="w-full bg-zinc-900 border border-zinc-800 rounded-2xl px-6 py-4 text-sm text-zinc-300 focus:outline-none focus:border-cyan-500/50 pr-24"
-                    />
+                    {/* File type chip */}
+                    <div className="shrink-0 w-16 h-20 rounded-xl bg-gradient-to-br from-zinc-800 to-zinc-900 border border-zinc-700 flex flex-col items-center justify-center relative overflow-hidden">
+                      <FileIcon className="w-7 h-7 text-cyan-400/80" strokeWidth={1.5} />
+                      <div className="text-[8px] font-black uppercase tracking-widest text-zinc-400 mt-1">
+                        {fileExt.length > 4 ? 'FILE' : fileExt}
+                      </div>
+                      {/* Folded corner */}
+                      <div className="absolute top-0 right-0 w-3 h-3 bg-zinc-700 [clip-path:polygon(0_0,100%_0,100%_100%)]" />
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <div className="text-white font-bold truncate">{file.name}</div>
+                      <div className="text-zinc-500 text-xs mt-1 flex items-center gap-3">
+                        <span>{formatBytes(file.size)}</span>
+                        <span className="w-1 h-1 rounded-full bg-zinc-700" />
+                        <span className="flex items-center gap-1.5 text-cyan-400">
+                          <Lock className="w-3 h-3" /> Ready to encrypt
+                        </span>
+                      </div>
+                    </div>
                     <button
-                      onClick={() => {
-                        navigator.clipboard.writeText(shareLink);
-                        setIsCopied(true);
-                        setTimeout(() => setIsCopied(false), 2000);
-                      }}
-                      className={`absolute right-2 top-2 bottom-2 w-[85px] rounded-xl text-[10px] font-black uppercase tracking-widest transition-all duration-300 overflow-hidden flex items-center justify-center ${isCopied ? 'bg-cyan-500 text-black shadow-[0_0_15px_rgba(6,182,212,0.5)]' : 'bg-white text-black hover:bg-zinc-200'}`}
+                      onClick={(e) => { e.stopPropagation(); setFile(null); }}
+                      className="shrink-0 w-9 h-9 rounded-full bg-zinc-800 hover:bg-zinc-700 border border-zinc-700 flex items-center justify-center text-zinc-400 hover:text-white transition-colors"
+                      title="Remove file"
                     >
-                      <AnimatePresence mode="wait">
-                        {isCopied ? (
-                          <motion.div
-                            key="copied"
-                            initial={{ opacity: 0, y: 15 }}
-                            animate={{ opacity: 1, y: 0 }}
-                            exit={{ opacity: 0, y: -15 }}
-                            transition={{ type: "spring", bounce: 0.4, duration: 0.4 }}
-                          >
-                            COPIED!
-                          </motion.div>
-                        ) : (
-                          <motion.div
-                            key="copy"
-                            initial={{ opacity: 0, y: 15 }}
-                            animate={{ opacity: 1, y: 0 }}
-                            exit={{ opacity: 0, y: -15 }}
-                            transition={{ type: "spring", bounce: 0.4, duration: 0.4 }}
-                          >
-                            COPY
-                          </motion.div>
-                        )}
-                      </AnimatePresence>
+                      <X className="w-4 h-4" />
                     </button>
-                  </div>
-                  <div className="flex flex-col gap-4 pt-2">
-                    <button
-                      onClick={() => {
-                        if (navigator.share) {
-                          navigator.share({
-                            title: 'Keepr Secure Transfer',
-                            text: 'I sent you an encrypted file via Keepr.',
-                            url: shareLink
-                          }).catch(() => { });
-                        }
-                      }}
-                      className="bg-white text-black py-4 rounded-xl text-[10px] font-black uppercase tracking-widest hover:bg-zinc-200 transition-all shadow-[0_0_20px_rgba(255,255,255,0.1)] flex items-center justify-center gap-2"
-                    >
-                      <Share2 className="w-3.5 h-3.5" /> Share Link via App
-                    </button>
-                    <button
-                      onClick={onReset}
-                      className="text-zinc-500 hover:text-white text-xs uppercase tracking-widest transition-colors mt-2"
-                    >
-                      Send Another File
-                    </button>
-                  </div>
-                </div>
-              ) : (
-                <>
-                  <div
-                    onClick={() => fileInputRef.current?.click()}
-                    onDragOver={(e) => e.preventDefault()}
-                    onDrop={onDrop}
-                    className="border-2 border-dashed border-zinc-800 rounded-3xl p-8 sm:p-16 flex flex-col items-center justify-center group hover:border-cyan-500/40 hover:bg-cyan-500/[0.02] transition-all cursor-pointer min-h-[400px]"
+                  </motion.div>
+                ) : (
+                  /* Empty state */
+                  <motion.div
+                    key="empty-state"
+                    initial={{ opacity: 0, y: 8 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    exit={{ opacity: 0, y: -8 }}
+                    transition={{ duration: 0.22, ease: [0.4, 0, 0.2, 1] }}
+                    className="flex flex-col items-center"
                   >
-                    <input
-                      type="file"
-                      className="hidden"
-                      ref={fileInputRef}
-                      onChange={(e) => setFile(e.target.files?.[0] || null)}
-                    />
                     <motion.div
-                      animate={{ y: [0, -10, 0] }}
-                      transition={{ repeat: Infinity, duration: 3, ease: "easeInOut" }}
-                      className="w-24 h-24 bg-zinc-900 rounded-3xl flex items-center justify-center mb-8 shadow-xl border border-zinc-800 group-hover:border-cyan-500/50 transition-colors"
+                      animate={{ y: isDragging ? -6 : [0, -8, 0] }}
+                      transition={isDragging ? { duration: 0.2 } : { repeat: Infinity, duration: 3, ease: 'easeInOut' }}
+                      className={`w-20 h-20 rounded-2xl flex items-center justify-center mb-6 border transition-colors ${isDragging
+                          ? 'bg-cyan-500/10 border-cyan-500/40 shadow-[0_0_24px_rgba(6,182,212,0.3)]'
+                          : 'bg-zinc-900 border-zinc-800'
+                        }`}
                     >
                       {status === 'processing' ? (
                         <motion.div
                           animate={{ rotate: 360 }}
-                          transition={{ repeat: Infinity, duration: 1, ease: "linear" }}
-                          className="w-12 h-12 border-4 border-cyan-500 border-t-transparent rounded-full"
+                          transition={{ repeat: Infinity, duration: 1, ease: 'linear' }}
+                          className="w-9 h-9 border-2 border-cyan-500 border-t-transparent rounded-full"
                         />
                       ) : (
-                        <Upload className="w-12 h-12 text-white" />
+                        <Upload
+                          className={`w-9 h-9 transition-colors ${isDragging ? 'text-cyan-400' : 'text-white'}`}
+                          strokeWidth={1.5}
+                        />
                       )}
                     </motion.div>
 
-                    {file ? (
-                      <div className="text-center px-4">
-                        <h2 className="text-2xl font-bold text-white mb-2 text-center break-all">{file.name}</h2>
-                        <p className="text-zinc-500 text-sm text-center">{(file.size / (1024 * 1024)).toFixed(2)} MB • Ready for encryption</p>
-                      </div>
-                    ) : (
-                      <div className="text-center px-4 flex flex-col items-center">
-                        <h2 className="text-3xl font-bold mb-4 tracking-tighter text-center">Secure Dropzone</h2>
-                        <p className="text-zinc-500 mb-2 italic font-serif text-center">Drag and drop or click to browse</p>
-                        <p className="text-zinc-700 text-[10px] uppercase tracking-widest font-black text-center">Files up to 10GB • Encrypted locally</p>
-                      </div>
-                    )}
-                  </div>
-
-                  <div className="mt-12 flex justify-center">
-                    <button
-                      disabled={!file || status === 'processing'}
-                      onClick={handleEncrypt}
-                      className="bg-white text-black px-10 py-4 rounded-2xl font-bold hover:bg-zinc-200 transition-all uppercase tracking-widest text-[10px] shadow-[0_0_30px_rgba(255,255,255,0.1)] disabled:opacity-50 disabled:cursor-not-allowed"
-                    >
-                      {status === 'processing' ? 'Encrypting...' : 'Initialize Encryption'}
-                    </button>
-                  </div>
-                  {status === 'error' && error && (
-                    <p className="mt-6 text-red-500 text-[10px] uppercase tracking-widest font-black text-center leading-tight">
-                      {error}
+                    <h2 className="text-2xl md:text-3xl font-bold mb-3 tracking-tight text-center">
+                      {isDragging ? 'Release to encrypt' : 'Drop a file or click to browse'}
+                    </h2>
+                    <p className="text-zinc-500 text-sm text-center max-w-sm">
+                      Files are encrypted on your device with AES-256 before leaving it.
                     </p>
-                  )}
-                </>
-              )}
+                  </motion.div>
+                )}
+                </AnimatePresence>
+              </div>
             </div>
+
+            {/* Encrypt button row */}
+            <div className="mt-5">
+              <button
+                disabled={!file || status === 'processing'}
+                onClick={handleEncrypt}
+                className="w-full group bg-white text-black px-7 py-4 rounded-2xl text-sm font-black uppercase tracking-[0.2em] hover:bg-zinc-200 transition-all hover:scale-[1.01] active:scale-[0.99] disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:scale-100 shadow-[0_0_24px_rgba(255,255,255,0.12)] flex items-center justify-center gap-2"
+              >
+                {status === 'processing' ? (
+                  <>
+                    <motion.div
+                      animate={{ rotate: 360 }}
+                      transition={{ repeat: Infinity, duration: 1, ease: 'linear' }}
+                      className="w-3.5 h-3.5 border-2 border-black border-t-transparent rounded-full"
+                    />
+                    Encrypting
+                  </>
+                ) : (
+                  <>
+                    <Lock className="w-3.5 h-3.5" strokeWidth={3} />
+                    Encrypt & Generate Link
+                  </>
+                )}
+              </button>
+            </div>
+
+            {status === 'error' && error && (
+              <div className="mt-4 px-4 py-3 rounded-xl bg-red-500/5 border border-red-500/20 text-red-400 text-xs flex items-center gap-2">
+                <AlertTriangle className="w-3.5 h-3.5 shrink-0" />
+                <span>{error}</span>
+              </div>
+            )}
           </motion.div>
-        </div>
+        )}
       </div>
     </section>
   );
@@ -698,87 +846,147 @@ const ReceiveView = ({
   decryptedFileName: string;
   error: string | null;
   onReset: () => void;
-}) => (
-  <section className="relative pt-40 pb-20 px-6 min-h-screen flex items-center justify-center bg-zinc-950/20 overflow-hidden">
-    <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[800px] h-[800px] bg-zinc-500/[0.02] blur-[150px] rounded-full pointer-events-none" />
+}) => {
+  const onPaste = async () => {
+    try {
+      const text = await navigator.clipboard.readText();
+      if (text) setDownloadInput(text);
+    } catch {
+      
+    }
+  };
 
-    <div className="max-w-xl w-full text-center relative">
-      <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="space-y-6 mb-16">
-        <div className="w-24 h-24 bg-zinc-900 border border-zinc-800 rounded-[2.5rem] flex items-center justify-center mx-auto mb-10 relative group">
-          <div className="absolute inset-0 bg-cyan-500/10 blur-2xl rounded-full opacity-0 group-hover:opacity-100 transition-opacity" />
-          <Download className="w-10 h-10 text-white relative z-10 group-hover:scale-110 transition-transform" />
-        </div>
-        <h1 className="text-6xl font-black tracking-tighter">
-          Retrieve Your <br />
-          <span className="text-white">Data Safely.</span>
-        </h1>
-        <p className="font-serif italic text-3xl text-zinc-400">
-          Decryption Happens on Your Terms.
-        </p>
-      </motion.div>
-
-      <motion.div
-        initial={{ opacity: 0, scale: 0.95 }}
-        animate={{ opacity: 1, scale: 1 }}
-        transition={{ delay: 0.2 }}
-        className="glass rounded-[3rem] p-12 md:p-16 border border-white/5 relative overflow-hidden shadow-2xl"
-      >
-        <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-transparent via-cyan-500/20 to-transparent" />
+  return (
+    <section className="relative pt-32 pb-20 px-6 min-h-screen overflow-hidden">
+      <div className="max-w-6xl mx-auto">
+        {/* Hero */}
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="text-center mb-14"
+        >
+          <h1 className="text-5xl md:text-7xl font-bold tracking-tight bg-gradient-to-b from-white via-zinc-200 to-zinc-500 bg-clip-text text-transparent drop-shadow-[0_2px_8px_rgba(255,255,255,0.08)]">
+            Decrypt your <span className="font-serif font-extralight italic text-zinc-400">file.</span>
+          </h1>
+        </motion.div>
 
         {status === 'success' && decryptedUrl ? (
-          <div className="py-6 space-y-6">
-            <div className="w-16 h-16 bg-green-500/20 rounded-full flex items-center justify-center mx-auto border border-green-500/30">
-              <Shield className="w-8 h-8 text-green-400" />
-            </div>
-            <h2 className="text-2xl font-bold text-white uppercase tracking-tighter">Decryption Successful</h2>
-            <div className="text-zinc-500 font-sans text-xs truncate max-w-xs mx-auto mb-2">{decryptedFileName}</div>
-            <a
-              href={decryptedUrl}
-              download={decryptedFileName}
-              className="block w-full bg-white text-black font-bold py-5 rounded-2xl hover:bg-zinc-200 transition-all text-center tracking-widest text-[10px] uppercase"
-            >
-              Download File
-            </a>
-            <button
-              onClick={onReset}
-              className="text-zinc-500 hover:text-white text-[10px] uppercase tracking-widest transition-colors font-black"
-            >
-              Close Vault
-            </button>
-          </div>
-        ) : (
-          <>
-            <p className="text-zinc-600 mb-8 text-[10px] uppercase tracking-[0.4em] font-black">Authorized Access Only</p>
+          /* ─────── SUCCESS STATE ─────── */
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="max-w-2xl mx-auto bg-zinc-950 border border-zinc-800 rounded-[2.5rem] p-10 md:p-14 relative overflow-hidden"
+          >
+            <div className="absolute top-0 right-0 w-64 h-64 bg-cyan-500/[0.08] blur-[80px] rounded-full pointer-events-none" />
 
-            <div className="mb-10 text-left">
-              <label className="text-[10px] uppercase tracking-widest text-zinc-700 font-black mb-3 block">Paste Vault Link</label>
-              <div className="relative group">
-                <input
-                  type="text"
-                  value={downloadInput}
-                  onChange={(e) => setDownloadInput(e.target.value)}
-                  className="w-full bg-zinc-900/50 border border-zinc-800 rounded-2xl px-6 py-4 text-white font-sans focus:border-cyan-500/50 outline-none transition-all focus:bg-zinc-950 placeholder:text-zinc-800"
-                  placeholder="Enter link from sender..."
-                />
+            <div className="relative text-center space-y-8">
+              <div className="inline-flex items-center justify-center w-16 h-16 rounded-2xl bg-cyan-500/10 border border-cyan-500/30">
+                <ShieldCheck className="w-7 h-7 text-cyan-400" strokeWidth={2} />
               </div>
-              {error && <p className="text-red-500 text-[10px] mt-2 uppercase tracking-widest font-black leading-tight text-center">{error}</p>}
-            </div>
 
-            <button
-              disabled={!downloadInput || status === 'processing'}
-              onClick={handleDecrypt}
-              className="w-full bg-zinc-900 border border-zinc-700 text-white font-bold py-5 rounded-2xl hover:border-cyan-500/50 hover:bg-zinc-800 transition-all active:scale-[0.98] mb-6 tracking-widest text-[10px] uppercase group disabled:opacity-50"
-            >
-              {status === 'processing' ? 'Processing...' : 'Decrypt & Download'}
-              <ArrowRight className="inline-block w-4 h-4 ml-2 group-hover:translate-x-1 transition-transform" />
-            </button>
-            <p className="text-[10px] text-zinc-700 uppercase tracking-widest font-black">Encrypted via 256-bit AES GCM</p>
-          </>
+              <div className="space-y-2">
+                <h2 className="text-3xl font-bold text-white tracking-tight">Decryption successful</h2>
+                <p className="text-zinc-500 text-sm">Your file is ready to download.</p>
+              </div>
+
+              {/* File preview pill */}
+              <div className="flex items-center gap-4 bg-zinc-900 border border-zinc-800 rounded-2xl p-4 text-left">
+                <div className="shrink-0 w-12 h-14 rounded-xl bg-gradient-to-br from-zinc-800 to-zinc-900 border border-zinc-700 flex items-center justify-center">
+                  <FileIcon className="w-5 h-5 text-cyan-400/80" strokeWidth={1.5} />
+                </div>
+                <div className="flex-1 min-w-0">
+                  <div className="text-white font-bold text-sm truncate">{decryptedFileName}</div>
+                  <div className="text-zinc-500 text-xs mt-0.5 flex items-center gap-1.5">
+                    <Lock className="w-3 h-3 text-cyan-400" /> Decrypted locally
+                  </div>
+                </div>
+              </div>
+
+              <div className="flex flex-col sm:flex-row gap-3">
+                <a
+                  href={decryptedUrl}
+                  download={decryptedFileName}
+                  className="flex-1 bg-white text-black py-3.5 rounded-2xl text-sm font-bold hover:bg-zinc-200 transition-colors flex items-center justify-center gap-2"
+                >
+                  <Download className="w-4 h-4" /> Download file
+                </a>
+                <button
+                  onClick={onReset}
+                  className="flex-1 bg-zinc-900 border border-zinc-800 hover:border-cyan-500/40 text-white py-3.5 rounded-2xl text-sm font-bold transition-colors"
+                >
+                  Receive another
+                </button>
+              </div>
+            </div>
+          </motion.div>
+        ) : (
+          /* ─────── INPUT STATE ─────── */
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="max-w-2xl mx-auto"
+          >
+            <div className="bg-zinc-950 border border-zinc-800 rounded-[2.5rem] p-10 md:p-12 relative overflow-hidden">
+              <div className="absolute inset-0 bg-[radial-gradient(circle_at_1px_1px,rgba(103,232,249,0.06)_1px,transparent_1px)] bg-[size:20px_20px] [mask-image:radial-gradient(ellipse_60%_60%_at_50%_50%,#000_50%,transparent_100%)] opacity-40" />
+
+              <div className="relative z-10">
+                <label className="text-[10px] uppercase tracking-[0.25em] text-zinc-500 font-black mb-3 block">
+                  Vault link
+                </label>
+                <div className="relative">
+                  <input
+                    type="text"
+                    value={downloadInput}
+                    onChange={(e) => setDownloadInput(e.target.value)}
+                    className="w-full bg-zinc-900 border border-zinc-800 rounded-2xl pl-5 pr-24 py-4 text-zinc-200 font-mono text-sm focus:border-cyan-500/50 outline-none transition-colors placeholder:text-zinc-600"
+                    placeholder="https://keepr..."
+                  />
+                  <button
+                    type="button"
+                    onClick={onPaste}
+                    className="absolute right-2 top-2 bottom-2 px-4 rounded-xl bg-zinc-800 hover:bg-zinc-700 text-zinc-300 hover:text-white text-[10px] font-black uppercase tracking-widest transition-colors"
+                    title="Paste from clipboard"
+                  >
+                    Paste
+                  </button>
+                </div>
+
+                <button
+                  disabled={!downloadInput || status === 'processing'}
+                  onClick={handleDecrypt}
+                  className="w-full mt-5 group bg-white text-black px-7 py-4 rounded-2xl text-sm font-black uppercase tracking-[0.2em] hover:bg-zinc-200 transition-all hover:scale-[1.01] active:scale-[0.99] disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:scale-100 shadow-[0_0_24px_rgba(255,255,255,0.12)] flex items-center justify-center gap-2"
+                >
+                  {status === 'processing' ? (
+                    <>
+                      <motion.div
+                        animate={{ rotate: 360 }}
+                        transition={{ repeat: Infinity, duration: 1, ease: 'linear' }}
+                        className="w-3.5 h-3.5 border-2 border-black border-t-transparent rounded-full"
+                      />
+                      Decrypting
+                    </>
+                  ) : (
+                    <>
+                      <KeyRound className="w-3.5 h-3.5" strokeWidth={3} />
+                      Decrypt & Download
+                    </>
+                  )}
+                </button>
+
+                {error && (
+                  <div className="mt-4 px-4 py-3 rounded-xl bg-red-500/5 border border-red-500/20 text-red-400 text-xs flex items-center gap-2">
+                    <AlertTriangle className="w-3.5 h-3.5 shrink-0" />
+                    <span>{error}</span>
+                  </div>
+                )}
+              </div>
+            </div>
+          </motion.div>
         )}
-      </motion.div>
-    </div>
-  </section>
-);
+      </div>
+    </section>
+  );
+};
 
 const ScanView = ({
   status,
@@ -794,12 +1002,14 @@ const ScanView = ({
   onReset: () => void;
 }) => {
   const fileInputRef = useRef<HTMLInputElement>(null);
-  const [dragActive, setDragActive] = useState(false);
+  const [isDragging, setIsDragging] = useState(false);
   const [scanMode, setScanMode] = useState<'file' | 'url'>('file');
   const [urlInput, setUrlInput] = useState('');
+  const [pickedFile, setPickedFile] = useState<File | null>(null);
 
   const handleFile = (files: FileList | null) => {
     if (files && files[0]) {
+      setPickedFile(files[0]);
       handleScan(files[0]);
     }
   };
@@ -809,198 +1019,283 @@ const ScanView = ({
     if (urlInput) handleScan(urlInput);
   };
 
+  const stats = scanResult?.data?.attributes?.stats;
+  const totalEngines =
+    (stats?.malicious || 0) + (stats?.suspicious || 0) + (stats?.harmless || 0) + (stats?.undetected || 0);
+  const isClean = scanResult && (stats?.malicious || 0) === 0 && (stats?.suspicious || 0) === 0;
+
   return (
-    <section className="relative pt-40 pb-20 px-6 min-h-screen overflow-hidden">
-      <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[1000px] h-[1000px] bg-red-500/[0.03] blur-[150px] rounded-full pointer-events-none" />
-
-      <div className="max-w-4xl mx-auto">
-        <div className="text-center mb-12 space-y-4">
-          <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-red-500/10 border border-red-500/20 text-red-400 text-xs font-bold uppercase tracking-widest mx-auto">
-            <Shield className="w-3 h-3" /> Advanced Threat Intelligence
-          </div>
-          <h1 className="text-5xl md:text-7xl font-bold tracking-tight text-white">
-            Scan for <span className="text-red-500">Threats.</span>
-          </h1>
-          <p className="font-serif italic text-xl md:text-2xl text-zinc-400">Powered by the VirusTotal Intelligence Network.</p>
-
-          <div className="flex justify-center gap-4 pt-6">
-            <button
-              onClick={() => { setScanMode('file'); onReset(); }}
-              className={`px-6 py-2 rounded-xl text-xs font-black uppercase tracking-widest transition-all ${scanMode === 'file' ? 'bg-red-500 text-white shadow-[0_0_15px_rgba(239,68,68,0.4)]' : 'bg-zinc-900 text-zinc-500 hover:text-zinc-300'}`}
-            >
-              File Scan
-            </button>
-            <button
-              onClick={() => { setScanMode('url'); onReset(); }}
-              className={`px-6 py-2 rounded-xl text-xs font-black uppercase tracking-widest transition-all ${scanMode === 'url' ? 'bg-red-500 text-white shadow-[0_0_15_rgba(239,68,68,0.4)]' : 'bg-zinc-900 text-zinc-500 hover:text-zinc-300'}`}
-            >
-              URL Scan
-            </button>
-          </div>
-        </div>
-
+    <section className="relative pt-32 pb-20 px-6 min-h-screen overflow-hidden">
+      <div className="max-w-6xl mx-auto">
+        {/* Hero */}
         <motion.div
-          initial={{ opacity: 0, scale: 0.95 }}
-          animate={{ opacity: 1, scale: 1 }}
-          className="relative p-1 rounded-[3rem] bg-gradient-to-br from-zinc-800 to-zinc-950 shadow-2xl overflow-hidden"
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="text-center mb-12"
         >
-          <div className="bg-zinc-950 rounded-[2.8rem] p-8 md:p-16 border border-white/5 relative z-10">
-            {scanResult ? (
-              <div className="space-y-8">
-                <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between border-b border-zinc-800 pb-6 gap-4">
-                  <div>
-                    <h2 className="text-2xl font-bold text-white uppercase tracking-tighter">Analysis Complete</h2>
-                    <p className="text-zinc-500 text-sm">Real-time scan results from 70+ antivirus engines</p>
-                  </div>
-                  <div className={`px-4 py-2 rounded-xl text-xs font-black uppercase tracking-widest whitespace-nowrap ${scanResult.data?.attributes?.stats?.malicious > 0 ? 'bg-red-500/20 text-red-400' : 'bg-green-500/20 text-green-400'
+          <h1 className="text-5xl md:text-7xl font-bold tracking-tight bg-gradient-to-b from-white via-zinc-200 to-zinc-500 bg-clip-text text-transparent drop-shadow-[0_2px_8px_rgba(255,255,255,0.08)]">
+            Scan before you <span className="font-serif font-extralight italic text-zinc-400">trust.</span>
+          </h1>
+
+          {/* Mode toggle — segmented pill */}
+          {!scanResult && (
+            <div className="flex justify-center mt-8">
+              <div className="bg-zinc-900 border border-zinc-800 rounded-full p-1.5 inline-flex relative">
+                <button
+                  onClick={() => { setScanMode('file'); onReset(); setPickedFile(null); }}
+                  className={`relative z-10 px-5 py-2 rounded-full text-xs font-bold transition-colors flex items-center gap-2 ${scanMode === 'file' ? 'text-black' : 'text-zinc-400 hover:text-white'
+                    }`}
+                >
+                  {scanMode === 'file' && (
+                    <motion.span
+                      layoutId="scan-toggle-pill"
+                      className="absolute inset-0 bg-white rounded-full -z-10"
+                      transition={{ type: 'spring', stiffness: 320, damping: 30 }}
+                    />
+                  )}
+                  <Upload className="w-3.5 h-3.5" /> File
+                </button>
+                <button
+                  onClick={() => { setScanMode('url'); onReset(); setUrlInput(''); }}
+                  className={`relative z-10 px-5 py-2 rounded-full text-xs font-bold transition-colors flex items-center gap-2 ${scanMode === 'url' ? 'text-black' : 'text-zinc-400 hover:text-white'
+                    }`}
+                >
+                  {scanMode === 'url' && (
+                    <motion.span
+                      layoutId="scan-toggle-pill"
+                      className="absolute inset-0 bg-white rounded-full -z-10"
+                      transition={{ type: 'spring', stiffness: 320, damping: 30 }}
+                    />
+                  )}
+                  <LinkIcon className="w-3.5 h-3.5" /> URL
+                </button>
+              </div>
+            </div>
+          )}
+        </motion.div>
+
+        {scanResult ? (
+          /* ─────── RESULT STATE ─────── */
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="max-w-3xl mx-auto bg-zinc-950 border border-zinc-800 rounded-[2.5rem] p-8 md:p-12 relative overflow-hidden"
+          >
+            <div className={`absolute top-0 right-0 w-64 h-64 blur-[80px] rounded-full pointer-events-none ${isClean ? 'bg-emerald-500/[0.08]' : 'bg-red-500/[0.10]'
+              }`} />
+
+            <div className="relative">
+              {/* Header verdict */}
+              <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 pb-6 border-b border-zinc-800">
+                <div className="flex items-center gap-4">
+                  <div className={`w-12 h-12 rounded-2xl flex items-center justify-center border ${isClean
+                      ? 'bg-emerald-500/10 border-emerald-500/30'
+                      : 'bg-red-500/10 border-red-500/30'
                     }`}>
-                    {scanResult.data?.attributes?.stats?.malicious > 0 ? 'Threat Projected' : 'Clean'}
+                    {isClean ? (
+                      <ShieldCheck className="w-6 h-6 text-emerald-400" strokeWidth={2} />
+                    ) : (
+                      <AlertTriangle className="w-6 h-6 text-red-400" strokeWidth={2} />
+                    )}
+                  </div>
+                  <div>
+                    <div className="text-[10px] uppercase tracking-[0.25em] font-black text-zinc-500 mb-1">
+                      Verdict
+                    </div>
+                    <h2 className="text-2xl font-bold text-white tracking-tight">
+                      {isClean ? 'No threats detected' : `${stats?.malicious || 0} engine${(stats?.malicious || 0) !== 1 ? 's' : ''} flagged this`}
+                    </h2>
                   </div>
                 </div>
 
-                <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                  <div className="bg-zinc-900/50 p-4 rounded-2xl border border-zinc-800 text-center">
-                    <div className="text-2xl font-bold text-white">{scanResult.data?.attributes?.stats?.malicious || 0}</div>
-                    <div className="text-[10px] text-zinc-500 uppercase tracking-widest font-black">Malicious</div>
-                  </div>
-                  <div className="bg-zinc-900/50 p-4 rounded-2xl border border-zinc-800 text-center">
-                    <div className="text-2xl font-bold text-white">{scanResult.data?.attributes?.stats?.suspicious || 0}</div>
-                    <div className="text-[10px] text-zinc-500 uppercase tracking-widest font-black">Suspicious</div>
-                  </div>
-                  <div className="bg-zinc-900/50 p-4 rounded-2xl border border-zinc-800 text-center">
-                    <div className="text-2xl font-bold text-white">{scanResult.data?.attributes?.stats?.harmless || 0}</div>
-                    <div className="text-[10px] text-zinc-500 uppercase tracking-widest font-black">Harmless</div>
-                  </div>
-                  <div className="bg-zinc-900/50 p-4 rounded-2xl border border-zinc-800 text-center">
-                    <div className="text-2xl font-bold text-white">{scanResult.data?.attributes?.stats?.undetected || 0}</div>
-                    <div className="text-[10px] text-zinc-500 uppercase tracking-widest font-black">Undetected</div>
-                  </div>
+                <div className="text-right">
+                  <div className="text-[10px] uppercase tracking-widest text-zinc-600 font-black mb-1">Scanned</div>
+                  <div className="text-white text-sm font-bold">{totalEngines} engines</div>
                 </div>
+              </div>
 
-                {/* Threat Details - List engines that detected something if any */}
-                {(scanResult.data?.attributes?.results && scanResult.data?.attributes?.stats?.malicious > 0) && (
-                  <div className="bg-zinc-900/30 rounded-2xl p-6 border border-zinc-800">
-                    <h3 className="text-xs uppercase tracking-widest font-bold text-red-400 mb-4">Positive Detections</h3>
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-2 max-h-40 overflow-y-auto pr-2 custom-scrollbar">
-                      {Object.entries(scanResult.data.attributes.results)
-                        .filter(([_, value]: [any, any]) => value.category === 'malicious')
-                        .map(([engine, value]: [any, any]) => (
-                          <div key={engine} className="flex justify-between text-xs py-1 border-b border-zinc-800 last:border-0">
-                            <span className="text-zinc-400">{engine}</span>
-                            <span className="text-red-500 font-mono italic">{value.result}</span>
-                          </div>
-                        ))}
+              {/* Stats grid */}
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mt-6">
+                {[
+                  { n: stats?.malicious || 0, label: 'Malicious', accent: 'text-red-400', bg: 'bg-red-500/5 border-red-500/20' },
+                  { n: stats?.suspicious || 0, label: 'Suspicious', accent: 'text-amber-400', bg: 'bg-amber-500/5 border-amber-500/20' },
+                  { n: stats?.harmless || 0, label: 'Harmless', accent: 'text-emerald-400', bg: 'bg-emerald-500/5 border-emerald-500/20' },
+                  { n: stats?.undetected || 0, label: 'Undetected', accent: 'text-zinc-300', bg: 'bg-zinc-900 border-zinc-800' }
+                ].map(s => (
+                  <div key={s.label} className={`rounded-2xl p-4 border ${s.bg}`}>
+                    <div className={`text-2xl font-black tracking-tighter ${s.accent}`}>{s.n}</div>
+                    <div className="text-[10px] uppercase tracking-widest text-zinc-500 font-black mt-1">
+                      {s.label}
                     </div>
                   </div>
-                )}
+                ))}
+              </div>
 
-                <div className="space-y-4 pt-4">
-                  <div className="text-zinc-600 text-[10px] uppercase tracking-widest font-black break-all">Analysis ID: {scanResult.data?.id}</div>
-                  <div className="flex flex-col sm:flex-row gap-4">
-                    <button
-                      onClick={onReset}
-                      className="flex-1 bg-white text-black font-bold py-4 rounded-xl hover:bg-zinc-200 transition-all text-center tracking-widest text-[10px] uppercase shadow-lg"
-                    >
-                      New Scan
-                    </button>
-                    <a
-                      href={`https://www.virustotal.com/gui/${scanMode === 'url' ? 'url' : 'file'}-analysis/${scanResult.data?.id}`}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="flex-1 bg-zinc-900 border border-zinc-700 text-white font-bold py-4 rounded-xl hover:bg-zinc-800 transition-all text-center tracking-widest text-[10px] uppercase"
-                    >
-                      Get Detailed Report <ArrowRight className="inline-block w-3 h-3 ml-1" />
-                    </a>
+              {/* Detection list */}
+              {scanResult.data?.attributes?.results && (stats?.malicious || 0) > 0 && (
+                <div className="mt-6 bg-zinc-900/40 rounded-2xl p-5 border border-zinc-800">
+                  <h3 className="text-[10px] uppercase tracking-[0.25em] font-black text-red-400 mb-4">
+                    Positive detections
+                  </h3>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-x-6 gap-y-2 max-h-48 overflow-y-auto pr-2 custom-scrollbar">
+                    {Object.entries(scanResult.data.attributes.results)
+                      .filter(([_, v]: [any, any]) => v.category === 'malicious')
+                      .map(([engine, v]: [any, any]) => (
+                        <div
+                          key={engine}
+                          className="flex justify-between items-center text-xs py-1.5 border-b border-zinc-800/60 last:border-0"
+                        >
+                          <span className="text-zinc-300 truncate">{engine}</span>
+                          <span className="text-red-400 font-mono italic ml-3 truncate">{v.result}</span>
+                        </div>
+                      ))}
                   </div>
+                </div>
+              )}
+
+              {/* Actions */}
+              <div className="mt-7 flex flex-col sm:flex-row gap-3">
+                <button
+                  onClick={() => { onReset(); setPickedFile(null); }}
+                  className="flex-1 bg-white text-black py-3.5 rounded-2xl text-sm font-bold hover:bg-zinc-200 transition-colors"
+                >
+                  New scan
+                </button>
+                <a
+                  href={`https://www.virustotal.com/gui/${scanMode === 'url' ? 'url' : 'file'}-analysis/${scanResult.data?.id}`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="flex-1 bg-zinc-900 border border-zinc-800 hover:border-cyan-500/40 text-white py-3.5 rounded-2xl text-sm font-bold transition-colors flex items-center justify-center gap-2"
+                >
+                  Full report <ArrowRight className="w-3.5 h-3.5" />
+                </a>
+              </div>
+
+              <div className="text-[9px] uppercase tracking-widest text-zinc-700 font-black mt-5 break-all">
+                Analysis ID · {scanResult.data?.id}
+              </div>
+            </div>
+          </motion.div>
+        ) : (
+          /* ─────── INPUT STATE ─────── */
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="max-w-3xl mx-auto"
+          >
+            {scanMode === 'file' ? (
+              <div
+                onClick={() => fileInputRef.current?.click()}
+                onDragOver={(e) => e.preventDefault()}
+                onDragEnter={(e) => { e.preventDefault(); setIsDragging(true); }}
+                onDragLeave={(e) => { if (e.currentTarget === e.target) setIsDragging(false); }}
+                onDrop={(e) => { e.preventDefault(); setIsDragging(false); handleFile(e.dataTransfer.files); }}
+                className={`relative bg-zinc-950 border rounded-[2.5rem] p-10 md:p-14 cursor-pointer transition-colors duration-300 min-h-[420px] flex flex-col items-center justify-center overflow-hidden ${isDragging
+                    ? 'border-red-500/60 bg-red-500/[0.04]'
+                    : 'border-zinc-800 hover:border-zinc-700'
+                  }`}
+              >
+                <div className={`absolute inset-0 bg-[radial-gradient(circle_at_1px_1px,rgba(239,68,68,0.07)_1px,transparent_1px)] bg-[size:20px_20px] [mask-image:radial-gradient(ellipse_60%_60%_at_50%_50%,#000_50%,transparent_100%)] transition-opacity ${isDragging ? 'opacity-100' : 'opacity-40'
+                  }`} />
+
+                <input
+                  type="file"
+                  className="hidden"
+                  ref={fileInputRef}
+                  onChange={(e) => handleFile(e.target.files)}
+                />
+
+                <div className="relative z-10 flex flex-col items-center">
+                  <motion.div
+                    animate={status === 'processing' ? {} : { y: isDragging ? -6 : [0, -8, 0] }}
+                    transition={status === 'processing' ? {} : isDragging ? { duration: 0.2 } : { repeat: Infinity, duration: 3, ease: 'easeInOut' }}
+                    className={`w-20 h-20 rounded-2xl flex items-center justify-center mb-6 border transition-colors ${isDragging
+                        ? 'bg-red-500/10 border-red-500/40 shadow-[0_0_24px_rgba(239,68,68,0.3)]'
+                        : 'bg-zinc-900 border-zinc-800'
+                      }`}
+                  >
+                    {status === 'processing' ? (
+                      <motion.div
+                        animate={{ rotate: 360 }}
+                        transition={{ repeat: Infinity, duration: 1, ease: 'linear' }}
+                        className="w-9 h-9 border-2 border-red-500 border-t-transparent rounded-full"
+                      />
+                    ) : (
+                      <ScanSearch
+                        className={`w-9 h-9 ${isDragging ? 'text-red-400' : 'text-white'}`}
+                        strokeWidth={1.5}
+                      />
+                    )}
+                  </motion.div>
+
+                  <h2 className="text-2xl md:text-3xl font-bold mb-3 tracking-tight text-center">
+                    {status === 'processing'
+                      ? 'Analyzing...'
+                      : isDragging
+                        ? 'Release to scan'
+                        : 'Drop a file or click to browse'}
+                  </h2>
+                  <p className="text-zinc-500 text-sm text-center max-w-sm">
+                    {status === 'processing'
+                      ? 'Submitting to threat intelligence engines.'
+                      : pickedFile
+                        ? pickedFile.name
+                        : 'Up to 32 MB. Files are deleted right after the scan.'}
+                  </p>
                 </div>
               </div>
             ) : (
-              <>
-                {scanMode === 'file' ? (
-                  <div
-                    onDragOver={(e) => { e.preventDefault(); setDragActive(true); }}
-                    onDragLeave={() => setDragActive(false)}
-                    onDrop={(e) => { e.preventDefault(); setDragActive(false); handleFile(e.dataTransfer.files); }}
-                    onClick={() => fileInputRef.current?.click()}
-                    className={`border-2 border-dashed rounded-[2rem] p-8 sm:p-16 flex flex-col items-center justify-center transition-all cursor-pointer min-h-[350px] ${dragActive ? 'border-red-500 bg-red-500/5' : 'border-zinc-800 hover:border-red-500/40 hover:bg-red-500/[0.02]'
-                      }`}
-                  >
+              <div className="bg-zinc-950 border border-zinc-800 rounded-[2.5rem] p-10 md:p-12 relative overflow-hidden">
+                <div className="absolute inset-0 bg-[radial-gradient(circle_at_1px_1px,rgba(239,68,68,0.07)_1px,transparent_1px)] bg-[size:20px_20px] [mask-image:radial-gradient(ellipse_60%_60%_at_50%_50%,#000_50%,transparent_100%)] opacity-40" />
+
+                <div className="relative z-10">
+                  <form onSubmit={handleUrlSubmit}>
+                    <label className="text-[10px] uppercase tracking-[0.25em] text-zinc-500 font-black mb-3 block">
+                      URL
+                    </label>
                     <input
-                      type="file"
-                      className="hidden"
-                      ref={fileInputRef}
-                      onChange={(e) => handleFile(e.target.files)}
+                      type="url"
+                      required
+                      value={urlInput}
+                      onChange={(e) => setUrlInput(e.target.value)}
+                      placeholder="https://suspicious-link.example"
+                      className="w-full bg-zinc-900 border border-zinc-800 rounded-2xl pl-5 pr-4 py-4 text-zinc-200 font-mono text-sm focus:border-red-500/50 outline-none transition-colors placeholder:text-zinc-600"
                     />
-                    <motion.div
-                      animate={status === 'processing' ? { rotate: 360, scale: [1, 1.1, 1] } : { y: [0, -10, 0] }}
-                      transition={status === 'processing' ? { repeat: Infinity, duration: 1.5 } : { repeat: Infinity, duration: 3, ease: "easeInOut" }}
-                      className="w-20 h-20 bg-zinc-900 rounded-[1.5rem] flex items-center justify-center mb-8 border border-zinc-800 shadow-xl"
+
+                    <button
+                      type="submit"
+                      disabled={status === 'processing'}
+                      className="w-full mt-5 group bg-red-500 text-white px-7 py-4 rounded-2xl text-sm font-black uppercase tracking-[0.2em] hover:bg-red-400 transition-all hover:scale-[1.01] active:scale-[0.99] disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:scale-100 shadow-[0_0_24px_rgba(239,68,68,0.25)] flex items-center justify-center gap-2"
                     >
                       {status === 'processing' ? (
-                        <div className="w-8 h-8 border-2 border-red-500 border-t-transparent rounded-full" />
+                        <>
+                          <motion.div
+                            animate={{ rotate: 360 }}
+                            transition={{ repeat: Infinity, duration: 1, ease: 'linear' }}
+                            className="w-3.5 h-3.5 border-2 border-white border-t-transparent rounded-full"
+                          />
+                          Scanning
+                        </>
                       ) : (
-                        <Upload className="w-10 h-10 text-white" />
+                        <>
+                          <ScanSearch className="w-3.5 h-3.5" strokeWidth={3} />
+                          Scan URL
+                        </>
                       )}
-                    </motion.div>
-                    <h2 className="text-3xl font-bold text-white mb-2 tracking-tighter text-center">
-                      {status === 'processing' ? 'Uploading & Analyzing...' : 'Drop File to Scan'}
-                    </h2>
-                    <p className="text-zinc-500 italic font-serif text-lg mb-2 text-center">
-                      {status === 'processing' ? 'Submitting to threat intelligence core' : 'Scan binaries, documents, or scripts under 32MB'}
-                    </p>
-                    <p className="text-zinc-700 text-[10px] uppercase tracking-widest font-black text-center">Anonymous • Private • E2E Integrity Checks</p>
-                  </div>
-                ) : (
-                  <div className="min-h-[350px] flex flex-col items-center justify-center space-y-10 py-10">
-                    <motion.div
-                      animate={status === 'processing' ? { rotate: 360, scale: [1, 1.1, 1] } : { y: [0, -10, 0] }}
-                      transition={status === 'processing' ? { repeat: Infinity, duration: 1.5 } : { repeat: Infinity, duration: 3, ease: "easeInOut" }}
-                      className="w-20 h-20 bg-zinc-900 rounded-[1.5rem] flex items-center justify-center border border-zinc-800 shadow-xl"
-                    >
-                      {status === 'processing' ? (
-                        <div className="w-8 h-8 border-2 border-red-500 border-t-transparent rounded-full" />
-                      ) : (
-                        <LinkIcon className="w-10 h-10 text-white" />
-                      )}
-                    </motion.div>
-
-                    <div className="text-center">
-                      <h2 className="text-3xl font-bold text-white mb-2 tracking-tighter">Scan URL for Threats</h2>
-                      <p className="text-zinc-500 italic font-serif text-lg">Verify links, domains, or specific web resources.</p>
-                    </div>
-
-                    <form onSubmit={handleUrlSubmit} className="w-full max-w-xl relative group">
-                      <input
-                        type="url"
-                        required
-                        value={urlInput}
-                        onChange={(e) => setUrlInput(e.target.value)}
-                        placeholder="https://suspected-malware.com"
-                        className="w-full bg-zinc-900 border border-zinc-800 rounded-2xl px-6 py-5 text-zinc-300 focus:outline-none focus:border-red-500/50 transition-all font-sans text-lg italic pr-32"
-                      />
-                      <button
-                        disabled={status === 'processing'}
-                        type="submit"
-                        className="absolute right-2 top-2 bottom-2 bg-red-500 text-white px-6 rounded-xl text-[10px] font-black uppercase tracking-widest hover:bg-red-600 transition-all shadow-[0_0_20px_rgba(239,68,68,0.2)] disabled:opacity-50"
-                      >
-                        {status === 'processing' ? 'Scanning...' : 'Scan Now'}
-                      </button>
-                    </form>
-                    <p className="text-zinc-700 text-[10px] uppercase tracking-widest font-black">Malware • Phishing • Suspicious Activity Checks</p>
-                  </div>
-                )}
-
-                {error && (
-                  <div className="mt-8 p-4 rounded-2xl bg-red-500/10 border border-red-500/20">
-                    <p className="text-red-400 text-[10px] text-center uppercase tracking-widest font-black leading-tight">
-                      {error}
-                    </p>
-                  </div>
-                )}
-              </>
+                    </button>
+                  </form>
+                </div>
+              </div>
             )}
-          </div>
-        </motion.div>
+
+            {error && (
+              <div className="mt-4 px-4 py-3 rounded-xl bg-red-500/5 border border-red-500/20 text-red-400 text-xs flex items-center gap-2">
+                <AlertTriangle className="w-3.5 h-3.5 shrink-0" />
+                <span>{error}</span>
+              </div>
+            )}
+          </motion.div>
+        )}
       </div>
     </section>
   );
@@ -1028,20 +1323,13 @@ const PricingView = ({
 
     <div className="max-w-6xl mx-auto">
       <div className="text-center mb-20 space-y-4">
-        <motion.div
-          initial={{ opacity: 0, y: 10 }}
-          animate={{ opacity: 1, y: 0 }}
-          className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-cyan-500/10 border border-cyan-500/20 text-cyan-400 text-xs font-bold uppercase tracking-[0.2em] mx-auto"
-        >
-          Simple Pricing
-        </motion.div>
         <motion.h1
           initial={{ opacity: 0, y: 10 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.1 }}
-          className="text-5xl md:text-7xl font-bold tracking-tight text-white mb-4"
+          className="text-5xl md:text-7xl font-bold tracking-tight mb-4 bg-gradient-to-b from-white via-zinc-200 to-zinc-500 bg-clip-text text-transparent drop-shadow-[0_2px_8px_rgba(255,255,255,0.08)]"
         >
-          Choose your <span className="font-serif italic text-zinc-500 font-light">tier.</span>
+          Simple, <span className="font-serif font-extralight italic text-zinc-400">honest.</span>
         </motion.h1>
         <motion.p
           initial={{ opacity: 0, y: 10 }}
@@ -1049,28 +1337,38 @@ const PricingView = ({
           transition={{ delay: 0.2 }}
           className="text-zinc-500 max-w-xl mx-auto"
         >
-          Scale your digital security with plans designed for individuals, teams, and global organizations.
+          Free for everyday encrypted transfers. Upgrade for storage, chat, and link detonation.
         </motion.p>
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
         {[
           {
-            name: 'Basic',
+            name: 'Free',
             price: 'Free',
-            description: 'Essential security for individuals and small projects.',
-            features: ['5GB Storage', 'Peer-to-Peer Transfer', 'Basic Malware Scan', 'AES-256 Encryption'],
-            excluded: ['Priority Support', 'Custom Domains', 'Admin Panel'],
-            cta: 'Get Started',
+            description: 'Everything you need for personal encrypted file transfer.',
+            features: [
+              'End-to-end file send & receive',
+              'Multi-engine malware scan',
+              'Single-use share links',
+              'AES-256-GCM client-side encryption'
+            ],
+            excluded: ['Secure storage rooms', 'Secure chat', 'Link detonator'],
+            cta: 'Get started',
             popular: false,
             id: 'basic'
           },
           {
             name: 'Pro',
             price: '$5',
-            description: 'For power users and data-conscious professionals.',
-            features: ['100GB Storage', 'Advanced Threat Intel', 'Password Expiry Control', 'Custom Share Branding', 'Priority Email Support'],
-            excluded: ['Dedicated Servers', 'SSO Integration'],
+            description: 'Unlocks every Keepr tool and 5 GB of encrypted storage.',
+            features: [
+              '5 GB secure storage rooms',
+              'Ephemeral end-to-end chat',
+              'Sandboxed link detonator',
+              'Auto-purge & email handoff'
+            ],
+            excluded: [],
             cta: 'Go Pro',
             popular: true,
             id: PRO_PLAN_ID
@@ -1078,9 +1376,14 @@ const PricingView = ({
           {
             name: 'Enterprise',
             price: 'Custom',
-            description: 'Uncompromising security for large scale operations.',
-            features: ['Unlimited Storage', 'Dedicated GPU Nodes', 'Full Admin Controls', 'SSO & Audit Logs', '24/7 Dedicated Support', 'Custom SLA'],
-            cta: 'Contact Sales',
+            description: 'Higher quotas, custom retention, and SLA-backed support.',
+            features: [
+              'Custom storage quota',
+              'Configurable retention',
+              'Priority response',
+              'Custom SLA'
+            ],
+            cta: 'Contact us',
             popular: false,
             id: 'enterprise'
           }
@@ -1162,16 +1465,6 @@ const PricingView = ({
           </motion.div>
         ))}
       </div>
-
-      <div className="mt-20 p-12 rounded-[3rem] border border-zinc-900 bg-zinc-950/50 flex flex-col md:flex-row items-center justify-between gap-8">
-        <div className="space-y-2">
-          <h3 className="text-2xl font-bold text-white tracking-tight">Need a custom security audit?</h3>
-          <p className="text-zinc-500 font-serif italic">Our threat labs can provide bespoke analysis for your infrastructure.</p>
-        </div>
-        <button className="bg-zinc-900 border border-zinc-700 text-white px-8 py-4 rounded-2xl text-[10px] font-black uppercase tracking-widest hover:border-cyan-500 transition-all flex items-center gap-2 group">
-          Contact Threat Labs <ArrowRight className="w-3 h-3 group-hover:translate-x-1 transition-transform" />
-        </button>
-      </div>
     </div>
   </section>
 );
@@ -1227,103 +1520,6 @@ const TrialEndedModal = ({ isOpen, onClose, onUpgrade }: { isOpen: boolean; onCl
     </AnimatePresence>
   );
 };
-
-const WhyUsView = () => (
-  <section className="relative pt-40 pb-20 px-6 min-h-screen overflow-hidden">
-    <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[1000px] h-[1000px] bg-cyan-500/[0.03] blur-[150px] rounded-full pointer-events-none" />
-
-    <div className="max-w-4xl mx-auto text-center mb-24">
-      <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="space-y-6">
-        <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-white/5 border border-white/10 text-zinc-400 text-[10px] font-black uppercase tracking-[0.3em] mx-auto">
-          The Keepr Advantage
-        </div>
-        <h1 className="text-6xl md:text-8xl font-black tracking-tight text-white">
-          Why <span className="font-serif italic font-extralight opacity-60">Keepr?</span>
-        </h1>
-        <p className="text-xl text-zinc-500 max-w-2xl mx-auto font-light leading-relaxed">
-          In a world of data harvesting, we chose a different path.
-          Keepr isn't just a tool; it's a statement that privacy is a human right.
-        </p>
-      </motion.div>
-    </div>
-
-    <div className="max-w-6xl mx-auto grid grid-cols-1 md:grid-cols-3 gap-8 mb-24">
-      {[
-        {
-          title: "Zero-Knowledge",
-          desc: "We don't just 'not read' your data. We CAN'T read it. Everything is encrypted on your device before it touches our cloud.",
-          icon: Shield,
-          stat: "100%",
-          statLabel: "Client-Side"
-        },
-        {
-          title: "Cloud Native",
-          desc: "Built on AWS Serverless infrastructure, ensuring massive scale and 99.99% availability without compromising on speed.",
-          icon: Zap,
-          stat: "45ms",
-          statLabel: "Latency"
-        },
-        {
-          title: "AI Analysis",
-          desc: "Our Link Detonator uses state-of-the-art vision models to protect you from threats that traditional scanners miss.",
-          icon: Globe,
-          stat: "Gemini",
-          statLabel: "Powered"
-        }
-      ].map((feature, idx) => (
-        <motion.div
-          key={idx}
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: idx * 0.1 }}
-          className="bg-zinc-900/30 border border-zinc-800 rounded-[3rem] p-10 group hover:bg-zinc-900/50 transition-all hover:border-cyan-500/20"
-        >
-          <div className="w-14 h-14 bg-black rounded-2xl flex items-center justify-center mb-8 border border-zinc-800 group-hover:border-cyan-500/50 transition-colors">
-            <feature.icon className="w-7 h-7 text-white" />
-          </div>
-          <h3 className="text-2xl font-bold text-white mb-4 lowercase tracking-tighter">{feature.title}.</h3>
-          <p className="text-zinc-500 text-sm font-light leading-relaxed mb-8 italic font-serif">
-            {feature.desc}
-          </p>
-          <div className="pt-6 border-t border-zinc-800">
-            <div className="text-3xl font-black text-white tracking-tighter">{feature.stat}</div>
-            <div className="text-[10px] uppercase tracking-widest text-zinc-600 font-black">{feature.statLabel}</div>
-          </div>
-        </motion.div>
-      ))}
-    </div>
-
-    <div className="max-w-5xl mx-auto bg-zinc-950 border border-zinc-800 rounded-[4rem] p-16 relative overflow-hidden">
-      <div className="absolute top-0 right-0 w-64 h-64 bg-cyan-500/5 blur-[80px] rounded-full" />
-      <div className="relative z-10 grid grid-cols-1 lg:grid-cols-2 gap-12 items-center">
-        <div>
-          <h2 className="text-4xl font-bold text-white mb-6 tracking-tighter">Infrastructure as <span className="text-cyan-500">Code.</span></h2>
-          <p className="text-zinc-500 font-light leading-relaxed mb-8">
-            Our entire stack is automated via Serverless Framework. This means no manual configuration errors,
-            consistent security policies, and rapid deployment of new features.
-            When you use Keepr, you're using a perfectly orchestrated cloud environment.
-          </p>
-          <button className="flex items-center gap-2 text-white font-bold text-[10px] uppercase tracking-widest group">
-            Learn about our stack <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
-          </button>
-        </div>
-        <div className="bg-black/50 rounded-3xl p-8 border border-zinc-800 font-mono text-[10px] text-zinc-500">
-          <div className="text-cyan-500/50 mb-4">// keepr-infrastructure.yml</div>
-          <div className="space-y-1">
-            <div><span className="text-zinc-400">service:</span> keepr-ephemeral-chat</div>
-            <div><span className="text-zinc-400">provider:</span> aws</div>
-            <div className="pl-4"><span className="text-zinc-400">region:</span> ap-south-1</div>
-            <div className="pl-4"><span className="text-zinc-400">runtime:</span> nodejs20.x</div>
-            <div><span className="text-zinc-400">resources:</span></div>
-            <div className="pl-4"><span className="text-zinc-400">VaultBucket:</span> AWS::S3::Bucket</div>
-            <div className="pl-4"><span className="text-zinc-400">Connections:</span> AWS::DynamoDB::Table</div>
-            <div className="pl-4"><span className="text-zinc-400">Detonator:</span> AWS::Lambda::Function</div>
-          </div>
-        </div>
-      </div>
-    </div>
-  </section>
-);
 
 function AppContent() {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
@@ -1579,108 +1775,6 @@ function AppContent() {
   }, [user, isLoaded, isPro, isActivatingPro]);
 
   // Open Pro checkout - handles both first-time payment and existing subscriptions
-  const openCheckout = async (planId: string) => {
-    try {
-      console.log('🔍 Opening Pro checkout...');
-
-      // Open Clerk checkout modal
-      (window as any).Clerk?.__internal_openCheckout?.({ planId, planPeriod: 'month' });
-
-      let checkCount = 0;
-      const maxChecks = 30; // Check for 30 seconds
-
-      const monitorCheckout = setInterval(async () => {
-        checkCount++;
-
-        // Check 1: Look for "already active" message (existing subscription)
-        const modalText = document.body.innerText;
-        const isAlreadyActive = modalText.includes('already active') || modalText.includes('already purchased');
-
-        if (isAlreadyActive) {
-          console.log('✅ Found "already active" message! User has existing Pro subscription.');
-          clearInterval(monitorCheckout);
-
-          // Close modal
-          const closeButton = document.querySelector('[aria-label="Close"]') as HTMLButtonElement;
-          if (closeButton) closeButton.click();
-
-          // Update website to Pro
-          setTimeout(async () => {
-            if (user) {
-              console.log('✅ Activating existing Pro subscription on website...');
-              await user.update({
-                unsafeMetadata: {
-                  ...user.unsafeMetadata,
-                  plan: 'pro',
-                  activatedAt: new Date().toISOString()
-                }
-              });
-              await user.reload?.();
-              console.log('✅ Website now shows PRO!');
-            }
-          }, 500);
-          return;
-        }
-
-        // Check 2: Look for modal close (means payment completed or user closed it)
-        const modal = document.querySelector('[role="dialog"], .cl-modal, .cl-checkout');
-        const isModalVisible = modal !== null;
-
-        if (!isModalVisible && checkCount > 5) {
-          console.log('✅ Modal closed! Payment likely completed.');
-          clearInterval(monitorCheckout);
-
-          // Wait a moment for Clerk to update on their servers, then reload user
-          setTimeout(async () => {
-            if (user) {
-              console.log('🔄 Reloading user to check for new subscription...');
-              const reloadedUser = await user.reload?.();
-
-              if (reloadedUser) {
-                // Check if they now have a subscription
-                const subs = (reloadedUser as any)?.subscriptions || [];
-                const hasSubs = subs.length > 0;
-                const hasPlan = reloadedUser.unsafeMetadata?.plan === 'pro' || reloadedUser.publicMetadata?.plan === 'pro';
-
-                console.log('Subscription check:', {
-                  hasSubscriptions: hasSubs,
-                  hasPlanMetadata: hasPlan,
-                  subscriptions: subs
-                });
-
-                if (hasSubs || hasPlan) {
-                  console.log('✅ NEW Pro subscription detected! Updating website...');
-                  await reloadedUser.update({
-                    unsafeMetadata: {
-                      ...reloadedUser.unsafeMetadata,
-                      plan: 'pro',
-                      activatedAt: new Date().toISOString()
-                    }
-                  });
-                  await reloadedUser.reload?.();
-                  console.log('✅ Website now shows PRO!');
-                } else {
-                  console.log('⚠️ No subscription found. User may have closed without paying.');
-                }
-              }
-            }
-          }, 2000); // Wait 2 seconds before checking
-
-          return;
-        }
-
-        // Stop after 30 seconds
-        if (checkCount >= maxChecks) {
-          clearInterval(monitorCheckout);
-          console.log('⏱️ Stopped monitoring checkout');
-        }
-      }, 1000);
-
-    } catch (error) {
-      console.error('❌ Error in checkout:', error);
-    }
-  };
-
   // Handle Free plan activation
   const handleFreePlan = async () => {
     try {
@@ -1743,12 +1837,25 @@ function AppContent() {
   const [scanResult, setScanResult] = useState<any>(null);
   const [roomToJoin, setRoomToJoin] = useState<{ id: string, key: string } | null>(null);
 
+  // Tracks the live decrypted blob object URL so we can revoke it (free the
+  // memory) instead of leaking one per decrypt for the page's lifetime.
+  const decryptedUrlRef = useRef<string | null>(null);
+  useEffect(() => {
+    return () => {
+      if (decryptedUrlRef.current) URL.revokeObjectURL(decryptedUrlRef.current);
+    };
+  }, []);
+
   // Navigation handler
   const resetSessionState = () => {
     setFile(null);
     setStatus('idle');
     setShareLink('');
     setDownloadInput('');
+    if (decryptedUrlRef.current) {
+      URL.revokeObjectURL(decryptedUrlRef.current);
+      decryptedUrlRef.current = null;
+    }
     setDecryptedUrl(null);
     setDecryptedFileName('decrypted_file');
     setError(null);
@@ -1781,6 +1888,13 @@ function AppContent() {
     if (isPremium && !isPro) {
       handlePremiumFeatureAttempt();
       return;
+    }
+
+    // Clear chat-room hash from URL when navigating away from chat. Without this
+    // the room=ID&key=KEY hash persists, and a page refresh would re-trigger the
+    // chat-room-detection effect on mount.
+    if (view !== 'chat' && window.location.hash.includes('room=')) {
+      window.history.replaceState(null, '', window.location.pathname + window.location.search);
     }
 
     resetSessionState();
@@ -1911,7 +2025,11 @@ function AppContent() {
 
       // We apply the original file type here so images open as images, pdfs as pdfs, etc.
       const decryptedBlob = new Blob([decryptedBuffer], { type: fileType });
-      setDecryptedUrl(URL.createObjectURL(decryptedBlob));
+      // Revoke any previous URL before creating a new one to avoid leaks.
+      if (decryptedUrlRef.current) URL.revokeObjectURL(decryptedUrlRef.current);
+      const objectUrl = URL.createObjectURL(decryptedBlob);
+      decryptedUrlRef.current = objectUrl;
+      setDecryptedUrl(objectUrl);
       setDecryptedFileName(fileName);
       setStatus('success');
 
@@ -1983,7 +2101,7 @@ function AppContent() {
         <AuthPage />
       </SignedOut>
       <SignedIn>
-        <div className="min-h-screen bg-black text-zinc-400 overflow-x-hidden selection:bg-cyan-500/30 selection:text-cyan-200">
+        <div className="min-h-screen bg-black text-zinc-400 overflow-x-hidden selection:bg-cyan-500/30 selection:text-cyan-200 relative isolate">
           <Navbar
             activeView={activeView}
             navigateTo={navigateTo}
@@ -2081,70 +2199,95 @@ function AppContent() {
               exit={{ opacity: 0 }}
               transition={{ duration: 0.4 }}
             >
-              <main>
-                {activeView === 'home' && <HomeView navigateTo={navigateTo} />}
-                {activeView === 'send' && (
-                  <SendView
-                    file={file}
-                    setFile={setFile}
-                    status={status}
-                    handleEncrypt={handleEncrypt}
-                    shareLink={shareLink}
-                    error={error}
-                    onReset={resetSessionState}
-                  />
+              <main className="relative z-10">
+                <Suspense fallback={<ViewLoader />}>
+                {/* Home: hero stays untouched, aurora-bound region begins at "How It Works" */}
+                {activeView === 'home' && (
+                  <>
+                    <HomeHero navigateTo={navigateTo} />
+                    <div className="relative">
+                      <MouseAurora />
+                      <div className="relative z-10">
+                        <HomeBelow />
+                      </div>
+                    </div>
+                  </>
                 )}
-                {activeView === 'receive' && (
-                  <ReceiveView
-                    downloadInput={downloadInput}
-                    setDownloadInput={setDownloadInput}
-                    status={status}
-                    handleDecrypt={handleDecrypt}
-                    decryptedUrl={decryptedUrl}
-                    decryptedFileName={decryptedFileName}
-                    error={error}
-                    onReset={resetSessionState}
-                  />
-                )}
-                {activeView === 'scan' && (
-                  <ScanView
-                    status={status}
-                    handleScan={handleScan}
-                    scanResult={scanResult}
-                    error={error}
-                    onReset={resetSessionState}
-                  />
-                )}
-                {activeView === 'pricing' && (
-                  <PricingView
-                    handleFreePlan={handleFreePlan}
-                    handleProSubscriptionComplete={handleProSubscriptionComplete}
-                    handleRestoreProPlan={handleRestoreProPlan}
-                    hasPaidProSubscription={hasPaidProSubscription}
-                    isActivatingPro={isActivatingPro}
-                    isPro={isPro}
-                    isFree={isFree}
-                  />
-                )}
-                {activeView === 'whyus' && <WhyUsView />}
-                {activeView === 'detonator' && <DetonatorView />}
-                {activeView === 'chat' && (
-                  <EphemeralChat
-                    initialRoomId={roomToJoin?.id}
-                    initialKey={roomToJoin?.key}
-                  />
-                )}
-                {activeView === 'storage' && <SecureStorageRoom />}
 
-
-                <JourneySection />
+                {/* All other views: aurora wraps the entire view, ending right before JourneySection */}
+                {activeView !== 'home' && (
+                  <div className="relative">
+                    <MouseAurora />
+                    <div className="relative z-10">
+                      {activeView === 'send' && (
+                        <SendView
+                          file={file}
+                          setFile={setFile}
+                          status={status}
+                          handleEncrypt={handleEncrypt}
+                          shareLink={shareLink}
+                          error={error}
+                          onReset={resetSessionState}
+                        />
+                      )}
+                      {activeView === 'receive' && (
+                        <ReceiveView
+                          downloadInput={downloadInput}
+                          setDownloadInput={setDownloadInput}
+                          status={status}
+                          handleDecrypt={handleDecrypt}
+                          decryptedUrl={decryptedUrl}
+                          decryptedFileName={decryptedFileName}
+                          error={error}
+                          onReset={resetSessionState}
+                        />
+                      )}
+                      {activeView === 'scan' && (
+                        <ScanView
+                          status={status}
+                          handleScan={handleScan}
+                          scanResult={scanResult}
+                          error={error}
+                          onReset={resetSessionState}
+                        />
+                      )}
+                      {activeView === 'pricing' && (
+                        <PricingView
+                          handleFreePlan={handleFreePlan}
+                          handleProSubscriptionComplete={handleProSubscriptionComplete}
+                          handleRestoreProPlan={handleRestoreProPlan}
+                          hasPaidProSubscription={hasPaidProSubscription}
+                          isActivatingPro={isActivatingPro}
+                          isPro={isPro}
+                          isFree={isFree}
+                        />
+                      )}
+                      {activeView === 'whyus' && <WhyUsView navigateTo={navigateTo} />}
+                      {activeView === 'detonator' && <DetonatorView />}
+                      {activeView === 'chat' && (
+                        <EphemeralChat
+                          initialRoomId={roomToJoin?.id}
+                          initialKey={roomToJoin?.key}
+                        />
+                      )}
+                      {activeView === 'storage' && <SecureStorageRoom />}
+                    </div>
+                  </div>
+                )}
+                </Suspense>
               </main>
             </motion.div>
           </AnimatePresence>
 
-          <footer className="relative pt-24 pb-12 px-6 overflow-hidden bg-black">
-            {/* Top fade — blends seamlessly with JourneySection's black bottom */}
-            <div className="absolute top-0 inset-x-0 h-32 bg-gradient-to-b from-black to-transparent pointer-events-none z-10" />
+          {/* Bottom region (Journey + Footer) — hidden on feature pages so users can focus on the tool */}
+          {!['send', 'receive', 'scan', 'chat', 'detonator', 'storage'].includes(activeView) && (
+            <div className="relative z-10">
+              <MouseAurora />
+              <div className="relative z-10">
+                <Suspense fallback={<div className="min-h-[400px]" />}>
+                  <JourneySection />
+                </Suspense>
+                <footer className="relative pt-24 pb-12 px-6 overflow-hidden">
             <div className="max-w-7xl mx-auto flex flex-col md:flex-row justify-between items-start gap-12 relative z-10 text-left">
               <div className="space-y-4">
                 <div className="flex items-center gap-2">
@@ -2194,6 +2337,9 @@ function AppContent() {
               </span>
             </div>
           </footer>
+            </div>
+          </div>
+          )}
         </div>
       </SignedIn>
     </>

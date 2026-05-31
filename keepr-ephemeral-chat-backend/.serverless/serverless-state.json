@@ -66,7 +66,9 @@
                 "s3:GetObject",
                 "s3:PutObject",
                 "s3:DeleteObject",
-                "s3:ListBucket"
+                "s3:ListBucket",
+                "s3:AbortMultipartUpload",
+                "s3:ListMultipartUploadParts"
               ],
               "Resource": [
                 "arn:aws:s3:::keepr-secure-rooms-dev",
@@ -261,8 +263,8 @@
             "Type": "AWS::Lambda::Function",
             "Properties": {
               "Code": {
-                "S3Bucket": "serverless-framework-deployments-ap-south-1-a4211e29-227d",
-                "S3Key": "serverless/keepr-ephemeral-chat/dev/1779872094733-2026-05-27T08:54:54.733Z/keepr-ephemeral-chat.zip"
+                "S3Bucket": "serverless-framework-deployments-ap-south-1-17be40a0-dfea",
+                "S3Key": "serverless/keepr-ephemeral-chat/dev/1780246720853-2026-05-31T16:58:40.853Z/keepr-ephemeral-chat.zip"
               },
               "Handler": "handler.connectionHandler",
               "Runtime": "nodejs20.x",
@@ -297,8 +299,8 @@
             "Type": "AWS::Lambda::Function",
             "Properties": {
               "Code": {
-                "S3Bucket": "serverless-framework-deployments-ap-south-1-a4211e29-227d",
-                "S3Key": "serverless/keepr-ephemeral-chat/dev/1779872094733-2026-05-27T08:54:54.733Z/keepr-ephemeral-chat.zip"
+                "S3Bucket": "serverless-framework-deployments-ap-south-1-17be40a0-dfea",
+                "S3Key": "serverless/keepr-ephemeral-chat/dev/1780246720853-2026-05-31T16:58:40.853Z/keepr-ephemeral-chat.zip"
               },
               "Handler": "handler.defaultHandler",
               "Runtime": "nodejs20.x",
@@ -333,8 +335,8 @@
             "Type": "AWS::Lambda::Function",
             "Properties": {
               "Code": {
-                "S3Bucket": "serverless-framework-deployments-ap-south-1-a4211e29-227d",
-                "S3Key": "serverless/keepr-ephemeral-chat/dev/1779872094733-2026-05-27T08:54:54.733Z/keepr-ephemeral-chat.zip"
+                "S3Bucket": "serverless-framework-deployments-ap-south-1-17be40a0-dfea",
+                "S3Key": "serverless/keepr-ephemeral-chat/dev/1780246720853-2026-05-31T16:58:40.853Z/keepr-ephemeral-chat.zip"
               },
               "Handler": "handler.sendMessageHandler",
               "Runtime": "nodejs20.x",
@@ -369,8 +371,8 @@
             "Type": "AWS::Lambda::Function",
             "Properties": {
               "Code": {
-                "S3Bucket": "serverless-framework-deployments-ap-south-1-a4211e29-227d",
-                "S3Key": "serverless/keepr-ephemeral-chat/dev/1779872094733-2026-05-27T08:54:54.733Z/keepr-ephemeral-chat.zip"
+                "S3Bucket": "serverless-framework-deployments-ap-south-1-17be40a0-dfea",
+                "S3Key": "serverless/keepr-ephemeral-chat/dev/1780246720853-2026-05-31T16:58:40.853Z/keepr-ephemeral-chat.zip"
               },
               "Handler": "handlers/secureRoomApi.handler",
               "Runtime": "nodejs20.x",
@@ -406,8 +408,8 @@
             "Type": "AWS::Lambda::Function",
             "Properties": {
               "Code": {
-                "S3Bucket": "serverless-framework-deployments-ap-south-1-a4211e29-227d",
-                "S3Key": "serverless/keepr-ephemeral-chat/dev/1779872094733-2026-05-27T08:54:54.733Z/keepr-ephemeral-chat.zip"
+                "S3Bucket": "serverless-framework-deployments-ap-south-1-17be40a0-dfea",
+                "S3Key": "serverless/keepr-ephemeral-chat/dev/1780246720853-2026-05-31T16:58:40.853Z/keepr-ephemeral-chat.zip"
               },
               "Handler": "handlers/secureRoomCron.handler",
               "Runtime": "nodejs20.x",
@@ -439,54 +441,54 @@
               "SecureRoomCronJobLogGroup"
             ]
           },
-          "ConnectionHandlerLambdaVersionveyv9MK8dLd4GPhvWcAhZSP3ZCSNhU7xbiMlYM": {
+          "ConnectionHandlerLambdaVersionHQVaPp5mEathvo2I9aurZ5lkxbzHJKBoFysiO16Hp4M": {
             "Type": "AWS::Lambda::Version",
             "DeletionPolicy": "Retain",
             "Properties": {
               "FunctionName": {
                 "Ref": "ConnectionHandlerLambdaFunction"
               },
-              "CodeSha256": "QSeLD62Vjyg38x2YwjYrVyY2tHUfaCV5SNX2mHuh4v4="
+              "CodeSha256": "EaNUjW3Rn5m3+KWdPlAoDYmtNmHPdH2EAZqeGOM8qvE="
             }
           },
-          "DefaultHandlerLambdaVersionHYgff327ezMX97xhFSMdyMSNK1MmJigb5qGLfnbApA": {
+          "DefaultHandlerLambdaVersionfSXaYgNh6OKYOMNk8YQDAGtnvB0AbceSBkH580IxQ": {
             "Type": "AWS::Lambda::Version",
             "DeletionPolicy": "Retain",
             "Properties": {
               "FunctionName": {
                 "Ref": "DefaultHandlerLambdaFunction"
               },
-              "CodeSha256": "QSeLD62Vjyg38x2YwjYrVyY2tHUfaCV5SNX2mHuh4v4="
+              "CodeSha256": "EaNUjW3Rn5m3+KWdPlAoDYmtNmHPdH2EAZqeGOM8qvE="
             }
           },
-          "SendMessageHandlerLambdaVersionv32T3S4P0tR5iNkqa8xo0uQ9L2POwhSlQEX1JE664": {
+          "SendMessageHandlerLambdaVersion1WL20tcttJCy3JTMeoAvarrCmyAPYnQryhogXEUH9Q": {
             "Type": "AWS::Lambda::Version",
             "DeletionPolicy": "Retain",
             "Properties": {
               "FunctionName": {
                 "Ref": "SendMessageHandlerLambdaFunction"
               },
-              "CodeSha256": "QSeLD62Vjyg38x2YwjYrVyY2tHUfaCV5SNX2mHuh4v4="
+              "CodeSha256": "EaNUjW3Rn5m3+KWdPlAoDYmtNmHPdH2EAZqeGOM8qvE="
             }
           },
-          "SecureRoomApiHandlerLambdaVersion7LAUEJeF1fOCByVCz09ujS55UrUGG0uGzDpKmIR6EQ": {
+          "SecureRoomApiHandlerLambdaVersionpqb5QPjy0TweWkDO08yH8N1ApWkG3dgmNQGMbVs8": {
             "Type": "AWS::Lambda::Version",
             "DeletionPolicy": "Retain",
             "Properties": {
               "FunctionName": {
                 "Ref": "SecureRoomApiHandlerLambdaFunction"
               },
-              "CodeSha256": "QSeLD62Vjyg38x2YwjYrVyY2tHUfaCV5SNX2mHuh4v4="
+              "CodeSha256": "EaNUjW3Rn5m3+KWdPlAoDYmtNmHPdH2EAZqeGOM8qvE="
             }
           },
-          "SecureRoomCronJobLambdaVersion6MyHVUpVqYAS3exzWLiktrJayuAql5dqszZhMWJmM": {
+          "SecureRoomCronJobLambdaVersionhyw7tKG3i5XzollYEX0UcWLoCLc5nRp2GVKxiAng1yk": {
             "Type": "AWS::Lambda::Version",
             "DeletionPolicy": "Retain",
             "Properties": {
               "FunctionName": {
                 "Ref": "SecureRoomCronJobLambdaFunction"
               },
-              "CodeSha256": "QSeLD62Vjyg38x2YwjYrVyY2tHUfaCV5SNX2mHuh4v4="
+              "CodeSha256": "EaNUjW3Rn5m3+KWdPlAoDYmtNmHPdH2EAZqeGOM8qvE="
             }
           },
           "SecureRoomCronJobEventsRuleSchedule1": {
@@ -573,6 +575,66 @@
                 "Ref": "ApiGatewayResourceRoomsRoomidVar"
               },
               "PathPart": "upload-url",
+              "RestApiId": {
+                "Ref": "ApiGatewayRestApi"
+              }
+            }
+          },
+          "ApiGatewayResourceRoomsRoomidVarMultipart": {
+            "Type": "AWS::ApiGateway::Resource",
+            "Properties": {
+              "ParentId": {
+                "Ref": "ApiGatewayResourceRoomsRoomidVar"
+              },
+              "PathPart": "multipart",
+              "RestApiId": {
+                "Ref": "ApiGatewayRestApi"
+              }
+            }
+          },
+          "ApiGatewayResourceRoomsRoomidVarMultipartCreate": {
+            "Type": "AWS::ApiGateway::Resource",
+            "Properties": {
+              "ParentId": {
+                "Ref": "ApiGatewayResourceRoomsRoomidVarMultipart"
+              },
+              "PathPart": "create",
+              "RestApiId": {
+                "Ref": "ApiGatewayRestApi"
+              }
+            }
+          },
+          "ApiGatewayResourceRoomsRoomidVarMultipartPartDashurl": {
+            "Type": "AWS::ApiGateway::Resource",
+            "Properties": {
+              "ParentId": {
+                "Ref": "ApiGatewayResourceRoomsRoomidVarMultipart"
+              },
+              "PathPart": "part-url",
+              "RestApiId": {
+                "Ref": "ApiGatewayRestApi"
+              }
+            }
+          },
+          "ApiGatewayResourceRoomsRoomidVarMultipartComplete": {
+            "Type": "AWS::ApiGateway::Resource",
+            "Properties": {
+              "ParentId": {
+                "Ref": "ApiGatewayResourceRoomsRoomidVarMultipart"
+              },
+              "PathPart": "complete",
+              "RestApiId": {
+                "Ref": "ApiGatewayRestApi"
+              }
+            }
+          },
+          "ApiGatewayResourceRoomsRoomidVarMultipartAbort": {
+            "Type": "AWS::ApiGateway::Resource",
+            "Properties": {
+              "ParentId": {
+                "Ref": "ApiGatewayResourceRoomsRoomidVarMultipart"
+              },
+              "PathPart": "abort",
               "RestApiId": {
                 "Ref": "ApiGatewayRestApi"
               }
@@ -665,6 +727,186 @@
               },
               "ResourceId": {
                 "Ref": "ApiGatewayResourceRoomsRoomidVarUploadDashurl"
+              },
+              "RestApiId": {
+                "Ref": "ApiGatewayRestApi"
+              }
+            }
+          },
+          "ApiGatewayMethodRoomsRoomidVarMultipartCreateOptions": {
+            "Type": "AWS::ApiGateway::Method",
+            "Properties": {
+              "AuthorizationType": "NONE",
+              "HttpMethod": "OPTIONS",
+              "MethodResponses": [
+                {
+                  "StatusCode": "200",
+                  "ResponseParameters": {
+                    "method.response.header.Access-Control-Allow-Origin": true,
+                    "method.response.header.Access-Control-Allow-Headers": true,
+                    "method.response.header.Access-Control-Allow-Methods": true
+                  },
+                  "ResponseModels": {}
+                }
+              ],
+              "RequestParameters": {},
+              "Integration": {
+                "Type": "MOCK",
+                "RequestTemplates": {
+                  "application/json": "{statusCode:200}"
+                },
+                "ContentHandling": "CONVERT_TO_TEXT",
+                "IntegrationResponses": [
+                  {
+                    "StatusCode": "200",
+                    "ResponseParameters": {
+                      "method.response.header.Access-Control-Allow-Origin": "'*'",
+                      "method.response.header.Access-Control-Allow-Headers": "'Content-Type,X-Amz-Date,Authorization,X-Api-Key,X-Amz-Security-Token,X-Amz-User-Agent,X-Amzn-Trace-Id'",
+                      "method.response.header.Access-Control-Allow-Methods": "'OPTIONS,POST'"
+                    },
+                    "ResponseTemplates": {
+                      "application/json": ""
+                    }
+                  }
+                ]
+              },
+              "ResourceId": {
+                "Ref": "ApiGatewayResourceRoomsRoomidVarMultipartCreate"
+              },
+              "RestApiId": {
+                "Ref": "ApiGatewayRestApi"
+              }
+            }
+          },
+          "ApiGatewayMethodRoomsRoomidVarMultipartPartDashurlOptions": {
+            "Type": "AWS::ApiGateway::Method",
+            "Properties": {
+              "AuthorizationType": "NONE",
+              "HttpMethod": "OPTIONS",
+              "MethodResponses": [
+                {
+                  "StatusCode": "200",
+                  "ResponseParameters": {
+                    "method.response.header.Access-Control-Allow-Origin": true,
+                    "method.response.header.Access-Control-Allow-Headers": true,
+                    "method.response.header.Access-Control-Allow-Methods": true
+                  },
+                  "ResponseModels": {}
+                }
+              ],
+              "RequestParameters": {},
+              "Integration": {
+                "Type": "MOCK",
+                "RequestTemplates": {
+                  "application/json": "{statusCode:200}"
+                },
+                "ContentHandling": "CONVERT_TO_TEXT",
+                "IntegrationResponses": [
+                  {
+                    "StatusCode": "200",
+                    "ResponseParameters": {
+                      "method.response.header.Access-Control-Allow-Origin": "'*'",
+                      "method.response.header.Access-Control-Allow-Headers": "'Content-Type,X-Amz-Date,Authorization,X-Api-Key,X-Amz-Security-Token,X-Amz-User-Agent,X-Amzn-Trace-Id'",
+                      "method.response.header.Access-Control-Allow-Methods": "'OPTIONS,POST'"
+                    },
+                    "ResponseTemplates": {
+                      "application/json": ""
+                    }
+                  }
+                ]
+              },
+              "ResourceId": {
+                "Ref": "ApiGatewayResourceRoomsRoomidVarMultipartPartDashurl"
+              },
+              "RestApiId": {
+                "Ref": "ApiGatewayRestApi"
+              }
+            }
+          },
+          "ApiGatewayMethodRoomsRoomidVarMultipartCompleteOptions": {
+            "Type": "AWS::ApiGateway::Method",
+            "Properties": {
+              "AuthorizationType": "NONE",
+              "HttpMethod": "OPTIONS",
+              "MethodResponses": [
+                {
+                  "StatusCode": "200",
+                  "ResponseParameters": {
+                    "method.response.header.Access-Control-Allow-Origin": true,
+                    "method.response.header.Access-Control-Allow-Headers": true,
+                    "method.response.header.Access-Control-Allow-Methods": true
+                  },
+                  "ResponseModels": {}
+                }
+              ],
+              "RequestParameters": {},
+              "Integration": {
+                "Type": "MOCK",
+                "RequestTemplates": {
+                  "application/json": "{statusCode:200}"
+                },
+                "ContentHandling": "CONVERT_TO_TEXT",
+                "IntegrationResponses": [
+                  {
+                    "StatusCode": "200",
+                    "ResponseParameters": {
+                      "method.response.header.Access-Control-Allow-Origin": "'*'",
+                      "method.response.header.Access-Control-Allow-Headers": "'Content-Type,X-Amz-Date,Authorization,X-Api-Key,X-Amz-Security-Token,X-Amz-User-Agent,X-Amzn-Trace-Id'",
+                      "method.response.header.Access-Control-Allow-Methods": "'OPTIONS,POST'"
+                    },
+                    "ResponseTemplates": {
+                      "application/json": ""
+                    }
+                  }
+                ]
+              },
+              "ResourceId": {
+                "Ref": "ApiGatewayResourceRoomsRoomidVarMultipartComplete"
+              },
+              "RestApiId": {
+                "Ref": "ApiGatewayRestApi"
+              }
+            }
+          },
+          "ApiGatewayMethodRoomsRoomidVarMultipartAbortOptions": {
+            "Type": "AWS::ApiGateway::Method",
+            "Properties": {
+              "AuthorizationType": "NONE",
+              "HttpMethod": "OPTIONS",
+              "MethodResponses": [
+                {
+                  "StatusCode": "200",
+                  "ResponseParameters": {
+                    "method.response.header.Access-Control-Allow-Origin": true,
+                    "method.response.header.Access-Control-Allow-Headers": true,
+                    "method.response.header.Access-Control-Allow-Methods": true
+                  },
+                  "ResponseModels": {}
+                }
+              ],
+              "RequestParameters": {},
+              "Integration": {
+                "Type": "MOCK",
+                "RequestTemplates": {
+                  "application/json": "{statusCode:200}"
+                },
+                "ContentHandling": "CONVERT_TO_TEXT",
+                "IntegrationResponses": [
+                  {
+                    "StatusCode": "200",
+                    "ResponseParameters": {
+                      "method.response.header.Access-Control-Allow-Origin": "'*'",
+                      "method.response.header.Access-Control-Allow-Headers": "'Content-Type,X-Amz-Date,Authorization,X-Api-Key,X-Amz-Security-Token,X-Amz-User-Agent,X-Amzn-Trace-Id'",
+                      "method.response.header.Access-Control-Allow-Methods": "'OPTIONS,POST'"
+                    },
+                    "ResponseTemplates": {
+                      "application/json": ""
+                    }
+                  }
+                ]
+              },
+              "ResourceId": {
+                "Ref": "ApiGatewayResourceRoomsRoomidVarMultipartAbort"
               },
               "RestApiId": {
                 "Ref": "ApiGatewayRestApi"
@@ -948,6 +1190,190 @@
               "RequestParameters": {},
               "ResourceId": {
                 "Ref": "ApiGatewayResourceRoomsRoomidVarUploadDashurl"
+              },
+              "RestApiId": {
+                "Ref": "ApiGatewayRestApi"
+              },
+              "ApiKeyRequired": false,
+              "AuthorizationType": "NONE",
+              "Integration": {
+                "IntegrationHttpMethod": "POST",
+                "Type": "AWS_PROXY",
+                "Uri": {
+                  "Fn::Join": [
+                    "",
+                    [
+                      "arn:",
+                      {
+                        "Ref": "AWS::Partition"
+                      },
+                      ":apigateway:",
+                      {
+                        "Ref": "AWS::Region"
+                      },
+                      ":lambda:path/2015-03-31/functions/",
+                      {
+                        "Fn::GetAtt": [
+                          "SecureRoomApiHandlerLambdaFunction",
+                          "Arn"
+                        ]
+                      },
+                      "/invocations"
+                    ]
+                  ]
+                }
+              },
+              "MethodResponses": []
+            },
+            "DependsOn": [
+              "SecureRoomApiHandlerLambdaPermissionApiGateway"
+            ]
+          },
+          "ApiGatewayMethodRoomsRoomidVarMultipartCreatePost": {
+            "Type": "AWS::ApiGateway::Method",
+            "Properties": {
+              "HttpMethod": "POST",
+              "RequestParameters": {},
+              "ResourceId": {
+                "Ref": "ApiGatewayResourceRoomsRoomidVarMultipartCreate"
+              },
+              "RestApiId": {
+                "Ref": "ApiGatewayRestApi"
+              },
+              "ApiKeyRequired": false,
+              "AuthorizationType": "NONE",
+              "Integration": {
+                "IntegrationHttpMethod": "POST",
+                "Type": "AWS_PROXY",
+                "Uri": {
+                  "Fn::Join": [
+                    "",
+                    [
+                      "arn:",
+                      {
+                        "Ref": "AWS::Partition"
+                      },
+                      ":apigateway:",
+                      {
+                        "Ref": "AWS::Region"
+                      },
+                      ":lambda:path/2015-03-31/functions/",
+                      {
+                        "Fn::GetAtt": [
+                          "SecureRoomApiHandlerLambdaFunction",
+                          "Arn"
+                        ]
+                      },
+                      "/invocations"
+                    ]
+                  ]
+                }
+              },
+              "MethodResponses": []
+            },
+            "DependsOn": [
+              "SecureRoomApiHandlerLambdaPermissionApiGateway"
+            ]
+          },
+          "ApiGatewayMethodRoomsRoomidVarMultipartPartDashurlPost": {
+            "Type": "AWS::ApiGateway::Method",
+            "Properties": {
+              "HttpMethod": "POST",
+              "RequestParameters": {},
+              "ResourceId": {
+                "Ref": "ApiGatewayResourceRoomsRoomidVarMultipartPartDashurl"
+              },
+              "RestApiId": {
+                "Ref": "ApiGatewayRestApi"
+              },
+              "ApiKeyRequired": false,
+              "AuthorizationType": "NONE",
+              "Integration": {
+                "IntegrationHttpMethod": "POST",
+                "Type": "AWS_PROXY",
+                "Uri": {
+                  "Fn::Join": [
+                    "",
+                    [
+                      "arn:",
+                      {
+                        "Ref": "AWS::Partition"
+                      },
+                      ":apigateway:",
+                      {
+                        "Ref": "AWS::Region"
+                      },
+                      ":lambda:path/2015-03-31/functions/",
+                      {
+                        "Fn::GetAtt": [
+                          "SecureRoomApiHandlerLambdaFunction",
+                          "Arn"
+                        ]
+                      },
+                      "/invocations"
+                    ]
+                  ]
+                }
+              },
+              "MethodResponses": []
+            },
+            "DependsOn": [
+              "SecureRoomApiHandlerLambdaPermissionApiGateway"
+            ]
+          },
+          "ApiGatewayMethodRoomsRoomidVarMultipartCompletePost": {
+            "Type": "AWS::ApiGateway::Method",
+            "Properties": {
+              "HttpMethod": "POST",
+              "RequestParameters": {},
+              "ResourceId": {
+                "Ref": "ApiGatewayResourceRoomsRoomidVarMultipartComplete"
+              },
+              "RestApiId": {
+                "Ref": "ApiGatewayRestApi"
+              },
+              "ApiKeyRequired": false,
+              "AuthorizationType": "NONE",
+              "Integration": {
+                "IntegrationHttpMethod": "POST",
+                "Type": "AWS_PROXY",
+                "Uri": {
+                  "Fn::Join": [
+                    "",
+                    [
+                      "arn:",
+                      {
+                        "Ref": "AWS::Partition"
+                      },
+                      ":apigateway:",
+                      {
+                        "Ref": "AWS::Region"
+                      },
+                      ":lambda:path/2015-03-31/functions/",
+                      {
+                        "Fn::GetAtt": [
+                          "SecureRoomApiHandlerLambdaFunction",
+                          "Arn"
+                        ]
+                      },
+                      "/invocations"
+                    ]
+                  ]
+                }
+              },
+              "MethodResponses": []
+            },
+            "DependsOn": [
+              "SecureRoomApiHandlerLambdaPermissionApiGateway"
+            ]
+          },
+          "ApiGatewayMethodRoomsRoomidVarMultipartAbortPost": {
+            "Type": "AWS::ApiGateway::Method",
+            "Properties": {
+              "HttpMethod": "POST",
+              "RequestParameters": {},
+              "ResourceId": {
+                "Ref": "ApiGatewayResourceRoomsRoomidVarMultipartAbort"
               },
               "RestApiId": {
                 "Ref": "ApiGatewayRestApi"
@@ -1447,7 +1873,7 @@
               "SecureRoomApiHandlerLambdaPermissionApiGateway"
             ]
           },
-          "ApiGatewayDeployment1779872085325": {
+          "ApiGatewayDeployment1780246706103": {
             "Type": "AWS::ApiGateway::Deployment",
             "Properties": {
               "RestApiId": {
@@ -1457,6 +1883,10 @@
             },
             "DependsOn": [
               "ApiGatewayMethodRoomsRoomidVarUploadDashurlOptions",
+              "ApiGatewayMethodRoomsRoomidVarMultipartCreateOptions",
+              "ApiGatewayMethodRoomsRoomidVarMultipartPartDashurlOptions",
+              "ApiGatewayMethodRoomsRoomidVarMultipartCompleteOptions",
+              "ApiGatewayMethodRoomsRoomidVarMultipartAbortOptions",
               "ApiGatewayMethodRoomsRoomidVarDownloadDashurlOptions",
               "ApiGatewayMethodRoomsOptions",
               "ApiGatewayMethodRoomsRoomidVarOptions",
@@ -1464,6 +1894,10 @@
               "ApiGatewayMethodRoomsRoomidVarTestDashmigrationOptions",
               "ApiGatewayMethodRoomsRoomidVarTriggerDashcleanupOptions",
               "ApiGatewayMethodRoomsRoomidVarUploadDashurlPost",
+              "ApiGatewayMethodRoomsRoomidVarMultipartCreatePost",
+              "ApiGatewayMethodRoomsRoomidVarMultipartPartDashurlPost",
+              "ApiGatewayMethodRoomsRoomidVarMultipartCompletePost",
+              "ApiGatewayMethodRoomsRoomidVarMultipartAbortPost",
               "ApiGatewayMethodRoomsRoomidVarDownloadDashurlPost",
               "ApiGatewayMethodRoomsPost",
               "ApiGatewayMethodRoomsGet",
@@ -2087,7 +2521,7 @@
         },
         "Outputs": {
           "ServerlessDeploymentBucketName": {
-            "Value": "serverless-framework-deployments-ap-south-1-a4211e29-227d",
+            "Value": "serverless-framework-deployments-ap-south-1-17be40a0-dfea",
             "Export": {
               "Name": "sls-keepr-ephemeral-chat-dev-ServerlessDeploymentBucketName"
             }
@@ -2095,7 +2529,7 @@
           "ConnectionHandlerLambdaFunctionQualifiedArn": {
             "Description": "Current Lambda function version",
             "Value": {
-              "Ref": "ConnectionHandlerLambdaVersionveyv9MK8dLd4GPhvWcAhZSP3ZCSNhU7xbiMlYM"
+              "Ref": "ConnectionHandlerLambdaVersionHQVaPp5mEathvo2I9aurZ5lkxbzHJKBoFysiO16Hp4M"
             },
             "Export": {
               "Name": "sls-keepr-ephemeral-chat-dev-ConnectionHandlerLambdaFunctionQualifiedArn"
@@ -2104,7 +2538,7 @@
           "DefaultHandlerLambdaFunctionQualifiedArn": {
             "Description": "Current Lambda function version",
             "Value": {
-              "Ref": "DefaultHandlerLambdaVersionHYgff327ezMX97xhFSMdyMSNK1MmJigb5qGLfnbApA"
+              "Ref": "DefaultHandlerLambdaVersionfSXaYgNh6OKYOMNk8YQDAGtnvB0AbceSBkH580IxQ"
             },
             "Export": {
               "Name": "sls-keepr-ephemeral-chat-dev-DefaultHandlerLambdaFunctionQualifiedArn"
@@ -2113,7 +2547,7 @@
           "SendMessageHandlerLambdaFunctionQualifiedArn": {
             "Description": "Current Lambda function version",
             "Value": {
-              "Ref": "SendMessageHandlerLambdaVersionv32T3S4P0tR5iNkqa8xo0uQ9L2POwhSlQEX1JE664"
+              "Ref": "SendMessageHandlerLambdaVersion1WL20tcttJCy3JTMeoAvarrCmyAPYnQryhogXEUH9Q"
             },
             "Export": {
               "Name": "sls-keepr-ephemeral-chat-dev-SendMessageHandlerLambdaFunctionQualifiedArn"
@@ -2122,7 +2556,7 @@
           "SecureRoomApiHandlerLambdaFunctionQualifiedArn": {
             "Description": "Current Lambda function version",
             "Value": {
-              "Ref": "SecureRoomApiHandlerLambdaVersion7LAUEJeF1fOCByVCz09ujS55UrUGG0uGzDpKmIR6EQ"
+              "Ref": "SecureRoomApiHandlerLambdaVersionpqb5QPjy0TweWkDO08yH8N1ApWkG3dgmNQGMbVs8"
             },
             "Export": {
               "Name": "sls-keepr-ephemeral-chat-dev-SecureRoomApiHandlerLambdaFunctionQualifiedArn"
@@ -2131,7 +2565,7 @@
           "SecureRoomCronJobLambdaFunctionQualifiedArn": {
             "Description": "Current Lambda function version",
             "Value": {
-              "Ref": "SecureRoomCronJobLambdaVersion6MyHVUpVqYAS3exzWLiktrJayuAql5dqszZhMWJmM"
+              "Ref": "SecureRoomCronJobLambdaVersionhyw7tKG3i5XzollYEX0UcWLoCLc5nRp2GVKxiAng1yk"
             },
             "Export": {
               "Name": "sls-keepr-ephemeral-chat-dev-SecureRoomCronJobLambdaFunctionQualifiedArn"
@@ -2253,7 +2687,7 @@
         "timeout": 6,
         "runtime": "nodejs20.x",
         "vpc": {},
-        "versionLogicalId": "ConnectionHandlerLambdaVersionveyv9MK8dLd4GPhvWcAhZSP3ZCSNhU7xbiMlYM"
+        "versionLogicalId": "ConnectionHandlerLambdaVersionHQVaPp5mEathvo2I9aurZ5lkxbzHJKBoFysiO16Hp4M"
       },
       "defaultHandler": {
         "handler": "handler.defaultHandler",
@@ -2270,7 +2704,7 @@
         "timeout": 6,
         "runtime": "nodejs20.x",
         "vpc": {},
-        "versionLogicalId": "DefaultHandlerLambdaVersionHYgff327ezMX97xhFSMdyMSNK1MmJigb5qGLfnbApA"
+        "versionLogicalId": "DefaultHandlerLambdaVersionfSXaYgNh6OKYOMNk8YQDAGtnvB0AbceSBkH580IxQ"
       },
       "sendMessageHandler": {
         "handler": "handler.sendMessageHandler",
@@ -2287,7 +2721,7 @@
         "timeout": 6,
         "runtime": "nodejs20.x",
         "vpc": {},
-        "versionLogicalId": "SendMessageHandlerLambdaVersionv32T3S4P0tR5iNkqa8xo0uQ9L2POwhSlQEX1JE664"
+        "versionLogicalId": "SendMessageHandlerLambdaVersion1WL20tcttJCy3JTMeoAvarrCmyAPYnQryhogXEUH9Q"
       },
       "secureRoomApiHandler": {
         "handler": "handlers/secureRoomApi.handler",
@@ -2297,6 +2731,102 @@
           {
             "http": {
               "path": "rooms/{roomId}/upload-url",
+              "method": "post",
+              "cors": {
+                "origin": "*",
+                "methods": [
+                  "OPTIONS",
+                  "POST"
+                ],
+                "headers": [
+                  "Content-Type",
+                  "X-Amz-Date",
+                  "Authorization",
+                  "X-Api-Key",
+                  "X-Amz-Security-Token",
+                  "X-Amz-User-Agent",
+                  "X-Amzn-Trace-Id"
+                ],
+                "allowCredentials": false
+              },
+              "integration": "AWS_PROXY"
+            }
+          },
+          {
+            "http": {
+              "path": "rooms/{roomId}/multipart/create",
+              "method": "post",
+              "cors": {
+                "origin": "*",
+                "methods": [
+                  "OPTIONS",
+                  "POST"
+                ],
+                "headers": [
+                  "Content-Type",
+                  "X-Amz-Date",
+                  "Authorization",
+                  "X-Api-Key",
+                  "X-Amz-Security-Token",
+                  "X-Amz-User-Agent",
+                  "X-Amzn-Trace-Id"
+                ],
+                "allowCredentials": false
+              },
+              "integration": "AWS_PROXY"
+            }
+          },
+          {
+            "http": {
+              "path": "rooms/{roomId}/multipart/part-url",
+              "method": "post",
+              "cors": {
+                "origin": "*",
+                "methods": [
+                  "OPTIONS",
+                  "POST"
+                ],
+                "headers": [
+                  "Content-Type",
+                  "X-Amz-Date",
+                  "Authorization",
+                  "X-Api-Key",
+                  "X-Amz-Security-Token",
+                  "X-Amz-User-Agent",
+                  "X-Amzn-Trace-Id"
+                ],
+                "allowCredentials": false
+              },
+              "integration": "AWS_PROXY"
+            }
+          },
+          {
+            "http": {
+              "path": "rooms/{roomId}/multipart/complete",
+              "method": "post",
+              "cors": {
+                "origin": "*",
+                "methods": [
+                  "OPTIONS",
+                  "POST"
+                ],
+                "headers": [
+                  "Content-Type",
+                  "X-Amz-Date",
+                  "Authorization",
+                  "X-Api-Key",
+                  "X-Amz-Security-Token",
+                  "X-Amz-User-Agent",
+                  "X-Amzn-Trace-Id"
+                ],
+                "allowCredentials": false
+              },
+              "integration": "AWS_PROXY"
+            }
+          },
+          {
+            "http": {
+              "path": "rooms/{roomId}/multipart/abort",
               "method": "post",
               "cors": {
                 "origin": "*",
@@ -2567,7 +3097,7 @@
         "memory": 512,
         "runtime": "nodejs20.x",
         "vpc": {},
-        "versionLogicalId": "SecureRoomApiHandlerLambdaVersion7LAUEJeF1fOCByVCz09ujS55UrUGG0uGzDpKmIR6EQ"
+        "versionLogicalId": "SecureRoomApiHandlerLambdaVersionpqb5QPjy0TweWkDO08yH8N1ApWkG3dgmNQGMbVs8"
       },
       "secureRoomCronJob": {
         "handler": "handlers/secureRoomCron.handler",
@@ -2595,7 +3125,7 @@
         "memory": 512,
         "runtime": "nodejs20.x",
         "vpc": {},
-        "versionLogicalId": "SecureRoomCronJobLambdaVersion6MyHVUpVqYAS3exzWLiktrJayuAql5dqszZhMWJmM"
+        "versionLogicalId": "SecureRoomCronJobLambdaVersionhyw7tKG3i5XzollYEX0UcWLoCLc5nRp2GVKxiAng1yk"
       }
     },
     "resources": {
@@ -2957,7 +3487,7 @@
     "layers": {}
   },
   "package": {
-    "artifactDirectoryName": "serverless/keepr-ephemeral-chat/dev/1779872094733-2026-05-27T08:54:54.733Z",
+    "artifactDirectoryName": "serverless/keepr-ephemeral-chat/dev/1780246720853-2026-05-31T16:58:40.853Z",
     "artifact": "keepr-ephemeral-chat.zip"
   }
 }

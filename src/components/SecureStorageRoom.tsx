@@ -93,7 +93,30 @@ export interface SecureRoom {
   transferEmail: string;
   files: S3File[];
   createdAt: string;
+  /** ISO timestamp when the inactivity timer fires. Used to detect "time up". */
+  expiryAt?: string;
 }
+
+// Is this room's inactivity timer up? (no expiry stored ⇒ treat as not expired)
+const isRoomExpired = (room: { expiryAt?: string } | null | undefined): boolean => {
+  if (!room?.expiryAt) return false;
+  const t = new Date(room.expiryAt).getTime();
+  return Number.isFinite(t) && t <= Date.now();
+};
+
+// Compact "time remaining" formatter, e.g. "2d 4h", "71h 58m", "Expired".
+const formatRemaining = (expiryAt?: string): string => {
+  if (!expiryAt) return '—';
+  const ms = new Date(expiryAt).getTime() - Date.now();
+  if (!Number.isFinite(ms) || ms <= 0) return 'Expired';
+  const mins = Math.floor(ms / 60000);
+  const days = Math.floor(mins / 1440);
+  const hours = Math.floor((mins % 1440) / 60);
+  const minutes = mins % 60;
+  if (days > 0) return `${days}d ${hours}h`;
+  if (hours > 0) return `${hours}h ${minutes}m`;
+  return `${minutes}m`;
+};
 
 // Derive a secure CryptoKey from the local Vault passphrase/hash for use with Web Crypto API
 const getCryptoKey = async (passphrase: string): Promise<CryptoKey> => {
@@ -117,10 +140,120 @@ const hashStringSHA256 = async (str: string): Promise<string> => {
   return hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
 };
 
+// AWS S3 free tier ceiling (5 GB) used as the global quota for the workspace
+const S3_FREE_TIER_BYTES = 5 * 1024 * 1024 * 1024;
+
+// Format bytes into a clean human-readable string
+const formatBytes = (bytes: number): string => {
+  if (!bytes || bytes < 0) return '0 B';
+  if (bytes < 1024) return `${bytes} B`;
+  if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
+  if (bytes < 1024 * 1024 * 1024) return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
+  return `${(bytes / (1024 * 1024 * 1024)).toFixed(2)} GB`;
+};
+
+// ==========================================
+// CHUNKED ENCRYPTION + STREAMING (large files)
+// ------------------------------------------
+// Web Crypto's encrypt()/decrypt() are one-shot and cannot stream, and a single
+// presigned PUT needs the whole body in RAM. For a 2 GB file the old flow held
+// the plaintext + ciphertext + combined copies in memory at once (6 GB+), which
+// is what crashed the machine. We instead slice the file, encrypt one chunk at a
+// time, and push each encrypted chunk straight to S3 as a multipart "part" so
+// peak memory stays at roughly one chunk (~16 MB) no matter how big the file is.
+// ==========================================
+
+// Plaintext bytes per chunk. Each encrypted chunk becomes one S3 multipart part.
+// 16 MB keeps memory tiny while staying well above S3's 5 MB minimum part size and
+// well under the 10,000-part limit (supports files up to ~160 GB).
+const CHUNK_SIZE = 16 * 1024 * 1024;
+
+// Container magic so the download path can tell chunked files apart from the
+// legacy single-IV format. ASCII "KEPRCHK1".
+const CHUNK_MAGIC = new Uint8Array([0x4b, 0x45, 0x50, 0x52, 0x43, 0x48, 0x4b, 0x31]);
+
+const u32be = (n: number): Uint8Array => {
+  const b = new Uint8Array(4);
+  b[0] = (n >>> 24) & 0xff;
+  b[1] = (n >>> 16) & 0xff;
+  b[2] = (n >>> 8) & 0xff;
+  b[3] = n & 0xff;
+  return b;
+};
+
+const readU32be = (b: Uint8Array): number =>
+  ((b[0] << 24) | (b[1] << 16) | (b[2] << 8) | b[3]) >>> 0;
+
+const concatU8 = (parts: Uint8Array[]): Uint8Array => {
+  const total = parts.reduce((s, p) => s + p.length, 0);
+  const out = new Uint8Array(total);
+  let off = 0;
+  for (const p of parts) { out.set(p, off); off += p.length; }
+  return out;
+};
+
+const matchesMagic = (b: Uint8Array): boolean =>
+  b.length >= CHUNK_MAGIC.length && CHUNK_MAGIC.every((v, i) => b[i] === v);
+
+// Buffered reader over a fetch ReadableStream so we can pull exact byte counts
+// (segment length prefix, IV, ciphertext) without ever loading the whole file.
+class ChunkStreamReader {
+  private reader: ReadableStreamDefaultReader<Uint8Array>;
+  private queue: Uint8Array[] = [];
+  private queued = 0;
+  private streamDone = false;
+
+  constructor(reader: ReadableStreamDefaultReader<Uint8Array>) {
+    this.reader = reader;
+  }
+
+  private async pull(): Promise<void> {
+    if (this.streamDone) return;
+    const { value, done } = await this.reader.read();
+    if (done) { this.streamDone = true; return; }
+    if (value && value.length) { this.queue.push(value); this.queued += value.length; }
+  }
+
+  async readExactly(n: number): Promise<Uint8Array> {
+    while (this.queued < n && !this.streamDone) await this.pull();
+    if (this.queued < n) throw new Error('Unexpected end of encrypted stream');
+    const out = new Uint8Array(n);
+    let off = 0;
+    while (off < n) {
+      const head = this.queue[0];
+      const take = Math.min(head.length, n - off);
+      out.set(head.subarray(0, take), off);
+      off += take;
+      this.queued -= take;
+      if (take === head.length) this.queue.shift();
+      else this.queue[0] = head.subarray(take);
+    }
+    return out;
+  }
+
+  async atEnd(): Promise<boolean> {
+    while (this.queued === 0 && !this.streamDone) await this.pull();
+    return this.queued === 0 && this.streamDone;
+  }
+
+  // Drain whatever is left (used by the legacy single-IV fallback path).
+  async readRemaining(): Promise<Uint8Array> {
+    const chunks: Uint8Array[] = [];
+    while (this.queue.length) { const c = this.queue.shift(); if (c) chunks.push(c); }
+    this.queued = 0;
+    while (!this.streamDone) {
+      const { value, done } = await this.reader.read();
+      if (done) { this.streamDone = true; break; }
+      if (value && value.length) chunks.push(value);
+    }
+    return concatU8(chunks);
+  }
+}
+
 export function SecureStorageRoom() {
   const { user } = useUser();
   const { getToken } = useAuth();
-  const userName = user?.firstName || 'Secure Vault';
+  const userName = user?.firstName || 'You';
 
   const SECURE_ROOM_API_ENDPOINT = import.meta.env.VITE_SECURE_ROOM_API_ENDPOINT || '';
 
@@ -161,6 +294,7 @@ export function SecureStorageRoom() {
               transferEmail: r.transferEmail,
               files: existingRoom ? existingRoom.files : [],
               createdAt: r.createdAt ? (typeof r.createdAt === 'string' ? r.createdAt.substring(0, 10) : new Date(r.createdAt).toISOString().substring(0, 10)) : new Date().toISOString().substring(0, 10),
+              expiryAt: r.expiryAt || undefined,
             };
           });
         });
@@ -330,6 +464,7 @@ export function SecureStorageRoom() {
   const [transferEmail, setTransferEmail] = useState('');
   const [feedbackMsg, setFeedbackMsg] = useState('');
   const [activeRoomStrategy, setActiveRoomStrategy] = useState<'purge' | 'migration' | 'handoff_unlocked'>('purge');
+  const [activeRoomExpiryAt, setActiveRoomExpiryAt] = useState<string | undefined>(undefined);
   const [isSavingSettings, setIsSavingSettings] = useState(false);
 
   // Manage body scroll lock when modal is open
@@ -421,7 +556,7 @@ export function SecureStorageRoom() {
     handleUpdateActiveRoomFiles(reorderedFiles);
     setDraggedFileId(null);
 
-    setFeedbackMsg('Vault items rearranged successfully.');
+      setFeedbackMsg('Files reordered.');
     setTimeout(() => setFeedbackMsg(''), 2500);
     handleUpdateActivity();
 
@@ -554,13 +689,38 @@ export function SecureStorageRoom() {
       setActiveRoomId(selectedRoomToUnlock.id);
       setRoomName(selectedRoomToUnlock.name);
       setVaultKey(enteredVaultKey);
-      
+
       // Auto-set settings options based on strategy
       setAutoDestructEnabled(selectedRoomToUnlock.safetyStrategy === 'purge');
       setSafeTransferEnabled(selectedRoomToUnlock.safetyStrategy === 'migration');
-      setActiveRoomStrategy(selectedRoomToUnlock.safetyStrategy);
       setTransferEmail(selectedRoomToUnlock.transferEmail);
       setInactivityDays(selectedRoomToUnlock.inactivityDays);
+      setActiveRoomExpiryAt(selectedRoomToUnlock.expiryAt);
+
+      // ── Time-up check ──────────────────────────────────────────────
+      // If the inactivity timer has already fired, don't drop the user into
+      // the normal explorer just because they opened the room directly (the
+      // backend cron only sweeps every 5 min, so there's a window where the
+      // server still says "migration"/"purge"). Show the time-up popup now.
+      if (isRoomExpired(selectedRoomToUnlock)) {
+        setActiveRoomStrategy('handoff_unlocked');
+        // Still load the file list so the user can migrate (ZIP) them out.
+        setIsLoadingRooms(true);
+        const expiredFiles = await fetchRoomFiles(selectedRoomToUnlock.id);
+        setFiles(expiredFiles);
+        setRooms(prev => prev.map(r => r.id === selectedRoomToUnlock.id ? { ...r, files: expiredFiles } : r));
+        setIsLoadingRooms(false);
+
+        setIsUnlocked(true);
+        setPasskeyError('');
+        window.location.hash = enteredVaultKey;
+        setMatchedUrlRoomId(selectedRoomToUnlock.id);
+        setFeedbackMsg('This room\u2019s inactivity timer has expired.');
+        setTimeout(() => setFeedbackMsg(''), 4000);
+        return;
+      }
+
+      setActiveRoomStrategy(selectedRoomToUnlock.safetyStrategy);
 
       setIsLoadingRooms(true);
       const fetchedFiles = await fetchRoomFiles(selectedRoomToUnlock.id);
@@ -574,10 +734,10 @@ export function SecureStorageRoom() {
       window.location.hash = enteredVaultKey;
       setMatchedUrlRoomId(selectedRoomToUnlock.id);
       handleUpdateActivity();
-      setFeedbackMsg(`Vault mounted correctly. Decrypted with E2E safe keys.`);
+      setFeedbackMsg(`Vault unlocked.`);
       setTimeout(() => setFeedbackMsg(''), 3000);
     } else {
-      setPasskeyError('Verification unsuccessful. Please verify PIN and Vault Key credentials.');
+      setPasskeyError('Verification failed. Check your PIN and vault key.');
     }
   };
 
@@ -592,7 +752,7 @@ export function SecureStorageRoom() {
     setVaultKey('');
     window.location.hash = ''; // clear key parameter
     setMatchedUrlRoomId(null);
-    setFeedbackMsg('Active vault dismantled safely. Local buffers cleared.');
+    setFeedbackMsg('Vault closed. Local keys cleared.');
     setTimeout(() => setFeedbackMsg(''), 2500);
   };
 
@@ -624,6 +784,7 @@ export function SecureStorageRoom() {
     }
 
     let createdRoomId = 'room-' + Date.now();
+    let createdExpiryAt: string | undefined;
     let hasBackendSuccess = false;
 
     if (apiEndpoint && !apiEndpoint.includes('REPLACE_WITH_YOUR_API_ID')) {
@@ -650,6 +811,7 @@ export function SecureStorageRoom() {
           if (response.ok) {
             const data = await response.json();
             createdRoomId = data.roomId;
+            createdExpiryAt = data.expiryAt;
             hasBackendSuccess = true;
           } else {
             const errText = await response.text();
@@ -674,6 +836,7 @@ export function SecureStorageRoom() {
       transferEmail: newRoomTransferEmail,
       files: [],
       createdAt: new Date().toISOString().substring(0, 10),
+      expiryAt: createdExpiryAt,
     };
 
     // Save of rooms list
@@ -709,7 +872,7 @@ export function SecureStorageRoom() {
     setShowCreateWizard(false);
     setWizardError('');
 
-    setFeedbackMsg(`Room [${newRoom.name}] generated and automatically mounted via hash-seed.`);
+    setFeedbackMsg(`Room "${newRoom.name}" created and unlocked.`);
     setTimeout(() => setFeedbackMsg(''), 4000);
     handleUpdateActivity();
     setIsCreatingRoom(false);
@@ -763,7 +926,7 @@ export function SecureStorageRoom() {
       }
       
       setEditingRoomId(null);
-      setFeedbackMsg('Vault resource identifier updated successfully.');
+      setFeedbackMsg('Room renamed.');
       setTimeout(() => setFeedbackMsg(''), 2500);
     }
   };
@@ -829,184 +992,345 @@ export function SecureStorageRoom() {
     setRoomToPurge(null);
     setDeleteRoomPinInput('');
     setDeleteRoomPinError('');
-    setFeedbackMsg('Vault room and associated records permanently shredded.');
+    setFeedbackMsg('Room and all its files permanently deleted.');
     setTimeout(() => setFeedbackMsg(''), 3000);
   };
 
-  // Real secure file upload flow:
-  // 1. Get presigned upload URL from backend API (POST /rooms/{roomId}/upload-url)
-  // 2. Read file as ArrayBuffer and encrypt using AES-GCM client-side.
-  // 3. Concatenate the 12-byte IV to the front of the ciphertext.
-  // 4. PUT the combined binary payload to S3 directly via presigned URL.
-  // 5. Refresh room files list.
+  // Resolve the REST API endpoint (env var, else derive from the WS URL).
+  const resolveApiEndpoint = (): string => {
+    let apiEndpoint = SECURE_ROOM_API_ENDPOINT;
+    if (!apiEndpoint || apiEndpoint.includes('REPLACE_WITH_YOUR_API_ID')) {
+      const wsUrl = import.meta.env.VITE_WEBSOCKET_URL || '';
+      const match = wsUrl.match(/wss:\/\/([^.]+)\.execute-api/);
+      if (match && match[1]) {
+        apiEndpoint = `https://${match[1]}.execute-api.ap-south-1.amazonaws.com/dev`;
+      }
+    }
+    return apiEndpoint;
+  };
+
+  // Memory-safe secure upload.
+  //
+  // The old flow read the ENTIRE file into RAM (file.arrayBuffer()), encrypted it
+  // in one shot (a second full copy), then built a combined buffer (a third copy)
+  // and handed all of it to fetch. For a 2 GB file that's 6 GB+ of live memory,
+  // which is exactly what crashed Windows with VIDEO_MEMORY_MANAGEMENT_INTERNAL
+  // (the browser's render/GPU process running out of memory). No phone or laptop
+  // can do that in one shot.
+  //
+  // Strategy:
+  //   • Small files (≤ SINGLE_PUT_LIMIT) go through the existing, already-deployed
+  //     single presigned-PUT endpoint (legacy [IV][ciphertext] format). Holding a
+  //     ~100 MB file in memory is fine and needs no backend changes.
+  //   • Large files are sliced into 16 MB chunks, encrypted ONE chunk at a time,
+  //     and pushed to S3 as multipart parts so peak memory stays ~one chunk
+  //     regardless of file size. This path uses the newer /multipart endpoints.
+  const SINGLE_PUT_LIMIT = 100 * 1024 * 1024; // 100 MB
+
   const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const fileList = e.target.files;
     if (!fileList || fileList.length === 0) return;
-    
+
     const originalFile = fileList[0];
+
+    // Quota guard — the workspace is on the 5 GB free plan. Reject before we
+    // waste bandwidth encrypting/uploading something that can't fit.
+    if (totalUsedBytes + originalFile.size > S3_FREE_TIER_BYTES) {
+      setFeedbackMsg(
+        `Not enough space: ${formatBytes(originalFile.size)} file won't fit in the remaining ${formatBytes(Math.max(0, S3_FREE_TIER_BYTES - totalUsedBytes))} of your 5 GB plan.`
+      );
+      setTimeout(() => setFeedbackMsg(''), 5000);
+      if (fileInputRef.current) fileInputRef.current.value = '';
+      return;
+    }
+
     setIsUploading(true);
-    setUploadProgress(10);
+    setUploadProgress(1);
     handleUpdateActivity();
 
-    let apiEndpoint = SECURE_ROOM_API_ENDPOINT;
-    if (!apiEndpoint || apiEndpoint.includes('REPLACE_WITH_YOUR_API_ID')) {
-      const wsUrl = import.meta.env.VITE_WEBSOCKET_URL || '';
-      const match = wsUrl.match(/wss:\/\/([^.]+)\.execute-api/);
-      if (match && match[1]) {
-        apiEndpoint = `https://${match[1]}.execute-api.ap-south-1.amazonaws.com/dev`;
-      }
+    const apiEndpoint = resolveApiEndpoint();
+    const hasBackend = !!(apiEndpoint && !apiEndpoint.includes('REPLACE_WITH_YOUR_API_ID') && activeRoomId);
+
+    // Offline / no-backend fallback: just register the file locally. We do NOT
+    // read the file into memory here — that's what caused the crash.
+    if (!hasBackend) {
+      const fileTypeMapping: Record<string, S3File['type']> = {
+        'application/pdf': 'pdf', 'video/mp4': 'video', 'audio/mpeg': 'audio',
+        'audio/mp3': 'audio', 'image/png': 'image', 'image/jpeg': 'image',
+        'image/gif': 'image', 'application/zip': 'archive', 'text/plain': 'text'
+      };
+      const newFile: S3File = {
+        id: Math.random().toString(),
+        name: originalFile.name,
+        type: fileTypeMapping[originalFile.type] || 'misc',
+        size: formatBytes(originalFile.size),
+        bytes: originalFile.size,
+        date: new Date().toISOString().substring(0, 10),
+        encrypted: true
+      };
+      handleUpdateActiveRoomFiles([newFile, ...files]);
+      setUploadProgress(100);
+      setIsUploading(false);
+      setUploadProgress(0);
+      setFeedbackMsg('Saved locally (cloud backend not configured).');
+      setTimeout(() => setFeedbackMsg(''), 3500);
+      if (fileInputRef.current) fileInputRef.current.value = '';
+      return;
     }
 
     try {
-      // 1. Gather raw ArrayBuffer of the file
-      const fileBuffer = await originalFile.arrayBuffer();
-      setUploadProgress(25);
-
-      // 2. Generate random initialization vector (IV) - 12 bytes for AES-GCM
-      const iv = window.crypto.getRandomValues(new Uint8Array(12));
-      
-      // 3. Derive or import the CryptoKey based on the custom user Vault key
+      const token = await getToken();
+      if (!token) throw new Error('Authentication failed');
       const cryptoKey = await getCryptoKey(vaultKey);
-      setUploadProgress(40);
 
-      // 4. Encrypt the file data using the browser's crypto engine
-      const encryptedData = await window.crypto.subtle.encrypt(
-        { name: "AES-GCM", iv: iv }, 
-        cryptoKey, 
-        fileBuffer
-      );
-      setUploadProgress(60);
-
-      // 5. Package IV + Ciphertext
-      const combinedBuffer = new Uint8Array(iv.length + encryptedData.byteLength);
-      combinedBuffer.set(iv, 0);
-      combinedBuffer.set(new Uint8Array(encryptedData), iv.length);
-      setUploadProgress(70);
-
-      let uploadUrl = '';
-      let s3Key = '';
-
-      if (apiEndpoint && !apiEndpoint.includes('REPLACE_WITH_YOUR_API_ID') && activeRoomId) {
-        // Request presigned URL from backend
-        const token = await getToken();
-        if (!token) throw new Error("Authentication failed");
-
-        const presignResponse = await fetch(`${apiEndpoint}/rooms/${activeRoomId}/upload-url`, {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            'Authorization': `Bearer ${token}`
-          },
-          body: JSON.stringify({
-            fileName: originalFile.name,
-            contentType: originalFile.type || "application/octet-stream"
-          })
-        });
-
-        if (!presignResponse.ok) {
-          throw new Error(`Failed to generate upload URL: ${presignResponse.statusText}`);
-        }
-
-        const presignData = await presignResponse.json();
-        uploadUrl = presignData.uploadUrl;
-        s3Key = presignData.s3Key;
-      }
-
-      setUploadProgress(80);
-
-      if (uploadUrl) {
-        // Direct upload to S3
-        const uploadResponse = await fetch(uploadUrl, {
-          method: "PUT",
-          headers: { "Content-Type": originalFile.type || "application/octet-stream" },
-          body: combinedBuffer,
-        });
-
-        if (!uploadResponse.ok) {
-          throw new Error(`Cloud storage node rejected secure payload with status ${uploadResponse.status}`);
-        }
+      if (originalFile.size <= SINGLE_PUT_LIMIT) {
+        await uploadSinglePut(originalFile, apiEndpoint, token, cryptoKey);
       } else {
-        // Mock offline fallback
-        const uploadResponse = await fetch('/api/secure-upload-mock', {
-          method: "PUT",
-          headers: { "Content-Type": "application/octet-stream" },
-          body: combinedBuffer,
-        });
-        if (!uploadResponse.ok) {
-          throw new Error(`Cloud server rejected secure payload with status ${uploadResponse.status}`);
-        }
+        await uploadMultipart(originalFile, apiEndpoint, token, cryptoKey);
       }
 
       setUploadProgress(100);
-
-      // Refresh the listed files in active room
-      if (apiEndpoint && !apiEndpoint.includes('REPLACE_WITH_YOUR_API_ID') && activeRoomId) {
-        const refreshedFiles = await fetchRoomFiles(activeRoomId);
-        handleUpdateActiveRoomFiles(refreshedFiles);
-      } else {
-        // Fallback offline mock listing
-        const fileTypeMapping: Record<string, S3File['type']> = {
-          'application/pdf': 'pdf',
-          'video/mp4': 'video',
-          'audio/mpeg': 'audio',
-          'audio/mp3': 'audio',
-          'image/png': 'image',
-          'image/jpeg': 'image',
-          'image/gif': 'image',
-          'application/zip': 'archive',
-          'text/plain': 'text'
-        };
-        const mappedType = fileTypeMapping[originalFile.type] || 'misc';
-        const sizeString = originalFile.size > 1024 * 1024 
-          ? `${(originalFile.size / (1024 * 1024)).toFixed(1)} MB`
-          : `${(originalFile.size / 1024).toFixed(0)} KB`;
-
-        const newFile: S3File = {
-          id: s3Key || Math.random().toString(),
-          name: originalFile.name,
-          type: mappedType,
-          size: sizeString,
-          bytes: originalFile.size,
-          date: new Date().toISOString().substring(0, 10),
-          encrypted: true
-        };
-        const updatedFilesList = [newFile, ...files];
-        handleUpdateActiveRoomFiles(updatedFilesList);
-      }
+      const refreshedFiles = await fetchRoomFiles(activeRoomId!);
+      handleUpdateActiveRoomFiles(refreshedFiles);
 
       setIsUploading(false);
       setUploadProgress(0);
-      setFeedbackMsg(`Successfully encrypted with AES-GCM and committed to secure off-grid S3 node.`);
+      setFeedbackMsg('Encrypted and uploaded to S3.');
       setTimeout(() => setFeedbackMsg(''), 3500);
-
+      if (fileInputRef.current) fileInputRef.current.value = '';
     } catch (err: any) {
-      console.error('File packaging error:', err);
-      setFeedbackMsg(`Encryption Payload Rejected: ${err.message || 'AES-GCM encryption handshake failed.'}`);
-      setTimeout(() => setFeedbackMsg(''), 4000);
+      console.error('Upload error:', err);
+      setFeedbackMsg(`Upload failed: ${err.message || 'encryption error.'}`);
+      setTimeout(() => setFeedbackMsg(''), 5000);
       setIsUploading(false);
       setUploadProgress(0);
+      if (fileInputRef.current) fileInputRef.current.value = '';
     }
   };
 
-  // Real secure decrypted download flow:
-  // 1. Get presigned download URL from backend API (POST /rooms/{roomId}/download-url)
-  // 2. Fetch the combined binary payload from S3 (which has 12-byte IV prepended)
-  // 3. Extract the 12-byte IV and decrypt the remaining ciphertext client-side using AES-GCM.
-  // 4. Save/download decrypted buffer locally in browser.
+  // Small-file path — single presigned PUT to the existing /upload-url endpoint.
+  // Format: [IV(12)][ciphertext]. This is what the deployed backend already serves.
+  const uploadSinglePut = async (
+    file: File,
+    apiEndpoint: string,
+    token: string,
+    cryptoKey: CryptoKey
+  ) => {
+    setUploadProgress(20);
+    const fileBuffer = await file.arrayBuffer();
+    const iv = window.crypto.getRandomValues(new Uint8Array(12));
+    setUploadProgress(40);
+
+    const encrypted = new Uint8Array(
+      await window.crypto.subtle.encrypt({ name: 'AES-GCM', iv }, cryptoKey, fileBuffer)
+    );
+    const combined = concatU8([iv, encrypted]);
+    setUploadProgress(60);
+
+    const presignRes = await fetch(`${apiEndpoint}/rooms/${activeRoomId}/upload-url`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+      body: JSON.stringify({
+        fileName: file.name,
+        contentType: file.type || 'application/octet-stream'
+      })
+    });
+    if (!presignRes.ok) throw new Error(`Could not get upload URL (${presignRes.status})`);
+    const { uploadUrl } = await presignRes.json();
+    setUploadProgress(75);
+
+    const putRes = await fetch(uploadUrl, {
+      method: 'PUT',
+      headers: { 'Content-Type': file.type || 'application/octet-stream' },
+      body: combined as BodyInit
+    });
+    if (!putRes.ok) throw new Error(`S3 rejected the file (${putRes.status})`);
+    setUploadProgress(96);
+  };
+
+  // Large-file path — chunked encryption + S3 multipart upload (bounded memory).
+  // Requires the /multipart endpoints to be deployed on the backend.
+  const uploadMultipart = async (
+    file: File,
+    apiEndpoint: string,
+    token: string,
+    cryptoKey: CryptoKey
+  ) => {
+    const authHeaders = { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` };
+    let s3Key = '';
+    let uploadId = '';
+
+    // 1. Start the multipart upload. If this route isn't deployed yet, the
+    //    request fails at the network layer — surface a clear, actionable error.
+    let createData: any;
+    try {
+      const createRes = await fetch(`${apiEndpoint}/rooms/${activeRoomId}/multipart/create`, {
+        method: 'POST',
+        headers: authHeaders,
+        body: JSON.stringify({ fileName: file.name, contentType: 'application/octet-stream' })
+      });
+      if (!createRes.ok) throw new Error(`status ${createRes.status}`);
+      createData = await createRes.json();
+    } catch {
+      throw new Error(
+        `large-file uploads (${formatBytes(file.size)}) need the multipart backend deployed. Run "serverless deploy" in keepr-ephemeral-chat-backend.`
+      );
+    }
+    uploadId = createData.uploadId;
+    s3Key = createData.s3Key;
+
+    try {
+      const totalParts = Math.max(1, Math.ceil(file.size / CHUNK_SIZE));
+      const completedParts: { ETag: string; PartNumber: number }[] = [];
+
+      // 2. Encrypt + upload one chunk at a time.
+      for (let partNumber = 1; partNumber <= totalParts; partNumber++) {
+        const start = (partNumber - 1) * CHUNK_SIZE;
+        const end = Math.min(start + CHUNK_SIZE, file.size);
+
+        // Read ONLY this slice into memory (~16 MB), not the whole file.
+        const chunkBuf = await file.slice(start, end).arrayBuffer();
+
+        // Encrypt the chunk with its own random IV.
+        const iv = window.crypto.getRandomValues(new Uint8Array(12));
+        const cipher = new Uint8Array(
+          await window.crypto.subtle.encrypt({ name: 'AES-GCM', iv }, cryptoKey, chunkBuf)
+        );
+
+        // Build the self-describing segment.
+        //   part 1: [MAGIC(8)] [len(4)] [iv(12)] [ciphertext]
+        //   others:           [len(4)] [iv(12)] [ciphertext]
+        const header = u32be(cipher.length);
+        const segment =
+          partNumber === 1
+            ? concatU8([CHUNK_MAGIC, header, iv, cipher])
+            : concatU8([header, iv, cipher]);
+
+        // Presign this part and PUT it straight to S3.
+        const partUrlRes = await fetch(`${apiEndpoint}/rooms/${activeRoomId}/multipart/part-url`, {
+          method: 'POST',
+          headers: authHeaders,
+          body: JSON.stringify({ s3Key, uploadId, partNumber })
+        });
+        if (!partUrlRes.ok) throw new Error(`Could not presign part ${partNumber} (${partUrlRes.status})`);
+        const { url } = await partUrlRes.json();
+
+        const putRes = await fetch(url, { method: 'PUT', body: segment as BodyInit });
+        if (!putRes.ok) throw new Error(`S3 rejected part ${partNumber} (${putRes.status})`);
+
+        // S3 returns the part ETag in a response header; we need it to complete.
+        const eTag = putRes.headers.get('ETag') || putRes.headers.get('etag');
+        if (!eTag) throw new Error('S3 did not return an ETag (check bucket CORS ExposeHeaders: ETag)');
+        completedParts.push({ ETag: eTag, PartNumber: partNumber });
+
+        // Progress: reserve the last few % for the completion call.
+        setUploadProgress(Math.min(96, Math.round((partNumber / totalParts) * 95)));
+      }
+
+      // 3. Finalise — S3 stitches the parts into the final object.
+      const completeRes = await fetch(`${apiEndpoint}/rooms/${activeRoomId}/multipart/complete`, {
+        method: 'POST',
+        headers: authHeaders,
+        body: JSON.stringify({ s3Key, uploadId, parts: completedParts })
+      });
+      if (!completeRes.ok) throw new Error(`Could not finalise upload (${completeRes.status})`);
+    } catch (err) {
+      // Best-effort: abort so S3 doesn't keep orphan parts.
+      if (s3Key && uploadId) {
+        try {
+          await fetch(`${apiEndpoint}/rooms/${activeRoomId}/multipart/abort`, {
+            method: 'POST',
+            headers: authHeaders,
+            body: JSON.stringify({ s3Key, uploadId })
+          });
+        } catch { /* ignore abort failure */ }
+      }
+      throw err;
+    }
+  };
+
+  // Shared streaming decryptor. Fetches a presigned URL, detects the container
+  // format (new chunked vs legacy single-IV), decrypts chunk-by-chunk and hands
+  // each plaintext chunk to `emit`. Memory stays bounded to ~one chunk. Used by
+  // both the single-file download and the migration ZIP path so there's ONE
+  // correct decryption code path.
+  const streamDecryptUrl = async (
+    downloadUrl: string,
+    cryptoKey: CryptoKey,
+    emit: (chunk: Uint8Array) => Promise<void> | void,
+    onProgress?: (bytesDone: number) => void
+  ) => {
+    const response = await fetch(downloadUrl);
+    if (!response.ok || !response.body) {
+      throw new Error(`Failed to retrieve file from S3: ${response.statusText}`);
+    }
+
+    const reader = new ChunkStreamReader(response.body.getReader());
+    const firstHeader = await reader.readExactly(CHUNK_MAGIC.length);
+    let done = 0;
+
+    if (matchesMagic(firstHeader)) {
+      // Chunked format: repeating [len(4)][iv(12)][ciphertext] segments.
+      // eslint-disable-next-line no-constant-condition
+      while (true) {
+        const lenBytes = await reader.readExactly(4);
+        const segLen = readU32be(lenBytes);
+        const iv = await reader.readExactly(12);
+        const cipher = await reader.readExactly(segLen);
+        const plain = new Uint8Array(
+          await window.crypto.subtle.decrypt(
+            { name: 'AES-GCM', iv: iv as BufferSource },
+            cryptoKey,
+            cipher as BufferSource
+          )
+        );
+        await emit(plain);
+        done += plain.length;
+        onProgress?.(done);
+        if (await reader.atEnd()) break;
+      }
+    } else {
+      // Legacy single-IV format: [iv(12)][ciphertext] for the whole file.
+      const ivRest = await reader.readExactly(4);
+      const iv = concatU8([firstHeader, ivRest]); // 12-byte IV
+      const ciphertext = await reader.readRemaining();
+      const plain = new Uint8Array(
+        await window.crypto.subtle.decrypt(
+          { name: 'AES-GCM', iv: iv as BufferSource },
+          cryptoKey,
+          ciphertext as BufferSource
+        )
+      );
+      await emit(plain);
+      done += plain.length;
+      onProgress?.(done);
+    }
+  };
+
+  // Memory-safe secure download.
+  //
+  // Streams the encrypted object from S3, decrypts one chunk at a time, and
+  // (when the browser supports it) writes each decrypted chunk straight to disk
+  // via the File System Access API — so a 2 GB download never sits fully in RAM.
+  // Falls back to a Blob for browsers without the API, and decrypts both the new
+  // chunked format and the legacy single-IV format.
   const handleDownloadFile = async (fileItem: S3File) => {
     setActiveFileMenuId(null);
     handleUpdateActivity();
-    setFeedbackMsg(`Initiating download & clientside decryption for ${fileItem.name}...`);
-    setTimeout(() => setFeedbackMsg(''), 3000);
+    setFeedbackMsg(`Decrypting ${fileItem.name}…`);
 
-    let apiEndpoint = SECURE_ROOM_API_ENDPOINT;
-    if (!apiEndpoint || apiEndpoint.includes('REPLACE_WITH_YOUR_API_ID')) {
-      const wsUrl = import.meta.env.VITE_WEBSOCKET_URL || '';
-      const match = wsUrl.match(/wss:\/\/([^.]+)\.execute-api/);
-      if (match && match[1]) {
-        apiEndpoint = `https://${match[1]}.execute-api.ap-south-1.amazonaws.com/dev`;
-      }
-    }
+    const apiEndpoint = resolveApiEndpoint();
+
+    const mimeTypeMapping: Record<string, string> = {
+      'pdf': 'application/pdf',
+      'video': 'video/mp4',
+      'audio': 'audio/mpeg',
+      'image': 'image/png',
+      'archive': 'application/zip',
+      'text': 'text/plain',
+      'spreadsheet': 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+    };
+    const mimeType = mimeTypeMapping[fileItem.type] || 'application/octet-stream';
 
     try {
       let downloadUrl = '';
@@ -1016,79 +1340,70 @@ export function SecureStorageRoom() {
 
         const presignResponse = await fetch(`${apiEndpoint}/rooms/${activeRoomId}/download-url`, {
           method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            'Authorization': `Bearer ${token}`
-          },
-          body: JSON.stringify({
-            fileName: fileItem.name
-          })
+          headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+          body: JSON.stringify({ fileName: fileItem.name })
         });
-
         if (!presignResponse.ok) {
           throw new Error(`Failed to generate download URL: ${presignResponse.statusText}`);
         }
-
         const presignData = await presignResponse.json();
         downloadUrl = presignData.downloadUrl;
       }
 
       if (!downloadUrl) {
-        // Fallback or offline mock alert
         console.warn("REST API endpoint not configured. Offline mode bypass download.");
         setFeedbackMsg(`Download bypass: REST API is not fully deployed or configured.`);
         setTimeout(() => setFeedbackMsg(''), 3000);
         return;
       }
 
-      // Fetch the binary combined payload
-      const response = await fetch(downloadUrl);
-      if (!response.ok) {
-        throw new Error(`Failed to retrieve file from S3: ${response.statusText}`);
-      }
-
-      const combinedBuffer = await response.arrayBuffer();
-
-      // Extract the 12-byte IV from the front of the combined buffer
-      if (combinedBuffer.byteLength <= 12) {
-        throw new Error("Invalid encrypted payload: too small to contain IV");
-      }
-
-      const iv = combinedBuffer.slice(0, 12);
-      const ciphertext = combinedBuffer.slice(12);
-
-      // Decrypt client-side using user's vault private key
       const cryptoKey = await getCryptoKey(vaultKey);
-      const decryptedData = await window.crypto.subtle.decrypt(
-        { name: "AES-GCM", iv: new Uint8Array(iv) },
-        cryptoKey,
-        ciphertext
-      );
 
-      // Trigger standard browser download of decrypted blob
-      const mimeTypeMapping: Record<string, string> = {
-        'pdf': 'application/pdf',
-        'video': 'video/mp4',
-        'audio': 'audio/mpeg',
-        'image': 'image/png',
-        'archive': 'application/zip',
-        'text': 'text/plain',
-        'spreadsheet': 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+      // Try to stream straight to disk (no full-file buffer). Supported in
+      // Chromium browsers; gracefully falls back to a Blob elsewhere.
+      let writable: any = null;
+      const sink: Uint8Array[] = [];
+      const sfp = (window as any).showSaveFilePicker;
+      if (typeof sfp === 'function') {
+        try {
+          const handle = await sfp({ suggestedName: fileItem.name });
+          writable = await handle.createWritable();
+        } catch (pickErr: any) {
+          if (pickErr?.name === 'AbortError') {
+            setFeedbackMsg('Download cancelled.');
+            setTimeout(() => setFeedbackMsg(''), 2500);
+            return;
+          }
+          writable = null; // fall back to Blob
+        }
+      }
+      const emit = async (data: Uint8Array) => {
+        if (writable) await writable.write(data);
+        else sink.push(data);
       };
-      const mimeType = mimeTypeMapping[fileItem.type] || 'application/octet-stream';
-      const decryptedBlob = new Blob([decryptedData], { type: mimeType });
-      const downloadLink = document.createElement('a');
-      downloadLink.href = URL.createObjectURL(decryptedBlob);
-      downloadLink.download = fileItem.name;
-      document.body.appendChild(downloadLink);
-      downloadLink.click();
-      document.body.removeChild(downloadLink);
 
-      setFeedbackMsg(`Decrypted & downloaded asset: ${fileItem.name} using vault key.`);
+      await streamDecryptUrl(downloadUrl, cryptoKey, emit, (bytesDone) => {
+        setFeedbackMsg(`Decrypting ${fileItem.name}… (${formatBytes(bytesDone)})`);
+      });
+
+      if (writable) {
+        await writable.close();
+      } else {
+        const blob = new Blob(sink as BlobPart[], { type: mimeType });
+        const link = document.createElement('a');
+        link.href = URL.createObjectURL(blob);
+        link.download = fileItem.name;
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+        URL.revokeObjectURL(link.href);
+      }
+
+      setFeedbackMsg(`Downloaded ${fileItem.name}.`);
       setTimeout(() => setFeedbackMsg(''), 3000);
     } catch (e: any) {
       console.error("Decryption download failed:", e);
-      setFeedbackMsg(`Decryption failed: ${e.message || "Are you using the correct Vault Key?"}`);
+      setFeedbackMsg(`Decryption failed: ${e.message || "Wrong vault key?"}`);
       setTimeout(() => setFeedbackMsg(''), 4000);
     }
   };
@@ -1107,7 +1422,7 @@ export function SecureStorageRoom() {
       handleUpdateActiveRoomFiles(updatedFilesList);
       setIsRenameOpen(false);
       setSelectedFile(null);
-      setFeedbackMsg('Asset identifier updated successfully.');
+      setFeedbackMsg('File renamed.');
       setTimeout(() => setFeedbackMsg(''), 3000);
       handleUpdateActivity();
     }
@@ -1172,7 +1487,7 @@ export function SecureStorageRoom() {
                 <span className="flex h-7 w-7 items-center justify-center rounded-xl bg-cyan-500/10 text-cyan-400 border border-cyan-500/15">
                   <Download className="w-3.5 h-3.5" />
                 </span>
-                Decrypt Download
+                Decrypt & download
               </button>
               <button
                 type="button"
@@ -1183,7 +1498,7 @@ export function SecureStorageRoom() {
                 <span className="flex h-7 w-7 items-center justify-center rounded-xl bg-white/5 text-zinc-200 border border-white/10">
                   <Edit3 className="w-3.5 h-3.5" />
                 </span>
-                Rename Asset
+                Rename
               </button>
               <div className="h-px bg-white/5" />
               <button
@@ -1195,7 +1510,7 @@ export function SecureStorageRoom() {
                 <span className="flex h-7 w-7 items-center justify-center rounded-xl bg-red-500/10 text-red-400 border border-red-500/15">
                   <Trash2 className="w-3.5 h-3.5" />
                 </span>
-                Purge Item
+                Delete
               </button>
             </motion.div>
           )}
@@ -1244,11 +1559,11 @@ export function SecureStorageRoom() {
       if (hasBackendSuccess && activeRoomId) {
         const refreshedFiles = await fetchRoomFiles(activeRoomId);
         handleUpdateActiveRoomFiles(refreshedFiles);
-        setFeedbackMsg('Asset purged completely from S3 cluster.');
+        setFeedbackMsg('File deleted from S3.');
       } else {
         const updatedFilesList = files.filter(f => f.id !== selectedFile.id);
         handleUpdateActiveRoomFiles(updatedFilesList);
-        setFeedbackMsg('Asset purged completely (Local offline mode).');
+        setFeedbackMsg('File deleted (offline mode).');
       }
 
       setIsDeleteConfirmOpen(false);
@@ -1318,16 +1633,24 @@ export function SecureStorageRoom() {
       }
 
       if (activeRoomId) {
+        // The backend recalculates expiry from NOW when the timer changes;
+        // mirror that locally so the time-up popup logic stays accurate.
+        const newExpiryAt =
+          inactivityDays === 0
+            ? new Date(Date.now() + 60 * 1000).toISOString()
+            : new Date(Date.now() + inactivityDays * 24 * 60 * 60 * 1000).toISOString();
+        setActiveRoomExpiryAt(newExpiryAt);
         setRooms(prev => prev.map(r => r.id === activeRoomId ? {
           ...r,
           inactivityDays: inactivityDays,
           safetyStrategy: safetyStrategy,
           transferEmail: transferEmail,
+          expiryAt: newExpiryAt,
         } : r));
       }
 
       if (hasBackendSuccess) {
-        setFeedbackMsg('Automation criteria and inactivity parameters locked into cloud node.');
+        setFeedbackMsg('Settings saved.');
       } else {
         setFeedbackMsg('Settings saved locally.');
       }
@@ -1400,84 +1723,117 @@ export function SecureStorageRoom() {
 
         if (roomFiles.length === 0) {
           setFeedbackMsg('No files to migrate. Cleaning up room...');
-        } else {
-          setFeedbackMsg(`Decrypting & bundling ${roomFiles.length} file(s) into a ZIP archive...`);
         }
 
-        // 2. Initialize JSZip
-        const zip = new JSZip();
         const cryptoKey = await getCryptoKey(vaultKey);
         let processedCount = 0;
 
-        for (const file of roomFiles) {
-          try {
-            setFeedbackMsg(`Downloading & decrypting: ${file.fileName || 'file'} (${processedCount + 1}/${roomFiles.length})`);
+        // ── Single file: skip the ZIP entirely ──────────────────────────
+        // Wrapping one (already-compressed) file in a ZIP just burns minutes of
+        // CPU on CRC/DEFLATE for zero benefit. Stream-decrypt straight to disk
+        // instead, exactly like the normal download.
+        if (roomFiles.length === 1) {
+          const only = roomFiles[0];
+          setFeedbackMsg(`Downloading & decrypting: ${only.fileName}`);
 
-            // Get presigned download URL
-            const dlRes = await fetch(`${apiEndpoint}/rooms/${activeRoomId}/download-url`, {
-              method: 'POST',
-              headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
-              body: JSON.stringify({ fileName: file.fileName }),
-            });
-            if (!dlRes.ok) {
-              console.error(`Failed to get download URL for ${file.fileName}`);
-              continue;
-            }
-            const { downloadUrl } = await dlRes.json();
+          const dlRes = await fetch(`${apiEndpoint}/rooms/${activeRoomId}/download-url`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+            body: JSON.stringify({ fileName: only.fileName }),
+          });
+          if (!dlRes.ok) throw new Error(`Failed to get download URL for ${only.fileName}`);
+          const { downloadUrl } = await dlRes.json();
 
-            // Fetch encrypted blob from S3
-            const encRes = await fetch(downloadUrl);
-            if (!encRes.ok) {
-              console.error(`Failed to fetch file payload for ${file.fileName}`);
-              continue;
-            }
-            const encBuf = await encRes.arrayBuffer();
-
-            // Extract IV (first 12 bytes) and decrypt
-            let decryptedBuf: ArrayBuffer;
-            if (encBuf.byteLength > 12) {
-              const iv = new Uint8Array(encBuf.slice(0, 12));
-              const ciphertext = encBuf.slice(12);
-              try {
-                decryptedBuf = await window.crypto.subtle.decrypt({ name: 'AES-GCM', iv }, cryptoKey, ciphertext);
-              } catch (decErr) {
-                console.warn(`Could not decrypt ${file.fileName}, using original payload`, decErr);
-                decryptedBuf = encBuf;
+          // Stream straight to disk when supported; fall back to a Blob.
+          let writable: any = null;
+          const sink: Uint8Array[] = [];
+          const sfp = (window as any).showSaveFilePicker;
+          if (typeof sfp === 'function') {
+            try {
+              const handle = await sfp({ suggestedName: only.fileName });
+              writable = await handle.createWritable();
+            } catch (pickErr: any) {
+              if (pickErr?.name === 'AbortError') {
+                setFeedbackMsg('Migration cancelled — room NOT deleted.');
+                setTimeout(() => setFeedbackMsg(''), 4000);
+                setIsTriggeringNow(false);
+                return;
               }
-            } else {
-              decryptedBuf = encBuf;
+              writable = null;
             }
-
-            // Add decrypted file to ZIP
-            zip.file(file.fileName, new Uint8Array(decryptedBuf));
-            processedCount++;
-          } catch (fileErr) {
-            console.error(`Failed to process ${file.fileName}:`, fileErr);
           }
-        }
+          const emit = async (data: Uint8Array) => {
+            if (writable) await writable.write(data);
+            else sink.push(data);
+          };
 
-        if (roomFiles.length > 0 && processedCount === 0) {
-          throw new Error('All files failed to download and decrypt. Please verify your Vault Private Key. The room has NOT been deleted.');
-        }
+          await streamDecryptUrl(downloadUrl, cryptoKey, emit, (bytesDone) => {
+            setFeedbackMsg(`Decrypting ${only.fileName}… (${formatBytes(bytesDone)})`);
+          });
 
-        if (processedCount > 0) {
-          setFeedbackMsg('Generating ZIP archive...');
-          const zipContent = await zip.generateAsync({ type: 'blob' });
-          
+          if (writable) {
+            await writable.close();
+          } else {
+            const blob = new Blob(sink as BlobPart[], { type: 'application/octet-stream' });
+            const link = document.createElement('a');
+            link.href = URL.createObjectURL(blob);
+            link.download = only.fileName;
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+            URL.revokeObjectURL(link.href);
+          }
+          processedCount = 1;
+          setFeedbackMsg('File downloaded. Purging room…');
+        } else if (roomFiles.length > 1) {
+          // ── Multiple files: bundle into a ZIP, but with NO compression ──
+          // (STORE). The payloads are encrypted/already-compressed, so DEFLATE
+          // wastes huge CPU for ~0% gain. STORE just concatenates, which is fast.
+          setFeedbackMsg(`Decrypting & bundling ${roomFiles.length} file(s)…`);
+          const zip = new JSZip();
+
+          for (const file of roomFiles) {
+            try {
+              setFeedbackMsg(`Downloading & decrypting: ${file.fileName} (${processedCount + 1}/${roomFiles.length})`);
+
+              const dlRes = await fetch(`${apiEndpoint}/rooms/${activeRoomId}/download-url`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+                body: JSON.stringify({ fileName: file.fileName }),
+              });
+              if (!dlRes.ok) { console.error(`No download URL for ${file.fileName}`); continue; }
+              const { downloadUrl } = await dlRes.json();
+
+              // Collect decrypted chunks for this one file, then hand to JSZip.
+              const parts: Uint8Array[] = [];
+              await streamDecryptUrl(downloadUrl, cryptoKey, (c) => { parts.push(c); });
+              zip.file(file.fileName, concatU8(parts));
+              processedCount++;
+            } catch (fileErr) {
+              console.error(`Failed to process ${file.fileName}:`, fileErr);
+            }
+          }
+
+          if (processedCount === 0) {
+            throw new Error('All files failed to download and decrypt. Please verify your Vault Private Key. The room has NOT been deleted.');
+          }
+
+          setFeedbackMsg('Generating archive…');
+          const zipContent = await zip.generateAsync({ type: 'blob', compression: 'STORE' });
           const dateStr = new Date().toISOString().slice(0, 10);
           const zipName = `Keepr_Vault_Backup_${roomName}_${dateStr}.zip`;
-          
-          // Trigger browser download
+
           const downloadLink = document.createElement('a');
           downloadLink.href = URL.createObjectURL(zipContent);
           downloadLink.download = zipName;
           document.body.appendChild(downloadLink);
           downloadLink.click();
           document.body.removeChild(downloadLink);
-          
-          setFeedbackMsg(`ZIP download complete (${processedCount} files). Purging room...`);
+          URL.revokeObjectURL(downloadLink.href);
+
+          setFeedbackMsg(`ZIP download complete (${processedCount} files). Purging room…`);
         } else {
-          setFeedbackMsg('No files were found in the room. Purging empty room...');
+          setFeedbackMsg('No files were found in the room. Purging empty room…');
         }
 
         // 3. Purge room from Keepr (delete S3 + DynamoDB + send email)
@@ -1505,8 +1861,21 @@ export function SecureStorageRoom() {
   // Filter Files based on Query
   const filteredFiles = files.filter(f => f.name.toLowerCase().includes(searchQuery.toLowerCase()));
 
+  // ── Real-time storage accounting ────────────────────────────────────────
+  // Per-room totals: prefer in-memory `files` for the active (currently mounted) room
+  // because it stays fresh during uploads. For other rooms, fall back to the
+  // last-known list stored on the room object.
+  const roomBytes = (room: SecureRoom) => {
+    if (room.id === activeRoomId) return files.reduce((sum, f) => sum + (f.bytes || 0), 0);
+    return room.files.reduce((sum, f) => sum + (f.bytes || 0), 0);
+  };
+  const totalUsedBytes = rooms.reduce((sum, r) => sum + roomBytes(r), 0);
+  const activeRoomBytes = activeRoomId
+    ? files.reduce((sum, f) => sum + (f.bytes || 0), 0)
+    : 0;
+
   return (
-    <div className="min-h-screen bg-black text-zinc-200 pt-32 pb-24 px-4 md:px-8 transition-all relative font-sans">
+    <div className="min-h-screen bg-black text-zinc-200 pt-32 pb-24 px-4 md:px-8 relative font-sans">
       <style dangerouslySetInnerHTML={{ __html: `
         .glass-card {
           background: rgba(9, 9, 11, 0.55);
@@ -1544,19 +1913,15 @@ export function SecureStorageRoom() {
           <div className="absolute right-0 top-0 h-64 w-64 rounded-full bg-cyan-500/5 blur-[80px] pointer-events-none" />
           <div className="relative flex flex-col md:flex-row md:items-end justify-between gap-8">
           <div className="flex flex-col">
-            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-white/5 border border-white/10 text-zinc-400 text-[10px] font-black uppercase tracking-[0.3em] w-fit mb-4">
-              <Lock className="w-3.5 h-3.5 text-cyan-400" />
-              Keepr Secure Storage
-            </div>
             <div className="space-y-2 mb-3">
-              <h1 className="text-4xl md:text-6xl font-bold text-white tracking-tighter">
-                Personal <span className="font-serif italic font-extralight text-zinc-500">Vault.</span>
+              <h1 className="text-4xl md:text-6xl font-bold text-white tracking-tight">
+                Your <span className="font-serif font-extralight italic text-zinc-400">vault.</span>
               </h1>
               <div className="flex items-center gap-3 flex-wrap">
                 <span className="text-xs text-zinc-600 uppercase tracking-widest font-black">Signed in as {userName}</span>
                 <span className="flex items-center px-2.5 py-1 rounded-full bg-cyan-500/10 text-cyan-400 text-[9px] font-black uppercase tracking-wider border border-cyan-500/20">
                   <span className="w-1.5 h-1.5 bg-cyan-400 rounded-full mr-1.5 status-glow"></span>
-                  Fully Encrypted
+                  End-to-end encrypted
                 </span>
               </div>
             </div>
@@ -1564,27 +1929,23 @@ export function SecureStorageRoom() {
             {activeRoomId && isUnlocked ? (
               <div className="space-y-2 mt-1">
                 <p className="text-sm text-zinc-500 max-w-xl">
-                  Advanced Clientside Memory Pipeline. Your data is decrypted locally and never persists on our infrastructure in a readable state.
+                  Files are decrypted in your browser. Nothing readable ever leaves your machine.
                 </p>
-                <div className="flex items-center gap-1.5 pt-1">
-                  <span className="text-[10px] text-zinc-600 font-black uppercase tracking-[0.2em]">Active Vault: <span className="text-white">{roomName}</span></span>
+                <div className="flex items-center gap-1.5 pt-1 flex-wrap">
+                  <span className="text-[10px] text-zinc-600 font-black uppercase tracking-[0.2em]">Active vault: <span className="text-white">{roomName}</span></span>
                   <button 
                     onClick={() => {
-                      handleCopyText(vaultKey, 'Vault Key copied to clipboard!');
+                      handleCopyText(vaultKey, 'Vault key copied to clipboard.');
                     }}
                     className="ml-2 px-2.5 py-1 rounded-full bg-black/50 text-[9px] text-cyan-400 border border-white/10 hover:border-cyan-500/40 font-mono flex items-center gap-1 transition-all active:scale-95 cursor-pointer"
-                    title="Copy Vault Private Key"
+                    title="Copy vault key"
                   >
                     <span>Key: {vaultKey.substring(0, 10)}...</span>
                     <Copy className="w-2.5 h-2.5" />
                   </button>
                 </div>
               </div>
-            ) : (
-              <p className="text-lg text-zinc-500 max-w-xl font-light leading-relaxed">
-                Zero-Knowledge Cryptographic Lockboxes. Design, unlock, and manage unlimited rooms locally.
-              </p>
-            )}
+            ) : null}
           </div>
 
           <div className="flex items-center gap-3 shrink-0 flex-wrap md:justify-end">
@@ -1597,12 +1958,12 @@ export function SecureStorageRoom() {
                       className="flex items-center px-4 py-2 bg-zinc-900/70 border border-zinc-800 hover:border-cyan-500/30 rounded-2xl space-x-3 text-zinc-300 text-xs font-bold cursor-pointer transition-all"
                     >
                       <Clock className="w-4 h-4 text-cyan-400" />
-                      <span>{inactivityDays} Days Inactivity Lock</span>
+                      <span>{inactivityDays}d inactivity lock</span>
                     </div>
                     <button 
                       onClick={() => setShowSettings(true)}
                       className="p-2.5 rounded-2xl border border-white/10 hover:bg-white/5 text-zinc-400 hover:text-white transition-colors cursor-pointer"
-                      title="Configure Parameters"
+                      title="Room settings"
                     >
                       <Settings className="w-5 h-5" />
                     </button>
@@ -1613,7 +1974,7 @@ export function SecureStorageRoom() {
                   className="flex items-center space-x-2 px-4 py-2 bg-red-500/10 hover:bg-red-500/20 text-red-400 border border-red-500/20 rounded-2xl transition-colors cursor-pointer"
                 >
                   <X className="w-4 h-4" />
-                  <span className="text-sm font-semibold uppercase tracking-wider">Exit Room</span>
+                  <span className="text-xs font-bold uppercase tracking-widest">Exit room</span>
                 </button>
               </>
             ) : selectedRoomToUnlock ? (
@@ -1625,7 +1986,7 @@ export function SecureStorageRoom() {
                 }}
                 className="flex items-center space-x-2 px-4 py-3 bg-zinc-900 hover:bg-zinc-800 border border-white/5 text-zinc-300 rounded-2xl transition-all cursor-pointer text-xs uppercase font-black tracking-widest"
               >
-                <span>← Back to Vaults</span>
+                <span>← Back to vaults</span>
               </button>
             ) : !showCreateWizard ? (
               <button
@@ -1641,7 +2002,7 @@ export function SecureStorageRoom() {
                 className="flex items-center space-x-2 px-6 py-3 bg-white text-black hover:bg-zinc-200 font-black rounded-2xl transition-colors shadow-[0_0_20px_rgba(255,255,255,0.12)] cursor-pointer text-[10px] uppercase tracking-widest"
               >
                 <Plus className="w-4 h-4 text-black" />
-                <span>Create New Room</span>
+                <span>New room</span>
               </button>
             ) : (
               <button
@@ -1651,10 +2012,61 @@ export function SecureStorageRoom() {
                 }}
                 className="flex items-center space-x-2 px-4 py-3 bg-zinc-900 hover:bg-zinc-800 border border-white/5 text-zinc-300 rounded-2xl transition-all cursor-pointer text-xs uppercase font-black tracking-widest"
               >
-                <span>Cancel Creation</span>
+                <span>Cancel</span>
               </button>
             )}
           </div>
+          </div>
+
+          {/* Real-time storage usage meter */}
+          <div className="relative mt-6 pt-6 border-t border-white/5">
+            <div className="flex items-center justify-between gap-4 mb-3 flex-wrap">
+              <div className="flex items-center gap-2.5">
+                <div className="w-7 h-7 rounded-lg bg-cyan-500/10 border border-cyan-500/20 flex items-center justify-center">
+                  <FolderLock className="w-3.5 h-3.5 text-cyan-400" />
+                </div>
+                <div>
+                  <div className="text-[10px] uppercase tracking-[0.25em] text-zinc-500 font-black leading-tight">
+                    Storage used
+                  </div>
+                  <div className="text-xs font-mono mt-0.5">
+                    <span className={totalUsedBytes / S3_FREE_TIER_BYTES > 0.9 ? 'text-red-400' : totalUsedBytes / S3_FREE_TIER_BYTES > 0.75 ? 'text-amber-400' : 'text-cyan-400'}>{formatBytes(totalUsedBytes)}</span>
+                    <span className="text-zinc-600"> / {formatBytes(S3_FREE_TIER_BYTES)}</span>
+                  </div>
+                </div>
+              </div>
+              <div className="flex items-center gap-3">
+                <div>
+                  <div className="text-[10px] uppercase tracking-[0.25em] text-zinc-500 font-black leading-tight">Rooms</div>
+                  <div className="text-xs text-white font-mono mt-0.5 font-bold">{rooms.length}</div>
+                </div>
+                <div className="hidden sm:block w-px h-7 bg-white/5" />
+                <div className="hidden sm:block">
+                  <div className="text-[10px] uppercase tracking-[0.25em] text-zinc-500 font-black leading-tight">Plan</div>
+                  <div className="text-xs text-white font-mono mt-0.5 font-bold">Free</div>
+                </div>
+              </div>
+            </div>
+            <div className="relative h-1.5 bg-zinc-900 rounded-full overflow-hidden">
+              <motion.div
+                initial={{ width: 0 }}
+                animate={{ width: `${Math.min(100, (totalUsedBytes / S3_FREE_TIER_BYTES) * 100).toFixed(2)}%` }}
+                transition={{ duration: 0.8, ease: 'easeOut' }}
+                className={`h-full rounded-full ${
+                  totalUsedBytes / S3_FREE_TIER_BYTES > 0.9
+                    ? 'bg-gradient-to-r from-red-500 to-red-400'
+                    : totalUsedBytes / S3_FREE_TIER_BYTES > 0.75
+                      ? 'bg-gradient-to-r from-amber-500 to-amber-400'
+                      : 'bg-gradient-to-r from-cyan-500 to-cyan-300'
+                }`}
+              />
+            </div>
+            {totalUsedBytes / S3_FREE_TIER_BYTES > 0.9 && (
+              <div className="mt-3 flex items-start gap-2 text-[10px] text-red-400">
+                <AlertTriangle className="w-3 h-3 shrink-0 mt-0.5" />
+                <span>Approaching the 5 GB free tier ceiling. Purge unused rooms to free space.</span>
+              </div>
+            )}
           </div>
         </header>
 
@@ -1665,9 +2077,9 @@ export function SecureStorageRoom() {
               initial={{ opacity: 0, y: -10, scale: 0.98 }}
               animate={{ opacity: 1, y: 0, scale: 1 }}
               exit={{ opacity: 0, y: -10 }}
-              className="p-3 bg-zinc-900 border border-zinc-800 text-cyan-400 rounded-xl text-center text-xs font-mono font-medium"
+              className="p-3 bg-zinc-900 border border-zinc-800 text-cyan-400 rounded-xl text-center text-xs font-mono font-medium flex items-center justify-center gap-2"
             >
-              🔒 {feedbackMsg}
+              <Lock className="w-3 h-3" /> {feedbackMsg}
             </motion.div>
           )}
         </AnimatePresence>
@@ -1685,7 +2097,7 @@ export function SecureStorageRoom() {
                     <Sparkles className="w-5 h-5 text-cyan-400" />
                   </div>
                   <div>
-                    <h2 className="text-base font-bold text-white tracking-tight">Create Cryptographic Vault</h2>
+                    <h2 className="text-base font-bold text-white tracking-tight">Create a vault</h2>
                     <p className="text-[10px] text-zinc-500 uppercase tracking-widest font-black mt-0.5">Step {wizardStep} of 4</p>
                   </div>
                 </div>
@@ -1700,8 +2112,8 @@ export function SecureStorageRoom() {
               </div>
 
               {wizardError && (
-                <div className="p-3 bg-red-950/20 border border-red-500/20 text-red-400 rounded-xl text-xs font-sans text-center">
-                  ⚠️ {wizardError}
+                <div className="p-3 bg-red-950/20 border border-red-500/20 text-red-400 rounded-xl text-xs font-sans text-center flex items-center justify-center gap-2">
+                  <AlertTriangle className="w-3.5 h-3.5" /> {wizardError}
                 </div>
               )}
 
@@ -1716,13 +2128,13 @@ export function SecureStorageRoom() {
                     className="space-y-4"
                   >
                     <div className="space-y-1">
-                      <h3 className="text-sm font-semibold text-white">Give Your Secure Room a Label</h3>
+                      <h3 className="text-sm font-semibold text-white">Name your room</h3>
                       <p className="text-xs text-zinc-500">
-                        This designation separates your offline decryption channels and will be listed in your Sovereign Management dashboard.
+                        A label so you can find it later in your dashboard.
                       </p>
                     </div>
                     <div className="space-y-2">
-                      <label className="text-[10px] text-zinc-600 uppercase tracking-widest font-black">Room Name</label>
+                      <label className="text-[10px] text-zinc-600 uppercase tracking-widest font-black">Room name</label>
                       <input
                         type="text"
                         value={newRoomName}
@@ -1730,7 +2142,7 @@ export function SecureStorageRoom() {
                           setNewRoomName(e.target.value);
                           setWizardError('');
                         }}
-                        placeholder="e.g. Confidential Offshore Records"
+                        placeholder="e.g. Tax documents 2025"
                         className="w-full bg-black/50 border border-zinc-800 focus:border-cyan-500/50 rounded-2xl px-4 py-3 text-sm text-white placeholder:text-zinc-700 outline-none transition-colors font-sans"
                         autoFocus
                       />
@@ -1747,13 +2159,13 @@ export function SecureStorageRoom() {
                     className="space-y-4"
                   >
                     <div className="space-y-1">
-                      <h3 className="text-sm font-semibold text-white">Define Pin Protection</h3>
+                      <h3 className="text-sm font-semibold text-white">Set a PIN</h3>
                       <p className="text-xs text-zinc-500">
-                        Only requested on first-time room creation. Security passcodes process locally in secure sandboxed sandbox nodes.
+                        4 to 6 digits. Required to unlock this room.
                       </p>
                     </div>
                     <div className="space-y-2">
-                      <label className="text-[10px] text-zinc-600 uppercase tracking-widest font-black">4-6 Digit Room PIN</label>
+                      <label className="text-[10px] text-zinc-600 uppercase tracking-widest font-black">Room PIN</label>
                       <input
                         type="password"
                         pattern="[0-9]*"
@@ -1782,9 +2194,9 @@ export function SecureStorageRoom() {
                     className="space-y-5"
                   >
                     <div className="space-y-1">
-                      <h3 className="text-sm font-semibold text-white">Sovereign Vault Key Generation</h3>
+                      <h3 className="text-sm font-semibold text-white">Your vault key</h3>
                       <p className="text-xs text-zinc-400 leading-relaxed">
-                        Your zero-knowledge Vault Key has been generated in-browser. Only **you** in the entire world will possess this key. It is strictly required alongside your PIN to unlock your vault in the future.
+                        Generated in your browser. Required alongside the PIN to unlock this room. We never see it — store it somewhere safe.
                       </p>
                     </div>
                     
@@ -1794,11 +2206,11 @@ export function SecureStorageRoom() {
                       <div className="flex items-center justify-between gap-2 flex-wrap">
                         <span className="text-[10px] uppercase font-mono tracking-wider font-extrabold text-zinc-500 flex items-center gap-1.5">
                           <Key className="w-3.5 h-3.5 text-cyan-400" />
-                          Vault Private Key
+                          Vault key
                         </span>
                         <div className="flex items-center gap-2">
                           <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded bg-cyan-950/40 text-cyan-400 text-[9px] font-mono border border-cyan-500/25">
-                            Client-Side Generated
+                            Generated locally
                           </span>
                           <button
                             type="button"
@@ -1872,9 +2284,9 @@ export function SecureStorageRoom() {
                       <div className="p-3.5 bg-amber-500/5 border border-amber-500/20 rounded-xl flex items-start gap-3">
                         <AlertTriangle className="w-5 h-5 text-amber-500 shrink-0 mt-0.5 animate-pulse" />
                         <div className="space-y-0.5">
-                          <h4 className="text-[11px] font-bold text-amber-300 uppercase tracking-wider">Crucial Security Alert</h4>
+                          <h4 className="text-[11px] font-bold text-amber-300 uppercase tracking-wider">Save this key now</h4>
                           <p className="text-[10px] text-zinc-400 leading-relaxed">
-                            This key is **never** sent to our database. Without it, your locked chamber cannot be decrypted. Store this key in a physical safe notebook or a secure password manager immediately.
+                            We never store your vault key. Without it, you can't decrypt anything in this room — store it in a password manager or somewhere safe.
                           </p>
                         </div>
                       </div>
@@ -1891,14 +2303,14 @@ export function SecureStorageRoom() {
                     className="space-y-4"
                   >
                     <div className="space-y-1">
-                      <h3 className="text-sm font-semibold text-white">Safety Switch Setup</h3>
+                      <h3 className="text-sm font-semibold text-white">Inactivity safeguard</h3>
                       <p className="text-xs text-zinc-400">
-                        Choose your inactivity timeout and emergency trigger strategy that fires if you do not log in.
+                        What happens if you don't open this room for a while? Pick the timeout and the action.
                       </p>
                     </div>
 
                     <div className="space-y-2">
-                      <label className="text-[10px] text-zinc-500 font-mono uppercase tracking-wider font-bold block">Inactivity Timeout Limit</label>
+                      <label className="text-[10px] text-zinc-500 font-mono uppercase tracking-wider font-bold block">Inactivity timeout</label>
                       <div className="relative">
                         <select
                           value={newRoomInactivityDays}
@@ -1908,8 +2320,11 @@ export function SecureStorageRoom() {
                           <option value={0} className="bg-zinc-950">1 Minute (Test Mode)</option>
                           <option value={1} className="bg-zinc-950">1 Day</option>
                           <option value={7} className="bg-zinc-950">7 Days</option>
+                          <option value={15} className="bg-zinc-950">15 Days</option>
                           <option value={30} className="bg-zinc-950">30 Days</option>
+                          <option value={60} className="bg-zinc-950">60 Days</option>
                           <option value={90} className="bg-zinc-950">90 Days</option>
+                          <option value={180} className="bg-zinc-950">180 Days</option>
                         </select>
                         <div className="absolute inset-y-0 right-0 flex items-center pr-4 pointer-events-none text-zinc-500">
                           <svg className="w-4.5 h-4.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 9l-7 7-7-7" /></svg>
@@ -1918,7 +2333,7 @@ export function SecureStorageRoom() {
                     </div>
 
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-3.5 pt-1">
-                      {/* Shred and Purge */}
+                      {/* Auto-purge */}
                       <button
                         type="button"
                         onClick={() => setNewRoomStrategy('purge')}
@@ -1927,19 +2342,18 @@ export function SecureStorageRoom() {
                         <div className="flex items-center justify-between gap-2 mb-1.5">
                           <div className="flex items-center gap-2">
                             <ShieldAlert className="w-4 h-4 text-red-500" />
-                            <span className="text-xs font-semibold text-white">Emergency Shred</span>
+                            <span className="text-xs font-semibold text-white">Auto-purge</span>
                           </div>
-                          {/* Dot Selector */}
                           <div className={`w-3.5 h-3.5 rounded-full border flex items-center justify-center transition-all ${newRoomStrategy === 'purge' ? 'border-red-500 bg-red-500' : 'border-zinc-700'}`}>
                             {newRoomStrategy === 'purge' && <div className="w-1.5 h-1.5 rounded-full bg-white" />}
                           </div>
                         </div>
                         <p className="text-[10px] text-zinc-400 leading-relaxed">
-                          Permanently wipe data metadata from local memory and delete folders upon trigger timeout.
+                          Permanently delete the room and all its files when the timeout hits.
                         </p>
                       </button>
 
-                      {/* Email Handoff */}
+                      {/* Email handoff */}
                       <button
                         type="button"
                         onClick={() => setNewRoomStrategy('migration')}
@@ -1948,31 +2362,30 @@ export function SecureStorageRoom() {
                         <div className="flex items-center justify-between gap-2 mb-1.5">
                           <div className="flex items-center gap-2">
                             <Mail className="w-4 h-4 text-emerald-500" />
-                            <span className="text-xs font-semibold text-white">Email Handoff</span>
+                            <span className="text-xs font-semibold text-white">Email handoff</span>
                           </div>
-                          {/* Dot Selector */}
                           <div className={`w-3.5 h-3.5 rounded-full border flex items-center justify-center transition-all ${newRoomStrategy === 'migration' ? 'border-emerald-500 bg-emerald-500' : 'border-zinc-700'}`}>
                             {newRoomStrategy === 'migration' && <div className="w-1.5 h-1.5 rounded-full bg-white" />}
                           </div>
                         </div>
                         <p className="text-[10px] text-zinc-400 leading-relaxed">
-                          Securely email a Vault Key to a designated receiver today, and send the unlock link upon timeout.
+                          Email your vault key to a trusted recipient now, then send them an unlock link if the timeout expires.
                         </p>
                       </button>
                     </div>
 
                     {newRoomStrategy === 'migration' && (
                       <div className="space-y-3 pt-1">
-                        <label className="text-[10px] text-zinc-500 font-mono uppercase tracking-wider font-bold block">Backup Receiver Email</label>
+                        <label className="text-[10px] text-zinc-500 font-mono uppercase tracking-wider font-bold block">Recipient email</label>
                         <input
                           type="email"
                           value={newRoomTransferEmail}
                           onChange={(e) => setNewRoomTransferEmail(e.target.value)}
-                          placeholder="receiver@example.com"
+                          placeholder="recipient@example.com"
                           className="w-full bg-zinc-900/50 border border-zinc-800 focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500 rounded-xl px-4 py-3 text-sm text-white placeholder-zinc-600 transition-all outline-none"
                         />
                         <p className="text-[10px] text-zinc-500 leading-relaxed">
-                          We will instantly send an email containing the Vault Key to this address so they can keep it safe. The server will not store this key. When the timeout expires, we will send them a second email with the link to unlock the vault.
+                          They'll receive your vault key by email immediately. The server doesn't keep a copy. If the timeout fires, we'll send a second email with the unlock link.
                         </p>
                       </div>
                     )}
@@ -1997,7 +2410,7 @@ export function SecureStorageRoom() {
                     onClick={() => setShowCreateWizard(false)}
                     className="px-4 py-2.5 bg-zinc-900 hover:bg-zinc-800 text-zinc-400 rounded-xl text-xs font-medium border border-zinc-800 transition-colors"
                   >
-                    Rescind Creation
+                    Cancel
                   </button>
                 )}
 
@@ -2005,11 +2418,11 @@ export function SecureStorageRoom() {
                   <button
                     onClick={() => {
                       if (wizardStep === 1 && !newRoomName.trim()) {
-                        setWizardError('Please give your Room identification label.');
+                        setWizardError('Please give the room a name.');
                         return;
                       }
                       if (wizardStep === 2 && newRoomPin.length < 4) {
-                        setWizardError('PIN authentication passkey must be at least 4 digits.');
+                        setWizardError('PIN must be at least 4 digits.');
                         return;
                       }
                       setWizardError('');
@@ -2017,7 +2430,7 @@ export function SecureStorageRoom() {
                     }}
                     className="flex-1 py-2.5 bg-white hover:bg-zinc-200 text-black text-xs font-bold rounded-xl transition-all font-sans text-center flex items-center justify-center gap-1 cursor-pointer"
                   >
-                    <span>Proceed Forward</span>
+                    <span>Continue</span>
                     <ArrowRight className="w-3.5 h-3.5" />
                   </button>
                 ) : (
@@ -2031,7 +2444,7 @@ export function SecureStorageRoom() {
                     ) : (
                       <Check className="w-3.5 h-3.5" />
                     )}
-                    <span>{isCreatingRoom ? "Initializing..." : "Initialize and Launch Room"}</span>
+                    <span>{isCreatingRoom ? "Creating…" : "Create room"}</span>
                   </button>
                 )}
               </div>
@@ -2047,14 +2460,14 @@ export function SecureStorageRoom() {
                 </div>
                 
                 <div className="space-y-1.5">
-                  <span className="text-[10px] uppercase text-cyan-400 font-black tracking-widest border border-cyan-500/20 px-3 py-1 rounded-full bg-cyan-500/10">
-                    🔐 Access Gate
+                  <span className="text-[10px] uppercase text-cyan-400 font-black tracking-widest border border-cyan-500/20 px-3 py-1 rounded-full bg-cyan-500/10 inline-flex items-center gap-1.5">
+                    <Lock className="w-3 h-3" /> Locked
                   </span>
                   <h2 className="text-2xl font-bold tracking-tight text-white font-sans mt-2">
                     Unlock <span className="font-serif italic font-light text-zinc-500">{selectedRoomToUnlock.name}</span>
                   </h2>
                   <p className="text-xs text-zinc-500 max-w-xs mx-auto leading-relaxed font-sans">
-                    Sovereign Vault is only accessible via its unique browser Vault Key, and unlocked locally by providing its PIN protection.
+                    Enter the PIN and vault key for this room. Both are needed — neither alone will work.
                   </p>
                 </div>
 
@@ -2062,7 +2475,7 @@ export function SecureStorageRoom() {
                   {/* Security PIN Input */}
                   <div className="space-y-1.5">
                     <label className="text-[10px] uppercase tracking-widest text-zinc-500 font-extrabold block pl-1">
-                      Security PIN Passcode
+                      Security PIN
                     </label>
                     <input
                       type="password"
@@ -2083,7 +2496,7 @@ export function SecureStorageRoom() {
                   {/* Vault Private Key Input */}
                   <div className="space-y-1.5 relative">
                     <label className="text-[10px] uppercase tracking-widest text-zinc-500 font-extrabold block pl-1">
-                      Vault Private Key
+                      Vault key
                     </label>
                     <div className="relative">
                       <span className="absolute inset-y-0 left-0 flex items-center pl-4 text-zinc-500">
@@ -2110,8 +2523,8 @@ export function SecureStorageRoom() {
                   </div>
 
                   {passkeyError && (
-                    <p className="text-red-400 font-medium text-xs text-center mt-2">
-                      ⚠️ {passkeyError}
+                    <p className="text-red-400 font-medium text-xs text-center mt-2 flex items-center justify-center gap-1.5">
+                      <AlertTriangle className="w-3 h-3" /> {passkeyError}
                     </p>
                   )}
 
@@ -2126,19 +2539,20 @@ export function SecureStorageRoom() {
                       }}
                       className="flex-1 bg-zinc-900 border border-zinc-800 text-zinc-400 hover:text-white hover:bg-zinc-800 font-bold py-3 rounded-2xl transition-all text-xs uppercase tracking-widest cursor-pointer text-center"
                     >
-                      Rescind
+                      Cancel
                     </button>
                     <button
                       type="submit"
                       className="flex-[2] bg-cyan-500 hover:bg-cyan-400 text-black font-black py-3 rounded-2xl transition-all shadow-[0_0_20px_rgba(6,182,212,0.15)] text-xs uppercase tracking-widest cursor-pointer text-center"
                     >
-                      Verify & Decrypt
+                      Unlock vault
                     </button>
                   </div>
                 </form>
 
                 <div className="text-[10px] text-zinc-500 pt-4 border-t border-white/5 font-mono flex items-center justify-center gap-1.5 text-center">
-                  <span className="text-zinc-500">🔒 Only the user holds the unique Vault Key for this room.</span>
+                  <Lock className="w-3 h-3" />
+                  <span className="text-zinc-500">Only you hold this room's vault key.</span>
                 </div>
               </div>
             </div>
@@ -2149,22 +2563,22 @@ export function SecureStorageRoom() {
               <div className="flex items-center justify-between gap-4 flex-wrap">
                 <div className="space-y-1">
                   <div className="flex items-center gap-3">
-                    <h2 className="text-2xl font-bold text-white tracking-tighter">Active Vaults</h2>
+                    <h2 className="text-2xl font-bold text-white tracking-tight">Your rooms</h2>
                     <button
                       type="button"
                       onClick={fetchRoomsFromBackend}
                       disabled={isLoadingRooms}
-                      title="Refresh Vaults list from cloud database"
+                      title="Refresh rooms list"
                       className="p-2 bg-zinc-900/60 hover:bg-zinc-800 border border-zinc-800 hover:border-zinc-700 text-zinc-400 hover:text-white rounded-xl transition-all cursor-pointer outline-none active:scale-95 disabled:opacity-50 shrink-0"
                     >
                       <RefreshCw className={`w-3.5 h-3.5 ${isLoadingRooms ? 'animate-spin' : ''}`} />
                     </button>
                   </div>
-                  <p className="text-sm text-zinc-500 font-light font-sans">Select any configured cipher box below to trigger memory decipher nodes.</p>
+                  <p className="text-sm text-zinc-500 font-light font-sans">Tap any room to unlock and access its files.</p>
                 </div>
                 
                 <span className="text-[10px] uppercase text-cyan-400 bg-cyan-500/10 px-3 py-1.5 rounded-full border border-cyan-500/15 font-black tracking-widest">
-                  {rooms.length} Configured Locked Chamber{rooms.length > 1 ? 's' : ''}
+                  {rooms.length} {rooms.length === 1 ? 'room' : 'rooms'}
                 </span>
               </div>
 
@@ -2174,9 +2588,9 @@ export function SecureStorageRoom() {
                     <FolderLock className="w-8 h-8 text-zinc-600" />
                   </div>
                   <div className="space-y-1">
-                    <h3 className="text-lg font-semibold text-white">No Active Encryption Rooms Detected</h3>
+                    <h3 className="text-lg font-semibold text-white">No rooms yet</h3>
                     <p className="text-xs text-zinc-500 max-w-xs leading-relaxed">
-                      All descriptors were either shredded or none have been established locally on this browser terminal. Create one to begin.
+                      Create your first encrypted room to start storing files.
                     </p>
                   </div>
                   <button
@@ -2192,7 +2606,7 @@ export function SecureStorageRoom() {
                     className="flex items-center gap-1.5 bg-white hover:bg-zinc-200 text-black px-5 py-3 rounded-2xl text-[10px] font-black uppercase tracking-widest transition-all cursor-pointer"
                   >
                     <Plus className="w-3.5 h-3.5" />
-                    <span>Create Your First Room</span>
+                    <span>Create your first room</span>
                   </button>
                 </div>
               ) : (
@@ -2241,7 +2655,7 @@ export function SecureStorageRoom() {
                                       handleStartRenameRoom(room);
                                     }}
                                     className="p-1.5 bg-black/30 hover:bg-zinc-800 rounded-xl text-zinc-400 hover:text-white cursor-pointer border border-white/5 transition-all active:scale-95 flex items-center justify-center"
-                                    title="Edit Room Name"
+                                    title="Rename room"
                                   >
                                     <Edit3 className="w-3.5 h-3.5" />
                                   </button>
@@ -2252,7 +2666,7 @@ export function SecureStorageRoom() {
                                       handlePurgeRoom(room.id);
                                     }}
                                     className="p-1.5 bg-red-500/10 border border-red-500/20 hover:bg-red-500 hover:text-white rounded-lg text-red-400 cursor-pointer transition-all active:scale-95 flex items-center justify-center shadow-lg"
-                                    title="Dismantle Entire Room"
+                                    title="Delete room"
                                   >
                                     <Trash2 className="w-3.5 h-3.5" />
                                   </button>
@@ -2263,11 +2677,33 @@ export function SecureStorageRoom() {
                           </div>
                         </div>
 
-                        <div className="flex items-center justify-between pt-4 border-t border-white/5 text-[10px] font-mono text-zinc-400 font-sans">
-                          <span className={`inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full text-[9px] font-black uppercase tracking-wider ${room.safetyStrategy === 'purge' ? 'bg-red-500/10 text-red-400 border border-red-500/15' : 'bg-cyan-500/10 text-cyan-400 border border-cyan-500/15'}`}>
-                            {room.safetyStrategy === 'purge' ? 'Auto-Shred' : 'Drive Delegate'}
-                          </span>
-                          <span>{room.files.length} Saved Buffers</span>
+                        {/* Per-room storage + meta */}
+                        <div className="pt-4 border-t border-white/5 space-y-3">
+                          <div>
+                            <div className="flex items-center justify-between mb-1.5">
+                              <span className="text-[9px] uppercase tracking-[0.25em] text-zinc-500 font-black">
+                                Storage
+                              </span>
+                              <span className="text-[10px] font-mono text-zinc-300">
+                                {formatBytes(roomBytes(room))}
+                              </span>
+                            </div>
+                            <div className="h-1 bg-zinc-900 rounded-full overflow-hidden">
+                              <div
+                                className="h-full bg-gradient-to-r from-cyan-500 to-cyan-300 rounded-full transition-all duration-500"
+                                style={{ width: `${Math.min(100, (roomBytes(room) / S3_FREE_TIER_BYTES) * 100).toFixed(2)}%` }}
+                              />
+                            </div>
+                          </div>
+
+                          <div className="flex items-center justify-between gap-2">
+                            <span className={`inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full text-[9px] font-black uppercase tracking-wider ${room.safetyStrategy === 'purge' ? 'bg-red-500/10 text-red-400 border border-red-500/15' : 'bg-cyan-500/10 text-cyan-400 border border-cyan-500/15'}`}>
+                              {room.safetyStrategy === 'purge' ? 'Auto-purge' : 'Email handoff'}
+                            </span>
+                            <span className="text-[10px] font-mono text-zinc-500">
+                              {room.files.length} {room.files.length === 1 ? 'file' : 'files'}
+                            </span>
+                          </div>
                         </div>
                       </div>
                     );
@@ -2300,7 +2736,7 @@ export function SecureStorageRoom() {
                 </div>
                 
                 <span className="text-[9px] font-black uppercase tracking-[0.2em] text-red-400 bg-red-500/10 border border-red-500/20 px-2.5 py-1 rounded-md shrink-0 select-none">
-                  Timer Expired
+                  Timeout reached
                 </span>
               </div>
 
@@ -2308,23 +2744,23 @@ export function SecureStorageRoom() {
               <div className="px-6 py-5 space-y-3.5 border-b border-white/5 bg-white/[0.01]">
                 {/* Status Bar */}
                 <div className="flex items-center justify-between bg-zinc-900/30 border border-white/[0.02] px-4.5 py-3.5 rounded-2xl">
-                  <span className="text-zinc-500 uppercase tracking-wider font-bold text-[9px]">Vault Status</span>
+                  <span className="text-zinc-500 uppercase tracking-wider font-bold text-[9px]">Status</span>
                   <span className="text-red-400 text-xs font-bold flex items-center gap-2">
                     <span className="w-2 h-2 bg-red-500 rounded-full" />
-                    Locked for Handoff
+                    Locked for handoff
                   </span>
                 </div>
                 
                 {/* Secondary indicators */}
                 <div className="grid grid-cols-2 gap-3.5">
                   <div className="bg-zinc-900/30 border border-white/[0.02] px-4.5 py-3.5 rounded-2xl flex flex-col gap-1">
-                    <span className="text-zinc-500 uppercase tracking-wider font-bold text-[9px]">Time Remaining</span>
-                    <span className="text-zinc-100 font-mono font-bold text-sm">72 Hours</span>
+                    <span className="text-zinc-500 uppercase tracking-wider font-bold text-[9px]">Time remaining</span>
+                    <span className="text-zinc-100 font-mono font-bold text-sm">{formatRemaining(activeRoomExpiryAt)}</span>
                   </div>
                   <div className="bg-zinc-900/30 border border-white/[0.02] px-4.5 py-3.5 rounded-2xl flex flex-col gap-1">
-                    <span className="text-zinc-500 uppercase tracking-wider font-bold text-[9px]">Encrypted Buffers</span>
+                    <span className="text-zinc-500 uppercase tracking-wider font-bold text-[9px]">Files</span>
                     <span className="text-cyan-400 font-mono font-bold text-sm">
-                      {files.length} File{files.length !== 1 ? 's' : ''}
+                      {files.length} {files.length !== 1 ? 'files' : 'file'}
                     </span>
                   </div>
                 </div>
@@ -2336,7 +2772,7 @@ export function SecureStorageRoom() {
                   <AlertTriangle className="w-4.5 h-4.5 text-amber-500 shrink-0 mt-0.5" />
                   <p className="text-[10.5px] text-zinc-400 leading-relaxed font-medium">
                     All vault operations are locked. Download your files as a ZIP — the room will be{' '}
-                    <span className="text-amber-400 font-bold">permanently destroyed</span> immediately after.
+                    <span className="text-amber-400 font-bold">permanently destroyed</span> right after.
                   </p>
                 </div>
               </div>
@@ -2364,7 +2800,7 @@ export function SecureStorageRoom() {
                   ) : (
                     <>
                       <Download className="w-3.5 h-3.5 shrink-0" />
-                      <span>Download ZIP & Destroy</span>
+                      <span>Download ZIP & destroy</span>
                     </>
                   )}
                 </button>
@@ -2374,11 +2810,60 @@ export function SecureStorageRoom() {
         ) : (
           /* FILE EXPLORER MAIN MODULE (Active Selected chamber is unlocked) */
           <div className="bg-zinc-950/50 border border-zinc-900 rounded-[2.5rem] p-5 md:p-6 shadow-2xl space-y-6">
+
+            {/* PER-ROOM STORAGE STRIP */}
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+              <div className="bg-zinc-900/40 border border-zinc-800 rounded-2xl px-5 py-4 sm:col-span-2">
+                <div className="flex items-center justify-between mb-2">
+                  <div className="flex items-center gap-2">
+                    <FolderLock className="w-3.5 h-3.5 text-cyan-400" />
+                    <span className="text-[10px] uppercase tracking-[0.25em] font-black text-zinc-500">
+                      Room storage
+                    </span>
+                  </div>
+                  <div className="text-[11px] font-mono">
+                    <span className="text-cyan-400">{formatBytes(activeRoomBytes)}</span>
+                    <span className="text-zinc-600"> / 5 GB plan</span>
+                  </div>
+                </div>
+                <div className="h-1.5 bg-zinc-900 rounded-full overflow-hidden">
+                  <motion.div
+                    initial={{ width: 0 }}
+                    animate={{ width: `${Math.min(100, (activeRoomBytes / S3_FREE_TIER_BYTES) * 100).toFixed(2)}%` }}
+                    transition={{ duration: 0.6, ease: 'easeOut' }}
+                    className="h-full bg-gradient-to-r from-cyan-500 to-cyan-300 rounded-full"
+                  />
+                </div>
+              </div>
+
+              <div className="bg-zinc-900/40 border border-zinc-800 rounded-2xl px-5 py-4 flex items-center justify-between">
+                <div>
+                  <div className="text-[10px] uppercase tracking-[0.25em] font-black text-zinc-500">
+                    Files
+                  </div>
+                  <div className="text-xl font-bold text-white tracking-tight mt-0.5">{files.length}</div>
+                </div>
+                <div className="text-right">
+                  <div className="text-[10px] uppercase tracking-[0.25em] font-black text-zinc-500">
+                    Strategy
+                  </div>
+                  <div className="text-[11px] font-mono mt-0.5">
+                    {activeRoomStrategy === 'purge' ? (
+                      <span className="text-red-400">Auto-purge</span>
+                    ) : activeRoomStrategy === 'migration' ? (
+                      <span className="text-emerald-400">Email handoff</span>
+                    ) : (
+                      <span className="text-zinc-300">Locked</span>
+                    )}
+                  </div>
+                </div>
+              </div>
+            </div>
             
             {/* EXPLORER ACTIONS STRIP */}
             <div className="flex flex-col md:flex-row items-stretch justify-between gap-4">
               
-              {/* Elegant Search Container */}
+              {/* Search */}
               <div className="relative flex-1 max-w-md">
                 <span className="absolute inset-y-0 left-0 flex items-center pl-4 text-zinc-600">
                   <Search className="w-4 h-4" />
@@ -2386,7 +2871,7 @@ export function SecureStorageRoom() {
                 <input
                   type="text"
                   className="w-full bg-black/40 border border-zinc-800 rounded-2xl py-3.5 pl-11 pr-5 text-sm text-zinc-200 focus:outline-none focus:border-cyan-500/60 placeholder:text-zinc-700 transition-all font-sans"
-                  placeholder="Filter decrypted safe items..."
+                  placeholder="Search files in this room…"
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
                 />
@@ -2395,7 +2880,7 @@ export function SecureStorageRoom() {
               {/* View mode toggle with responsive sizing */}
               <div className="flex items-center gap-3 w-full md:w-auto shrink-0 justify-end">
                 
-                {/* Visual View-Mode Selection buttons */}
+                {/* View-mode toggle */}
                 <div className="flex items-center bg-black/40 border border-zinc-800 rounded-2xl p-1 gap-1">
                   <button
                     onClick={() => setViewMode('grid')}
@@ -2407,7 +2892,7 @@ export function SecureStorageRoom() {
                   <button
                     onClick={() => setViewMode('list')}
                     className={`p-2 rounded-xl transition-all cursor-pointer ${viewMode === 'list' ? 'bg-white text-black' : 'text-zinc-500 hover:text-white'}`}
-                    title="Detailed list layout"
+                    title="List layout"
                   >
                     <List className="w-4 h-4" />
                   </button>
@@ -2420,13 +2905,13 @@ export function SecureStorageRoom() {
                   className="hidden"
                 />
 
-                {/* S3 Store Upload Trigger */}
+                {/* Upload */}
                 <button
                   onClick={() => fileInputRef.current?.click()}
                   className="flex items-center gap-2 bg-white hover:bg-zinc-200 text-black px-5 py-3.5 rounded-2xl text-[10px] font-black uppercase tracking-widest transition-all shrink-0 cursor-pointer shadow-[0_0_20px_rgba(255,255,255,0.12)]"
                 >
                   <FolderUp className="w-3.5 h-3.5" />
-                  Upload Secure Buffer
+                  Upload file
                 </button>
               </div>
             </div>
@@ -2443,9 +2928,9 @@ export function SecureStorageRoom() {
                   <div className="flex items-center justify-between mb-2">
                     <div className="flex items-center gap-2.5">
                       <div className="w-2 h-2 rounded-full bg-cyan-400 animate-ping" />
-                      <span className="text-xs font-mono font-medium text-cyan-400">Performing Clientside Cryptographical Packaging...</span>
+                      <span className="text-xs font-mono font-medium text-cyan-400">Encrypting and uploading…</span>
                     </div>
-                    <span className="text-xs font-mono text-zinc-400">{uploadProgress}% Packaged</span>
+                    <span className="text-xs font-mono text-zinc-400">{uploadProgress}%</span>
                   </div>
                   <div className="w-full bg-black rounded-full h-1 overflow-hidden">
                     <div className="bg-cyan-500 h-full rounded-full transition-all duration-150" style={{ width: `${uploadProgress}%` }} />
@@ -2460,7 +2945,7 @@ export function SecureStorageRoom() {
             {filteredFiles.length === 0 ? (
               <div className="flex flex-col items-center justify-center py-20 text-center text-zinc-500 h-80 space-y-3">
                 <Folder className="w-10 h-10 text-zinc-700" />
-                <p className="text-sm font-sans italic">No safe items match this search filter.</p>
+                <p className="text-sm font-sans italic">No files match your search.</p>
               </div>
             ) : viewMode === 'grid' ? (
               
@@ -2519,11 +3004,11 @@ export function SecureStorageRoom() {
                 <table className="w-full text-left text-xs text-zinc-300 font-sans border-collapse">
                   <thead>
                     <tr className="border-b border-white/5 text-[10px] uppercase tracking-wider text-zinc-600 font-bold">
-                      <th className="py-3 px-4">Workspace Resource</th>
+                      <th className="py-3 px-4">File</th>
                       <th className="py-3 px-4 flex-1">Size</th>
-                      <th className="py-3 px-4">Secure Cryptogard</th>
-                      <th className="py-3 px-4">Date Committed</th>
-                      <th className="py-3 px-4 text-right">Operations</th>
+                      <th className="py-3 px-4">Encryption</th>
+                      <th className="py-3 px-4">Modified</th>
+                      <th className="py-3 px-4 text-right">Actions</th>
                     </tr>
                   </thead>
                   <tbody>
@@ -2579,9 +3064,9 @@ export function SecureStorageRoom() {
                     </div>
                     <div>
                       <h2 className="text-base md:text-md font-bold text-white tracking-tight">
-                        Configure Automation switch
+                        Room settings
                       </h2>
-                      <p className="text-xs text-zinc-400">Zero-Knowledge inactivity trigger thresholds & automated safety handlers</p>
+                      <p className="text-xs text-zinc-400">Inactivity timeout and what happens when it triggers</p>
                     </div>
                   </div>
                   <button onClick={() => setShowSettings(false)} className="p-1.5 rounded-xl bg-zinc-900 border border-zinc-800 hover:bg-zinc-800 text-zinc-400 hover:text-white transition-colors cursor-pointer">
@@ -2593,29 +3078,31 @@ export function SecureStorageRoom() {
                   
                   {/* Activity parameter check card */}
                   <div className="bg-zinc-950/70 p-4 rounded-xl border border-zinc-800">
-                    <span className="text-[9px] uppercase font-mono tracking-wider font-bold text-zinc-500 block">Pulse Activity Auditor</span>
+                    <span className="text-[9px] uppercase font-mono tracking-wider font-bold text-zinc-500 block">Last activity</span>
                     <span className="text-white font-mono text-xs mt-1 block">{lastActiveAt}</span>
                     <span className="text-[10px] text-zinc-400 leading-relaxed block mt-1.5">
-                      Your presence update gets automatically updated on secure browser logons, actions, or file interactions.
+                      Updated automatically when you sign in, upload, download, or rearrange files.
                     </span>
                   </div>
 
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     {/* Limit threshold select card */}
                     <div className="space-y-1">
-                      <label className="text-[10px] uppercase tracking-wider font-bold text-zinc-500 block">Inactivity Limit</label>
+                      <label className="text-[10px] uppercase tracking-wider font-bold text-zinc-500 block">Inactivity timeout</label>
                       <div className="relative">
                         <select
                            value={inactivityDays}
                            onChange={(e) => setInactivityDays(Number(e.target.value))}
                            className="w-full bg-zinc-950 border border-zinc-800 rounded-xl pl-4 pr-10 py-3 text-xs text-zinc-200 focus:border-cyan-500/50 outline-none transition-colors appearance-none cursor-pointer"
                         >
-                          <option value={0}>⚡ 1 Min — Test Mode</option>
-                          <option value={15}>15 Days Inactive</option>
-                          <option value={30}>30 Days Inactive</option>
-                          <option value={60}>60 Days Inactive</option>
-                          <option value={90}>90 Days Inactive</option>
-                          <option value={180}>180 Days Inactive</option>
+                          <option value={0}>1 minute (test mode)</option>
+                          <option value={1}>1 day</option>
+                          <option value={7}>7 days</option>
+                          <option value={15}>15 days</option>
+                          <option value={30}>30 days</option>
+                          <option value={60}>60 days</option>
+                          <option value={90}>90 days</option>
+                          <option value={180}>180 days</option>
                         </select>
                         <div className="pointer-events-none absolute right-3.5 top-1/2 -translate-y-1/2 text-zinc-400">
                           <ChevronDown className="w-3.5 h-3.5" />
@@ -2626,16 +3113,16 @@ export function SecureStorageRoom() {
                     {/* Backup Receiver Email Configuration Card */}
                     {safeTransferEnabled && (
                       <div className="space-y-3 p-4 rounded-xl bg-zinc-950/70 border border-zinc-800">
-                        <label className="text-[9px] uppercase font-mono tracking-wider font-bold text-zinc-500 block">Backup Receiver Email</label>
+                        <label className="text-[9px] uppercase font-mono tracking-wider font-bold text-zinc-500 block">Recipient email</label>
                         <input
                           type="email"
                           value={transferEmail}
                           onChange={(e) => setTransferEmail(e.target.value)}
-                          placeholder="receiver@example.com"
+                          placeholder="recipient@example.com"
                           className="w-full bg-zinc-950 border border-zinc-800 focus:border-emerald-500/50 rounded-xl px-4 py-3 text-xs text-white placeholder:text-zinc-800 outline-none transition-colors"
                         />
                         <p className="text-[10px] text-zinc-500 leading-relaxed block mt-1">
-                          When the inactivity timeout is reached, an emergency warning email containing the secure vault unlock handoff link will be delivered to this address so they can download the ZIP backup.
+                          When the timeout fires, this address gets a one-time link to download a ZIP backup of the room.
                         </p>
                       </div>
                     )}
@@ -2656,7 +3143,7 @@ export function SecureStorageRoom() {
                       <div className="flex items-center justify-between mb-2">
                         <div className="flex items-center gap-2">
                           <ShieldAlert className="w-4 h-4 text-red-500" />
-                          <span className="text-xs font-semibold text-white">Shred and Purge</span>
+                          <span className="text-xs font-semibold text-white">Auto-purge</span>
                         </div>
                         {/* Dot Selector */}
                         <div className={`w-3.5 h-3.5 rounded-full border flex items-center justify-center transition-all ${autoDestructEnabled ? 'border-red-500 bg-red-500' : 'border-zinc-700'}`}>
@@ -2664,7 +3151,7 @@ export function SecureStorageRoom() {
                         </div>
                       </div>
                       <p className="text-[11px] text-zinc-400 font-sans leading-normal">
-                        Irreversibly delete files from active secure cloud buffers the moment the inactivity duration triggers.
+                        Permanently delete the room and all files when the timeout fires.
                       </p>
                     </button>
 
@@ -2680,7 +3167,7 @@ export function SecureStorageRoom() {
                       <div className="flex items-center justify-between mb-2">
                         <div className="flex items-center gap-2">
                           <Mail className="w-4 h-4 text-emerald-500" />
-                          <span className="text-xs font-semibold text-white">Emergency Handoff</span>
+                          <span className="text-xs font-semibold text-white">Email handoff</span>
                         </div>
                         {/* Dot Selector */}
                         <div className={`w-3.5 h-3.5 rounded-full border flex items-center justify-center transition-all ${safeTransferEnabled ? 'border-emerald-500 bg-emerald-500' : 'border-zinc-700'}`}>
@@ -2688,7 +3175,7 @@ export function SecureStorageRoom() {
                         </div>
                       </div>
                       <p className="text-[11px] text-zinc-400 font-sans leading-normal">
-                        Email a secure handoff link to download all vault files as a ZIP archive upon inactivity trigger.
+                        Email a one-time link to download all files as a ZIP, then delete the room.
                       </p>
                     </button>
                     
@@ -2701,7 +3188,7 @@ export function SecureStorageRoom() {
                       onClick={() => setShowSettings(false)}
                       className="flex-1 py-3 bg-zinc-950 hover:bg-zinc-900 border border-zinc-800 hover:border-zinc-700 text-zinc-300 text-xs font-semibold rounded-xl transition-all cursor-pointer disabled:opacity-50"
                     >
-                      Rescind
+                      Cancel
                     </button>
                     <button
                       type="button"
@@ -2712,10 +3199,10 @@ export function SecureStorageRoom() {
                       {isSavingSettings ? (
                         <>
                           <RefreshCw className="w-3.5 h-3.5 animate-spin" />
-                          Locking...
+                          Saving…
                         </>
                       ) : (
-                        'Commit Switch parameters'
+                        'Save settings'
                       )}
                     </button>
                   </div>
@@ -2723,11 +3210,11 @@ export function SecureStorageRoom() {
                   {/* Trigger Now — immediate lifecycle execution */}
                   <div className="pt-2">
                     <div className="p-3 rounded-xl bg-zinc-950 border border-zinc-800">
-                      <p className="text-[10px] text-zinc-500 mb-2 uppercase tracking-wider font-bold">Manual Trigger</p>
+                      <p className="text-[10px] text-zinc-500 mb-2 uppercase tracking-wider font-bold">Run now</p>
                       <p className="text-[11px] text-zinc-400 leading-relaxed mb-3">
                         {autoDestructEnabled
-                          ? 'Immediately purge all files and delete this room from Keeper. A notification email will be sent.'
-                          : 'Immediately decrypt and download all files as a single ZIP archive, then delete this room from Keeper. A notification email will be sent.'}
+                          ? 'Delete all files and remove this room immediately. A confirmation email will be sent.'
+                          : 'Decrypt and download all files as a ZIP, then delete this room. A confirmation email will be sent.'}
                       </p>
                       <button
                         type="button"
@@ -2742,9 +3229,9 @@ export function SecureStorageRoom() {
                         {isTriggeringNow ? (
                           <><RefreshCw className="w-3.5 h-3.5 animate-spin" /> Executing…</>
                         ) : autoDestructEnabled ? (
-                          <><Trash2 className="w-3.5 h-3.5" /> Trigger Purge Now</>
+                          <><Trash2 className="w-3.5 h-3.5" /> Delete room now</>
                         ) : (
-                          <><Download className="w-3.5 h-3.5" /> Decrypt & Download ZIP Now</>
+                          <><Download className="w-3.5 h-3.5" /> Download ZIP & delete now</>
                         )}
                       </button>
                     </div>
@@ -2768,9 +3255,9 @@ export function SecureStorageRoom() {
                 exit={{ scale: 0.98, opacity: 0 }}
                 className="w-full max-w-md bg-zinc-950 border border-zinc-800 rounded-2xl p-6 my-auto"
               >
-                <h3 className="text-base font-bold text-white mb-1.5 font-sans">Update Storage identifier</h3>
+                <h3 className="text-base font-bold text-white mb-1.5 font-sans">Rename file</h3>
                 <p className="text-xs text-zinc-500 mb-4 font-sans leading-normal">
-                  Provide custom name for storage buffer asset. This change takes place immediately in browser memory and local records.
+                  Set a new name for this file. Takes effect immediately.
                 </p>
                 <input
                   type="text"
@@ -2790,7 +3277,7 @@ export function SecureStorageRoom() {
                     onClick={handleSaveRename}
                     className="px-4 py-2.5 bg-white hover:bg-zinc-200 text-black rounded-xl text-xs font-semibold font-sans transition-all cursor-pointer"
                   >
-                    Save Changes
+                    Save
                   </button>
                 </div>
               </motion.div>
@@ -2816,13 +3303,13 @@ export function SecureStorageRoom() {
                     <AlertTriangle className="w-4 h-4 text-red-500" />
                   </div>
                   <div>
-                    <h3 className="text-base font-bold text-white font-sans">Purge Safe Asset?</h3>
-                    <p className="text-[9px] uppercase font-mono tracking-wider text-red-400">Irreversible Storage Shred</p>
+                    <h3 className="text-base font-bold text-white font-sans">Delete file?</h3>
+                    <p className="text-[9px] uppercase font-mono tracking-wider text-red-400">This can't be undone</p>
                   </div>
                 </div>
                 
                 <p className="text-xs text-zinc-400 mb-5 font-sans leading-relaxed">
-                  You are about to delete <span className="text-red-400 font-mono font-medium">[{selectedFile.name}]</span>. This is an irreversible operation; decrypted assets will be permanently unmounted.
+                  Permanently delete <span className="text-red-400 font-mono font-medium">{selectedFile.name}</span>. This file will be removed from your S3 bucket.
                 </p>
 
                 <div className="flex gap-3 justify-end">
@@ -2830,13 +3317,13 @@ export function SecureStorageRoom() {
                     onClick={() => setIsDeleteConfirmOpen(false)}
                     className="flex-1 py-3 bg-zinc-950 hover:bg-zinc-900 border border-zinc-800 hover:border-zinc-700 text-zinc-300 rounded-xl text-xs font-semibold font-sans transition-colors cursor-pointer"
                   >
-                    Rescind Trigger
+                    Cancel
                   </button>
                   <button
                     onClick={handleDeleteAsset}
                     className="flex-1 py-3 bg-red-500 hover:bg-red-400 text-white rounded-xl text-xs font-semibold font-sans transition-colors cursor-pointer"
                   >
-                    Confirm Deletion
+                    Delete
                   </button>
                 </div>
               </motion.div>
@@ -2862,24 +3349,25 @@ export function SecureStorageRoom() {
                     <Trash2 className="w-5 h-5 text-red-500" />
                   </div>
                   <div className="text-left">
-                    <h3 className="text-base font-bold text-white font-sans">Dismantle sovereign vault?</h3>
-                    <p className="text-xs text-zinc-400 font-sans">Permanently purge room: {roomToPurge.name}</p>
+                    <h3 className="text-base font-bold text-white font-sans">Delete this room?</h3>
+                    <p className="text-xs text-zinc-400 font-sans">Permanently remove: {roomToPurge.name}</p>
                   </div>
                 </div>
 
-                <p className="text-xs text-zinc-500 leading-relaxed mb-5 font-sans bg-red-500/5 p-3 rounded-lg border border-red-500/10 text-left">
-                  🚨 <strong className="text-red-400 font-semibold">CRITICAL SAFETY WARNING:</strong> This action cannot be undone. All decrypted sessions will be terminated and local encryption keys destroyed.
+                <p className="text-xs text-zinc-500 leading-relaxed mb-5 font-sans bg-red-500/5 p-3 rounded-lg border border-red-500/10 text-left flex items-start gap-2">
+                  <AlertTriangle className="w-3.5 h-3.5 text-red-400 shrink-0 mt-0.5" />
+                  <span><strong className="text-red-400 font-semibold">Permanent action.</strong> All files in this room will be deleted from S3 and the encryption keys will be wiped. There's no recovery.</span>
                 </p>
 
                 <div className="space-y-4 mb-6 text-left">
                   <div>
                     <label className="text-[10px] font-mono uppercase tracking-wider text-zinc-400 block mb-1.5 font-bold">
-                      Enter Vault PIN to Authorize Deletion
+                      Enter the room PIN to confirm
                     </label>
                     <input
                       type="password"
                       maxLength={8}
-                      placeholder="Enter security PIN"
+                      placeholder="PIN"
                       value={deleteRoomPinInput}
                       onChange={(e) => {
                         setDeleteRoomPinInput(e.target.value.replace(/\D/g, ''));
@@ -2894,9 +3382,9 @@ export function SecureStorageRoom() {
                       autoFocus
                     />
                     {deleteRoomPinError && (
-                      <p className="text-[10px] text-red-400 font-mono mt-1.5 flex items-center gap-1">
-                        ⚠️ {deleteRoomPinError}
-                      </p>
+                    <p className="text-[10px] text-red-400 font-mono mt-1.5 flex items-center gap-1">
+                      <AlertTriangle className="w-2.5 h-2.5" /> {deleteRoomPinError}
+                    </p>
                     )}
                   </div>
                 </div>
@@ -2910,14 +3398,14 @@ export function SecureStorageRoom() {
                     }}
                     className="flex-1 py-3 bg-zinc-950 hover:bg-zinc-900 border border-zinc-800 text-zinc-300 rounded-xl text-xs font-semibold font-sans transition-colors cursor-pointer"
                   >
-                    Cancel Action
+                    Cancel
                   </button>
                   <button
                     onClick={handleConfirmPurgeRoom}
                     disabled={!deleteRoomPinInput}
                     className="flex-1 py-3 bg-red-600 hover:bg-red-600 text-white rounded-xl text-xs font-semibold font-sans transition-colors cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed font-sans uppercase font-bold tracking-wider"
                   >
-                    Shred Vault
+                    Delete room
                   </button>
                 </div>
               </motion.div>

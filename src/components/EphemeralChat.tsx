@@ -1,7 +1,21 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
-import { Send, Trash2, Lock, MessageSquare, ShieldCheck, Loader2, Copy, Link as LinkIcon, RefreshCcw, AlertTriangle, LogIn } from 'lucide-react';
+import {
+  Send,
+  Trash2,
+  Lock,
+  MessageSquare,
+  ShieldCheck,
+  Loader2,
+  Copy,
+  Check,
+  Link as LinkIcon,
+  RefreshCcw,
+  AlertTriangle,
+  LogIn
+} from 'lucide-react';
 import { io, Socket } from 'socket.io-client';
+
 interface Message {
   id: string;
   text: string;
@@ -69,6 +83,7 @@ export const EphemeralChat = ({ initialRoomId, initialKey }: EphemeralChatProps)
   // ── WebSocket connection (with silent auto-retry for cold starts) ─────────
   const openSocket = useCallback((key: CryptoKey, room: string, attempt = 0) => {
     if (socketRef.current) {
+      socketRef.current.removeAllListeners();
       socketRef.current.disconnect();
     }
     if (timeoutRef.current) clearTimeout(timeoutRef.current);
@@ -81,7 +96,6 @@ export const EphemeralChat = ({ initialRoomId, initialKey }: EphemeralChatProps)
 
     const socket = io({ query: { room } });
 
-    // 12-second per-attempt timeout
     timeoutRef.current = setTimeout(() => {
       if (!socket.connected) {
         socket.disconnect();
@@ -94,7 +108,6 @@ export const EphemeralChat = ({ initialRoomId, initialKey }: EphemeralChatProps)
       retryCountRef.current = att + 1;
       if (att < MAX_RETRIES - 1) {
         const delay = Math.pow(2, att) * 1000;
-        console.log(`[WS] retrying in ${delay}ms (attempt ${att + 2}/${MAX_RETRIES})…`);
         timeoutRef.current = setTimeout(() => openSocket(k, r, att + 1), delay);
       } else {
         setStatus('error');
@@ -104,7 +117,6 @@ export const EphemeralChat = ({ initialRoomId, initialKey }: EphemeralChatProps)
 
     socket.on('connect', () => {
       clearTimeout(timeoutRef.current!);
-      console.log('[WS] connected to room:', room);
       retryCountRef.current = 0;
       setStatus('connected');
       setErrorMsg('');
@@ -120,13 +132,13 @@ export const EphemeralChat = ({ initialRoomId, initialKey }: EphemeralChatProps)
           sender: 'other',
           timestamp: new Date()
         }]);
-      } catch { /* wrong key or corrupt message – ignore */ }
+      } catch { /* wrong key or corrupt — ignore */ }
     });
 
     socket.on('peer-joined', () => {
       setMessages(prev => [...prev, {
         id: `${Date.now()}-${Math.random()}`,
-        text: '✅ A peer has established a secure connection to the session.',
+        text: 'A peer connected',
         sender: 'system',
         timestamp: new Date()
       }]);
@@ -136,7 +148,7 @@ export const EphemeralChat = ({ initialRoomId, initialKey }: EphemeralChatProps)
       lastWipeTime.current = Date.now();
       setMessages(prev => [...prev, {
         id: `${Date.now()}-${Math.random()}`,
-        text: '⚠️ A peer has permanently destroyed their session data.',
+        text: 'Peer wiped their session',
         sender: 'system',
         timestamp: new Date()
       }]);
@@ -146,7 +158,7 @@ export const EphemeralChat = ({ initialRoomId, initialKey }: EphemeralChatProps)
       if (Date.now() - lastWipeTime.current < 2000) return;
       setMessages(prev => [...prev, {
         id: `${Date.now()}-${Math.random()}`,
-        text: 'ℹ️ A peer has disconnected from the secure session.',
+        text: 'Peer disconnected',
         sender: 'system',
         timestamp: new Date()
       }]);
@@ -154,9 +166,8 @@ export const EphemeralChat = ({ initialRoomId, initialKey }: EphemeralChatProps)
 
     socket.on('disconnect', (reason) => {
       clearTimeout(timeoutRef.current!);
-      console.log('[WS] disconnected:', reason);
       if (reason === 'io server disconnect' || reason === 'transport close') {
-        handleFailure(key, room, attempt, `Tunnel closed.`);
+        handleFailure(key, room, attempt, 'Tunnel closed.');
       }
     });
 
@@ -168,27 +179,23 @@ export const EphemeralChat = ({ initialRoomId, initialKey }: EphemeralChatProps)
     const hash = (hashOverride ?? window.location.hash).replace(/^#/, '');
     const params = new URLSearchParams(hash);
     const urlRoom = params.get('room');
-    const urlKey  = params.get('key');
+    const urlKey = params.get('key');
 
     let room: string;
     let rawKey: string;
     let key: CryptoKey;
 
-    // PRIORITY 1: Explicit URL/Hash override (Crucial for joining a new room while already in one)
     if (urlRoom && urlKey) {
-      room   = urlRoom;
+      room = urlRoom;
       rawKey = urlKey;
       try {
         key = await importRawKey(urlKey);
       } catch {
-        // bad key – create fresh session
-        room   = Math.random().toString(36).substring(2, 8).toUpperCase();
+        room = Math.random().toString(36).substring(2, 8).toUpperCase();
         rawKey = await generateRawKey();
-        key    = await importRawKey(rawKey);
+        key = await importRawKey(rawKey);
       }
-    } 
-    // PRIORITY 2: Props from parent (e.g. joining from Vault link)
-    else if (initialRoomId && initialKey) {
+    } else if (initialRoomId && initialKey) {
       room = initialRoomId;
       rawKey = initialKey;
       try {
@@ -198,24 +205,21 @@ export const EphemeralChat = ({ initialRoomId, initialKey }: EphemeralChatProps)
         rawKey = await generateRawKey();
         key = await importRawKey(rawKey);
       }
-    } 
-    // PRIORITY 3: Fresh Random Room
-    else {
-      room   = Math.random().toString(36).substring(2, 8).toUpperCase();
+    } else {
+      room = Math.random().toString(36).substring(2, 8).toUpperCase();
       rawKey = await generateRawKey();
-      key    = await importRawKey(rawKey);
+      key = await importRawKey(rawKey);
     }
 
     const newUrl = `${location.origin}${location.pathname}#room=${room}&key=${rawKey}`;
 
-    keyRef.current   = key;
+    keyRef.current = key;
     roomIdRef.current = room;
 
     setRoomId(room);
     setShareUrl(newUrl);
     setMessages([]);
 
-    // Update URL without page reload or pushState spam
     history.replaceState(null, '', newUrl);
 
     openSocket(key, room);
@@ -224,17 +228,15 @@ export const EphemeralChat = ({ initialRoomId, initialKey }: EphemeralChatProps)
   useEffect(() => {
     initRoom();
     return () => {
-      clearTimeout(timeoutRef.current!);
+      if (timeoutRef.current) clearTimeout(timeoutRef.current);
+      socketRef.current?.removeAllListeners();
       socketRef.current?.disconnect();
     };
   }, [initRoom]);
 
   useEffect(() => {
-    // Scroll only the inner chat div — never the whole page
     const container = chatContainerRef.current;
-    if (container) {
-      container.scrollTop = container.scrollHeight;
-    }
+    if (container) container.scrollTop = container.scrollHeight;
   }, [messages]);
 
   // ── Send message ──────────────────────────────────────────────────────────
@@ -244,7 +246,7 @@ export const EphemeralChat = ({ initialRoomId, initialKey }: EphemeralChatProps)
     if (!text || !keyRef.current || !socketRef.current) return;
 
     if (!socketRef.current.connected) {
-      setErrorMsg('Not connected – retrying…');
+      setErrorMsg('Not connected. Retrying.');
       openSocket(keyRef.current, roomIdRef.current);
       return;
     }
@@ -259,17 +261,15 @@ export const EphemeralChat = ({ initialRoomId, initialKey }: EphemeralChatProps)
     }
   };
 
-  // ── Join via pasted link or URL fragment ──────────────────────────────────
+  // ── Join via pasted invite link ───────────────────────────────────────────
   const joinRoom = (e: React.FormEvent) => {
     e.preventDefault();
     const raw = joinInput.trim();
     if (!raw) return;
 
-    // Extract the hash portion whether user pasted full URL or just the fragment
     let hash = raw.includes('#') ? raw.split('#')[1] : raw;
-    // Allow "room=X&key=Y" without leading #
     if (!hash.includes('room=') || !hash.includes('key=')) {
-      setErrorMsg('Invalid invite link. Make sure you pasted the full URL.');
+      setErrorMsg('Invalid invite link. Paste the full URL.');
       return;
     }
 
@@ -288,210 +288,284 @@ export const EphemeralChat = ({ initialRoomId, initialKey }: EphemeralChatProps)
     location.reload();
   };
 
-  const copyLink = () => {
-    navigator.clipboard.writeText(shareUrl);
-    setIsCopied(true);
-    setTimeout(() => setIsCopied(false), 2000);
+  const copyLink = async () => {
+    try {
+      await navigator.clipboard.writeText(shareUrl);
+      setIsCopied(true);
+      setTimeout(() => setIsCopied(false), 2000);
+    } catch {
+      /* clipboard unavailable */
+    }
   };
 
-  // ── Render ────────────────────────────────────────────────────────────────
+  const pasteFromClipboard = async () => {
+    try {
+      const text = await navigator.clipboard.readText();
+      if (text) setJoinInput(text);
+    } catch {
+      /* clipboard unavailable */
+    }
+  };
+
+  const formatTime = (d: Date) =>
+    d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+
+  // ── Connecting state ──────────────────────────────────────────────────────
   if (status === 'connecting') {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-zinc-950">
-        <div className="text-center space-y-4">
-          <div className="relative inline-block">
-            <div className="absolute -inset-4 bg-cyan-500/20 blur-xl rounded-full animate-pulse" />
-            <Loader2 className="w-10 h-10 text-cyan-500 animate-spin relative z-10" />
+      <section className="relative pt-32 pb-20 px-6 min-h-screen flex items-center justify-center">
+        <motion.div
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          className="text-center space-y-5"
+        >
+          <div className="relative inline-flex items-center justify-center w-16 h-16 rounded-2xl bg-cyan-500/10 border border-cyan-500/30">
+            <div className="absolute inset-0 rounded-2xl bg-cyan-500/20 blur-xl animate-pulse" />
+            <Loader2 className="w-7 h-7 text-cyan-400 animate-spin relative z-10" />
           </div>
-          <p className="text-zinc-500 font-mono text-sm tracking-widest uppercase animate-pulse">Establishing Secure Tunnel…</p>
-        </div>
-      </div>
+          <div>
+            <div className="text-white font-bold tracking-tight">Establishing secure tunnel</div>
+            <div className="text-zinc-500 text-xs mt-1">Negotiating end-to-end keys.</div>
+          </div>
+        </motion.div>
+      </section>
     );
   }
 
   return (
-    <section className="relative pt-44 pb-20 px-6 min-h-screen bg-zinc-950 overflow-hidden">
-      <div className="absolute top-0 left-1/4 w-[800px] h-[800px] bg-cyan-500/[0.02] blur-[150px] rounded-full pointer-events-none" />
-
-      <div className="max-w-4xl mx-auto flex flex-col h-[80vh] relative z-10">
-
-        {/* ── Header ── */}
-        <div className="flex flex-col md:flex-row items-start md:items-center justify-between mb-6 gap-4">
-          <div>
-            <div className="flex items-center gap-2">
-              <ShieldCheck className="w-4 h-4 text-cyan-500" />
-              <h2 className="text-white font-black uppercase tracking-tighter text-2xl">
-                Secure Room <span className="text-zinc-600">#{roomId}</span>
-              </h2>
-              <span className={`ml-2 w-2 h-2 rounded-full ${status === 'connected' ? 'bg-emerald-400 animate-pulse' : 'bg-red-400'}`} />
+    <section className="relative pt-32 pb-20 px-6 min-h-screen overflow-hidden">
+      <div className="max-w-4xl mx-auto flex flex-col h-[calc(100vh-12rem)]">
+        {/* Header */}
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-5"
+        >
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 rounded-xl bg-cyan-500/10 border border-cyan-500/30 flex items-center justify-center shrink-0">
+              <ShieldCheck className="w-5 h-5 text-cyan-400" strokeWidth={2} />
             </div>
-            <p className="text-zinc-500 text-xs font-mono uppercase tracking-[0.2em]">End-to-End Encrypted · AES-256-GCM</p>
+            <div>
+              <div className="flex items-center gap-2">
+                <h1 className="text-xl font-bold tracking-tight text-white">
+                  Secure room
+                </h1>
+                <span className="text-zinc-600 font-mono text-sm">#{roomId}</span>
+                <span
+                  className={`w-1.5 h-1.5 rounded-full ${status === 'connected' ? 'bg-emerald-400' : 'bg-red-400'
+                    }`}
+                />
+              </div>
+              <div className="text-zinc-500 text-[10px] uppercase tracking-[0.25em] font-black mt-0.5">
+                {status === 'connected' ? 'AES-256-GCM · zero-log relay' : 'Disconnected'}
+              </div>
+            </div>
           </div>
 
-          <div className="flex items-center gap-2 w-full md:w-auto">
-            {/* Join button */}
+          <div className="flex items-center gap-2">
             <button
               onClick={() => setShowJoin(v => !v)}
-              className={`flex items-center gap-2 px-4 py-2.5 rounded-xl border text-[10px] font-black uppercase tracking-widest transition-all ${showJoin ? 'bg-white text-black border-white' : 'bg-zinc-900 border-zinc-800 text-zinc-400 hover:text-white hover:border-zinc-600'}`}
+              className={`flex items-center gap-2 px-4 py-2 rounded-xl border text-[10px] font-black uppercase tracking-widest transition-colors ${showJoin
+                  ? 'bg-zinc-800 border-zinc-700 text-white'
+                  : 'bg-zinc-900 border-zinc-800 text-zinc-400 hover:text-white hover:border-zinc-700'
+                }`}
             >
               <LogIn className="w-3.5 h-3.5" /> Join
             </button>
 
-            {/* Copy invite link */}
             <button
               onClick={copyLink}
-              className={`flex-grow md:flex-grow-0 flex items-center gap-2 px-4 py-2.5 rounded-xl border text-[10px] font-black uppercase tracking-widest transition-all ${isCopied ? 'bg-cyan-500/10 border-cyan-500/30 text-cyan-400' : 'bg-zinc-900 border-zinc-800 text-zinc-400 hover:text-white hover:border-zinc-600'}`}
+              className={`flex items-center gap-2 px-4 py-2 rounded-xl border text-[10px] font-black uppercase tracking-widest transition-colors ${isCopied
+                  ? 'bg-cyan-500/10 border-cyan-500/30 text-cyan-400'
+                  : 'bg-zinc-900 border-zinc-800 text-zinc-400 hover:text-white hover:border-zinc-700'
+                }`}
             >
-              <Copy className="w-3.5 h-3.5" /> {isCopied ? 'Copied!' : 'Invite'}
+              {isCopied ? <Check className="w-3.5 h-3.5" /> : <Copy className="w-3.5 h-3.5" />}
+              {isCopied ? 'Copied' : 'Invite'}
             </button>
 
-            {/* Wipe */}
             <button
               onClick={wipeSession}
-              className="group flex items-center gap-2 px-4 py-2.5 bg-zinc-900 hover:bg-red-500/10 border border-zinc-800 hover:border-red-500/30 rounded-xl transition-all"
+              className="group flex items-center gap-2 px-4 py-2 rounded-xl border border-zinc-800 bg-zinc-900 hover:bg-red-500/10 hover:border-red-500/30 text-zinc-400 hover:text-red-400 text-[10px] font-black uppercase tracking-widest transition-colors"
             >
-              <Trash2 className="w-3.5 h-3.5 text-zinc-500 group-hover:text-red-400 transition-colors" />
-              <span className="text-[10px] font-black uppercase tracking-widest text-zinc-400 group-hover:text-red-400 transition-colors">Wipe</span>
+              <Trash2 className="w-3.5 h-3.5" />
+              Wipe
             </button>
           </div>
-        </div>
+        </motion.div>
 
-        {/* ── Join input ── */}
+        {/* Join form */}
         <AnimatePresence>
           {showJoin && (
             <motion.form
               key="join"
               onSubmit={joinRoom}
-              initial={{ opacity: 0, height: 0, marginBottom: 0 }}
-              animate={{ opacity: 1, height: 'auto', marginBottom: 12 }}
-              exit={{ opacity: 0, height: 0, marginBottom: 0 }}
-              className="overflow-hidden flex bg-zinc-900 border border-cyan-500/30 rounded-2xl p-2 gap-2"
+              initial={{ opacity: 0, height: 0 }}
+              animate={{ opacity: 1, height: 'auto' }}
+              exit={{ opacity: 0, height: 0 }}
+              className="overflow-hidden mb-3"
             >
-              <LinkIcon className="w-4 h-4 text-cyan-500 self-center ml-3 shrink-0" />
-              <input
-                autoFocus
-                type="text"
-                value={joinInput}
-                onChange={e => setJoinInput(e.target.value)}
-                placeholder="Paste the full invite URL here…"
-                className="flex-grow bg-transparent py-2 text-zinc-300 focus:outline-none text-xs"
-              />
-              <button type="submit" className="bg-cyan-500 hover:bg-cyan-400 text-black px-5 rounded-xl font-black text-[9px] uppercase tracking-widest transition-all shrink-0">
-                Join Room
-              </button>
+              <div className="flex gap-2">
+                <div className="relative flex-1">
+                  <LinkIcon className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-zinc-500 pointer-events-none" />
+                  <input
+                    autoFocus
+                    type="text"
+                    value={joinInput}
+                    onChange={e => setJoinInput(e.target.value)}
+                    placeholder="Paste invite URL"
+                    className="w-full bg-zinc-900 border border-zinc-800 rounded-xl pl-11 pr-20 py-3 text-zinc-200 font-mono text-xs focus:border-cyan-500/50 outline-none transition-colors placeholder:text-zinc-600"
+                  />
+                  <button
+                    type="button"
+                    onClick={pasteFromClipboard}
+                    className="absolute right-1.5 top-1/2 -translate-y-1/2 px-3 py-1.5 rounded-lg bg-zinc-800 hover:bg-zinc-700 text-zinc-300 hover:text-white text-[9px] font-black uppercase tracking-widest transition-colors"
+                  >
+                    Paste
+                  </button>
+                </div>
+                <button
+                  type="submit"
+                  className="bg-white text-black px-5 rounded-xl font-black text-[10px] uppercase tracking-widest hover:bg-zinc-200 transition-colors shrink-0"
+                >
+                  Join
+                </button>
+              </div>
             </motion.form>
           )}
         </AnimatePresence>
 
-        {/* ── Error / Info banner ── */}
-        <AnimatePresence>
+        {/* Status banner */}
+        <AnimatePresence mode="wait">
           {errorMsg ? (
             <motion.div
               key="err"
-              initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
-              className="bg-red-500/10 border border-red-500/20 rounded-2xl p-3 mb-4 flex items-center justify-between gap-3"
+              initial={{ opacity: 0, height: 0 }}
+              animate={{ opacity: 1, height: 'auto' }}
+              exit={{ opacity: 0, height: 0 }}
+              className="overflow-hidden"
             >
-              <div className="flex items-center gap-3">
-                <AlertTriangle className="w-4 h-4 text-red-400 shrink-0" />
-                <p className="text-[11px] text-red-200/80">{errorMsg}</p>
+              <div className="bg-red-500/5 border border-red-500/20 rounded-xl px-4 py-3 mb-3 flex items-center justify-between gap-3">
+                <div className="flex items-center gap-2 min-w-0">
+                  <AlertTriangle className="w-3.5 h-3.5 text-red-400 shrink-0" />
+                  <p className="text-xs text-red-300 truncate">{errorMsg}</p>
+                </div>
+                <button
+                  onClick={() => {
+                    setErrorMsg('');
+                    if (keyRef.current) openSocket(keyRef.current, roomIdRef.current);
+                  }}
+                  className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-red-500/10 hover:bg-red-500/20 text-red-400 text-[9px] font-black uppercase tracking-widest transition-colors shrink-0"
+                >
+                  <RefreshCcw className="w-3 h-3" /> Retry
+                </button>
               </div>
-              <button
-                onClick={() => { setErrorMsg(''); openSocket(keyRef.current!, roomIdRef.current); }}
-                className="flex items-center gap-1 px-3 py-1.5 bg-red-500/10 hover:bg-red-500/20 rounded-lg text-red-400 text-[9px] font-black uppercase tracking-widest transition-all"
-              >
-                <RefreshCcw className="w-3 h-3" /> Retry
-              </button>
             </motion.div>
-          ) : (
-            <motion.div
-              key="info"
-              initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
-              className="bg-cyan-500/5 border border-cyan-500/10 rounded-2xl p-3 mb-4 flex items-center gap-3"
-            >
-              <Lock className="w-4 h-4 text-cyan-500 shrink-0" />
-              <p className="text-[11px] text-cyan-200/50">
-                Zero-knowledge relay · Messages are never stored or logged · Key lives only in your browser
-              </p>
-            </motion.div>
-          )}
+          ) : null}
         </AnimatePresence>
 
-        {/* ── Chat area ── */}
-        <div ref={chatContainerRef} className="flex-grow bg-zinc-900/30 border border-zinc-900 rounded-[2.5rem] p-8 overflow-y-auto mb-6 custom-scrollbar">
-          {messages.length === 0 && (
-            <div className="h-full flex flex-col items-center justify-center text-center gap-8">
-              <div className="opacity-30 flex flex-col items-center gap-4">
-                <div className="w-16 h-16 bg-zinc-950 rounded-2xl flex items-center justify-center border border-zinc-800">
-                  <MessageSquare className="w-8 h-8 text-zinc-600" />
-                </div>
-                <div>
-                  <h3 className="text-white font-bold tracking-tight uppercase text-sm">No Signal</h3>
-                  <p className="text-zinc-500 text-xs italic font-serif mt-1">Encrypted tunnel open. Waiting for transmission.</p>
-                </div>
+        {/* Chat area */}
+        <div
+          ref={chatContainerRef}
+          className="flex-grow bg-zinc-950 border border-zinc-800 rounded-[2rem] p-6 overflow-y-auto custom-scrollbar relative"
+        >
+          {/* Empty state */}
+          {messages.length === 0 ? (
+            <div className="absolute inset-0 flex flex-col items-center justify-center px-6 text-center">
+              <div className="w-14 h-14 rounded-2xl bg-zinc-900 border border-zinc-800 flex items-center justify-center mb-5">
+                <MessageSquare className="w-6 h-6 text-zinc-600" strokeWidth={1.5} />
               </div>
-              {!showJoin && (
-                <div className="w-full max-w-xs border-t border-zinc-800/50 pt-8">
-                  <p className="text-[10px] text-zinc-600 uppercase tracking-[0.2em] font-black mb-3">Joining someone's room?</p>
+              <h3 className="text-white font-bold tracking-tight mb-1">Encrypted tunnel open</h3>
+              <p className="text-zinc-500 text-xs mb-6 max-w-xs">
+                Send a message or share the invite link with your peer to start.
+              </p>
+              <div className="flex items-center gap-2">
+                <button
+                  onClick={copyLink}
+                  className="flex items-center gap-2 px-4 py-2 rounded-xl bg-zinc-900 border border-zinc-800 hover:border-cyan-500/40 text-zinc-300 hover:text-white text-[10px] font-black uppercase tracking-widest transition-colors"
+                >
+                  {isCopied ? <Check className="w-3 h-3" /> : <Copy className="w-3 h-3" />}
+                  {isCopied ? 'Copied' : 'Copy invite'}
+                </button>
+                {!showJoin && (
                   <button
                     onClick={() => setShowJoin(true)}
-                    className="w-full bg-zinc-900/50 border border-zinc-800 hover:border-zinc-700 rounded-xl px-4 py-3 text-[10px] text-zinc-400 font-bold uppercase tracking-widest transition-all flex items-center justify-center gap-2"
+                    className="flex items-center gap-2 px-4 py-2 rounded-xl bg-zinc-900 border border-zinc-800 hover:border-cyan-500/40 text-zinc-300 hover:text-white text-[10px] font-black uppercase tracking-widest transition-colors"
                   >
-                    <LogIn className="w-3 h-3" /> Paste Invite Link
+                    <LogIn className="w-3 h-3" /> Join other room
                   </button>
-                </div>
-              )}
+                )}
+              </div>
             </div>
-          )}
-
-          <div className="space-y-5">
-            {messages.map(msg => (
-              <motion.div
-                key={msg.id}
-                initial={{ opacity: 0, y: 8, scale: 0.96 }}
-                animate={{ opacity: 1, y: 0, scale: 1 }}
-                className={`flex ${msg.sender === 'system' ? 'justify-center' : msg.sender === 'me' ? 'justify-end' : 'justify-start'}`}
-              >
-                {msg.sender === 'system' ? (
-                  <div className="px-4 py-2 bg-red-500/10 border border-red-500/20 text-red-400 rounded-full text-[10px] uppercase tracking-widest font-bold my-2">
-                    {msg.text}
-                  </div>
-                ) : (
-                  <div className="max-w-[78%] space-y-1">
-                    <div className={`px-5 py-3 rounded-2xl text-sm font-medium ${msg.sender === 'me'
-                        ? 'bg-cyan-500 text-black rounded-tr-none'
-                        : 'bg-zinc-800 text-zinc-200 rounded-tl-none'}`}>
+          ) : (
+            <div className="space-y-3.5">
+              {messages.map(msg => (
+                <motion.div
+                  key={msg.id}
+                  initial={{ opacity: 0, y: 6 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  className={`flex ${msg.sender === 'system'
+                      ? 'justify-center'
+                      : msg.sender === 'me'
+                        ? 'justify-end'
+                        : 'justify-start'
+                    }`}
+                >
+                  {msg.sender === 'system' ? (
+                    <div className="px-3 py-1 bg-zinc-900 border border-zinc-800 rounded-full text-[10px] uppercase tracking-widest font-black text-zinc-500">
                       {msg.text}
                     </div>
-                    <p className={`text-[9px] font-mono uppercase tracking-tight text-zinc-600 ${msg.sender === 'me' ? 'text-right' : 'text-left'}`}>
-                      {msg.timestamp.toLocaleTimeString()} · AES-256-GCM
-                    </p>
-                  </div>
-                )}
-              </motion.div>
-            ))}
-            <div ref={messagesEndRef} />
-          </div>
+                  ) : (
+                    <div
+                      className={`max-w-[78%] flex flex-col ${msg.sender === 'me' ? 'items-end' : 'items-start'
+                        }`}
+                    >
+                      <div
+                        className={`px-4 py-2.5 rounded-2xl text-sm leading-relaxed ${msg.sender === 'me'
+                            ? 'bg-white text-black rounded-br-md'
+                            : 'bg-zinc-900 text-zinc-200 border border-zinc-800 rounded-bl-md'
+                          }`}
+                      >
+                        {msg.text}
+                      </div>
+                      <div className="text-[9px] uppercase tracking-widest text-zinc-700 font-black mt-1 px-1">
+                        {formatTime(msg.timestamp)}
+                      </div>
+                    </div>
+                  )}
+                </motion.div>
+              ))}
+              <div ref={messagesEndRef} />
+            </div>
+          )}
         </div>
 
-        {/* ── Input bar ── */}
-        <form onSubmit={sendMessage} className="relative group">
-          <div className="absolute -inset-1 bg-cyan-500 rounded-3xl blur opacity-0 group-focus-within:opacity-10 transition duration-500" />
-          <div className="relative flex bg-zinc-950 border border-zinc-900 rounded-2xl p-2 gap-2">
+        {/* Input bar */}
+        <form onSubmit={sendMessage} className="mt-4">
+          <div className="relative flex bg-zinc-950 border border-zinc-800 focus-within:border-cyan-500/40 rounded-2xl p-1.5 transition-colors">
+            <Lock className="absolute left-5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-zinc-600 pointer-events-none" />
             <input
               type="text"
               value={inputText}
               onChange={e => setInputText(e.target.value)}
-              placeholder={status === 'connected' ? 'Type an encrypted message…' : 'Connecting…'}
+              placeholder={
+                status === 'connected' ? 'Type an encrypted message…' : 'Connecting…'
+              }
               disabled={status !== 'connected'}
-              className="flex-grow bg-transparent px-6 py-4 text-zinc-300 focus:outline-none text-sm disabled:opacity-40"
+              className="flex-grow bg-transparent pl-11 pr-3 py-3 text-zinc-200 focus:outline-none text-sm disabled:opacity-40 placeholder:text-zinc-600"
             />
             <button
               type="submit"
               disabled={status !== 'connected' || !inputText.trim()}
-              className="bg-white hover:bg-zinc-200 disabled:opacity-40 text-black px-4 sm:px-8 rounded-xl font-black text-[10px] uppercase tracking-widest transition-all flex items-center justify-center gap-2"
+              className="bg-white hover:bg-zinc-200 disabled:opacity-40 disabled:cursor-not-allowed text-black px-5 rounded-xl font-black text-[10px] uppercase tracking-widest transition-colors flex items-center gap-2"
             >
-              <Send className="w-4 h-4 sm:w-3.5 sm:h-3.5" /> <span className="hidden sm:inline">Transmit</span>
+              <Send className="w-3.5 h-3.5" />
+              <span className="hidden sm:inline">Send</span>
             </button>
+          </div>
+          <div className="flex items-center justify-center gap-2 mt-3 text-[10px] uppercase tracking-widest text-zinc-700 font-black">
+            <Lock className="w-3 h-3" />
+            Messages are encrypted on this device. We see only ciphertext.
           </div>
         </form>
       </div>

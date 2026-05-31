@@ -15,6 +15,10 @@ import {
   PutObjectCommand,
   ListObjectsV2Command,
   DeleteObjectsCommand,
+  CreateMultipartUploadCommand,
+  UploadPartCommand,
+  CompleteMultipartUploadCommand,
+  AbortMultipartUploadCommand,
 } from "@aws-sdk/client-s3";
 import { getSignedUrl } from "@aws-sdk/s3-request-presigner";
 import {
@@ -125,6 +129,42 @@ export async function handler(event: any) {
     ) {
       const roomId = path.split("/")[2];
       return await generateUploadUrl(event, roomId, userId);
+    }
+
+    // POST /rooms/{roomId}/multipart/create – Start a multipart upload (large files)
+    if (
+      httpMethod === "POST" &&
+      path.match(/^\/rooms\/[^/]+\/multipart\/create$/)
+    ) {
+      const roomId = path.split("/")[2];
+      return await createMultipartUpload(event, roomId, userId);
+    }
+
+    // POST /rooms/{roomId}/multipart/part-url – Get a presigned URL for one part
+    if (
+      httpMethod === "POST" &&
+      path.match(/^\/rooms\/[^/]+\/multipart\/part-url$/)
+    ) {
+      const roomId = path.split("/")[2];
+      return await getMultipartPartUrl(event, roomId, userId);
+    }
+
+    // POST /rooms/{roomId}/multipart/complete – Finalise a multipart upload
+    if (
+      httpMethod === "POST" &&
+      path.match(/^\/rooms\/[^/]+\/multipart\/complete$/)
+    ) {
+      const roomId = path.split("/")[2];
+      return await completeMultipartUpload(event, roomId, userId);
+    }
+
+    // POST /rooms/{roomId}/multipart/abort – Abort a multipart upload
+    if (
+      httpMethod === "POST" &&
+      path.match(/^\/rooms\/[^/]+\/multipart\/abort$/)
+    ) {
+      const roomId = path.split("/")[2];
+      return await abortMultipartUpload(event, roomId, userId);
     }
 
     // POST /rooms/{roomId}/download-url – Generate presigned download URL
@@ -324,6 +364,156 @@ async function generateUploadUrl(
     });
   } catch (error: any) {
     throw new Error(`Failed to generate upload URL: ${error.message}`);
+  }
+}
+
+// ─────────────────────────────────────────────────────────────────
+// MULTIPART UPLOAD (large files — bounded memory, streamed in parts)
+// ─────────────────────────────────────────────────────────────────
+
+// Shared helper: verify the room exists and the caller owns it.
+async function assertRoomOwner(roomId: string, userId: string) {
+  const roomResult = await dynamoClient.send(
+    new GetItemCommand({
+      TableName: ROOM_SETTINGS_TABLE,
+      Key: marshall({ roomId }),
+    })
+  );
+  if (!roomResult.Item) {
+    return { error: response(404, { error: "Room not found" }) };
+  }
+  const room = unmarshall(roomResult.Item) as any;
+  if (room.ownerId !== userId) {
+    return { error: response(403, { error: "Unauthorized access" }) };
+  }
+  return { room };
+}
+
+// 1) Start a multipart upload — returns an uploadId the client reuses for every part.
+async function createMultipartUpload(event: any, roomId: string, userId: string) {
+  const body = JSON.parse(event.body || "{}");
+  const { fileName, contentType = "application/octet-stream" } = body;
+  if (!fileName) {
+    return response(400, { error: "fileName is required" });
+  }
+
+  const guard = await assertRoomOwner(roomId, userId);
+  if (guard.error) return guard.error;
+
+  try {
+    const s3Key = `${roomId}/${fileName}`;
+    const result = await s3Client.send(
+      new CreateMultipartUploadCommand({
+        Bucket: SECURE_ROOM_BUCKET,
+        Key: s3Key,
+        ContentType: contentType,
+      })
+    );
+
+    return response(200, {
+      uploadId: result.UploadId,
+      s3Key,
+      message: "Multipart upload initiated",
+    });
+  } catch (error: any) {
+    throw new Error(`Failed to start multipart upload: ${error.message}`);
+  }
+}
+
+// 2) Presign a single part — client PUTs one encrypted chunk directly to S3.
+async function getMultipartPartUrl(event: any, roomId: string, userId: string) {
+  const body = JSON.parse(event.body || "{}");
+  const { s3Key, uploadId, partNumber } = body;
+  if (!s3Key || !uploadId || !partNumber) {
+    return response(400, { error: "s3Key, uploadId and partNumber are required" });
+  }
+  // Make sure the key actually belongs to this room (prevents cross-room writes).
+  if (!String(s3Key).startsWith(`${roomId}/`)) {
+    return response(400, { error: "s3Key does not belong to this room" });
+  }
+
+  const guard = await assertRoomOwner(roomId, userId);
+  if (guard.error) return guard.error;
+
+  try {
+    const command = new UploadPartCommand({
+      Bucket: SECURE_ROOM_BUCKET,
+      Key: s3Key,
+      UploadId: uploadId,
+      PartNumber: Number(partNumber),
+    });
+
+    const url = await getSignedUrl(s3Client, command, { expiresIn: 3600 });
+    return response(200, { url, partNumber: Number(partNumber), expiresIn: 3600 });
+  } catch (error: any) {
+    throw new Error(`Failed to presign upload part: ${error.message}`);
+  }
+}
+
+// 3) Complete — stitches the uploaded parts into the final object.
+async function completeMultipartUpload(event: any, roomId: string, userId: string) {
+  const body = JSON.parse(event.body || "{}");
+  const { s3Key, uploadId, parts } = body;
+  if (!s3Key || !uploadId || !Array.isArray(parts) || parts.length === 0) {
+    return response(400, { error: "s3Key, uploadId and parts[] are required" });
+  }
+  if (!String(s3Key).startsWith(`${roomId}/`)) {
+    return response(400, { error: "s3Key does not belong to this room" });
+  }
+
+  const guard = await assertRoomOwner(roomId, userId);
+  if (guard.error) return guard.error;
+
+  try {
+    // Parts must be ordered by part number with their ETags.
+    const sortedParts = [...parts]
+      .map((p: any) => ({ ETag: p.ETag, PartNumber: Number(p.PartNumber) }))
+      .sort((a, b) => a.PartNumber - b.PartNumber);
+
+    const result = await s3Client.send(
+      new CompleteMultipartUploadCommand({
+        Bucket: SECURE_ROOM_BUCKET,
+        Key: s3Key,
+        UploadId: uploadId,
+        MultipartUpload: { Parts: sortedParts },
+      })
+    );
+
+    return response(200, {
+      s3Key,
+      location: result.Location,
+      message: "Multipart upload completed",
+    });
+  } catch (error: any) {
+    throw new Error(`Failed to complete multipart upload: ${error.message}`);
+  }
+}
+
+// 4) Abort — cleans up parts if the client cancels or errors out.
+async function abortMultipartUpload(event: any, roomId: string, userId: string) {
+  const body = JSON.parse(event.body || "{}");
+  const { s3Key, uploadId } = body;
+  if (!s3Key || !uploadId) {
+    return response(400, { error: "s3Key and uploadId are required" });
+  }
+  if (!String(s3Key).startsWith(`${roomId}/`)) {
+    return response(400, { error: "s3Key does not belong to this room" });
+  }
+
+  const guard = await assertRoomOwner(roomId, userId);
+  if (guard.error) return guard.error;
+
+  try {
+    await s3Client.send(
+      new AbortMultipartUploadCommand({
+        Bucket: SECURE_ROOM_BUCKET,
+        Key: s3Key,
+        UploadId: uploadId,
+      })
+    );
+    return response(200, { message: "Multipart upload aborted" });
+  } catch (error: any) {
+    throw new Error(`Failed to abort multipart upload: ${error.message}`);
   }
 }
 

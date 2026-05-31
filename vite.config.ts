@@ -15,9 +15,29 @@ export default defineConfig(({mode}) => {
         '@': path.resolve(__dirname, '.'),
       },
     },
+    build: {
+      // Raise the warning ceiling; the real win comes from splitting below.
+      chunkSizeWarningLimit: 700,
+      rollupOptions: {
+        output: {
+          // Split big, rarely-changing vendor libs into their own cacheable
+          // chunks so the browser can parallel-download and cache them, and so
+          // feature-only deps (three, socket.io, jszip) aren't bundled into the
+          // initial home-page payload.
+          manualChunks: {
+            'react-vendor': ['react', 'react-dom'],
+            'clerk-vendor': ['@clerk/clerk-react', '@clerk/themes'],
+            'three-vendor': ['three'],
+            'motion-vendor': ['motion'],
+            'socket-vendor': ['socket.io-client'],
+            'zip-vendor': ['jszip'],
+          },
+        },
+      },
+    },
     server: {
       // HMR is disabled in AI Studio via DISABLE_HMR env var.
-      // Do not modifyâfile watching is disabled to prevent flickering during agent edits.
+      // Do not modify - file watching is disabled to prevent flickering during agent edits.
       hmr: process.env.DISABLE_HMR !== 'true',
       proxy: {
         '/api': {

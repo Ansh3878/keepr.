@@ -1,6 +1,17 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
-import { Terminal, Send, ShieldAlert, ShieldCheck, Zap, Globe, Cpu, Camera, ArrowRight, Loader2, X } from 'lucide-react';
+import {
+  Terminal,
+  ShieldAlert,
+  ShieldCheck,
+  Zap,
+  Globe,
+  Camera,
+  Loader2,
+  X,
+  AlertTriangle,
+  Link as LinkIcon
+} from 'lucide-react';
 import { io, Socket } from 'socket.io-client';
 
 interface DetonatorAnalysis {
@@ -42,6 +53,7 @@ export const DetonatorView = () => {
     });
 
     return () => {
+      socketRef.current?.removeAllListeners();
       socketRef.current?.disconnect();
     };
   }, []);
@@ -51,6 +63,10 @@ export const DetonatorView = () => {
       terminalEndRef.current?.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
     }
   }, [logs, isDetonating]);
+
+  useEffect(() => {
+    window.scrollTo(0, 0);
+  }, []);
 
   const handleDetonate = (e: React.FormEvent) => {
     e.preventDefault();
@@ -65,258 +81,334 @@ export const DetonatorView = () => {
     socketRef.current?.emit('detonate-link', { url });
   };
 
-  useEffect(() => {
-    window.scrollTo(0, 0);
-  }, []);
+  const reset = () => {
+    setLogs([]);
+    setScreenshot(null);
+    setAnalysis(null);
+    setError(null);
+    setIsAnalysisExpanded(false);
+  };
+
+  const hasResults = logs.length > 0 || screenshot || analysis || isDetonating;
 
   return (
-    <section className="relative pt-40 pb-20 px-6 min-h-screen overflow-hidden">
-      {/* Background Atmosphere */}
-      <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[1200px] h-[600px] bg-cyan-500/[0.05] blur-[120px] rounded-full pointer-events-none" />
-      <div className="absolute bottom-0 right-0 w-[600px] h-[600px] bg-cyan-500/[0.03] blur-[150px] rounded-full pointer-events-none" />
-
-      <div className="max-w-6xl mx-auto relative z-10">
-        <div className="text-center mb-16 space-y-4">
-          <motion.div 
-            initial={{ opacity: 0, scale: 0.9 }}
-            animate={{ opacity: 1, scale: 1 }}
-            className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-cyan-500/10 border border-cyan-500/20 text-cyan-400 text-[10px] font-black uppercase tracking-[0.2em] mx-auto"
-          >
-            <Zap className="w-3 h-3 fill-cyan-400" /> AI Link Detonator Sandbox
-          </motion.div>
-          <motion.h1 
-             initial={{ opacity: 0, y: 20 }}
-             animate={{ opacity: 1, y: 0 }}
-             className="text-6xl md:text-8xl font-black tracking-tighter text-white"
-          >
-            Zero Trust <span className="text-cyan-500 italic font-serif font-light">Exploration.</span>
-          </motion.h1>
-          <motion.p 
-             initial={{ opacity: 0, y: 20 }}
-             animate={{ opacity: 1, y: 0 }}
-             transition={{ delay: 0.1 }}
-             className="text-zinc-500 max-w-2xl mx-auto font-medium"
-          >
-            Execute suspicious links in a hardened cloud environment. Captured, analyzed, and neutralized by Gemini 1.5 Pro.
-          </motion.p>
-        </div>
-
-        {/* Input Chamber */}
-        <motion.div 
-          initial={{ opacity: 0, y: 30 }}
+    <section className="relative pt-32 pb-20 px-6 min-h-screen overflow-hidden">
+      <div className="max-w-6xl mx-auto">
+        {/* Hero */}
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.2 }}
-          className="max-w-3xl mx-auto mb-16"
+          className="text-center mb-12"
         >
-          <form onSubmit={handleDetonate} className="relative group">
-            <div className="absolute -inset-1 bg-gradient-to-r from-cyan-500 to-blue-500 rounded-3xl blur opacity-20 group-hover:opacity-40 transition duration-1000"></div>
-            <div className="relative flex bg-zinc-950 border border-zinc-900 rounded-2xl overflow-hidden p-2">
-              <div className="flex-grow flex items-center px-4">
-                <Globe className="w-5 h-5 text-zinc-600 mr-3" />
-                <input 
-                  type="url" 
-                  required
-                  placeholder="https://suspected-target.io/login"
-                  value={url}
-                  onChange={(e) => setUrl(e.target.value)}
-                  className="w-full bg-transparent text-zinc-300 py-4 focus:outline-none placeholder:text-zinc-700 font-mono text-sm"
-                />
-              </div>
-              <button 
-                disabled={isDetonating}
-                type="submit"
-                className="bg-cyan-500 hover:bg-cyan-600 text-black px-8 rounded-xl font-black text-[10px] uppercase tracking-widest transition-all shadow-[0_0_20px_rgba(6,182,212,0.3)] disabled:opacity-50 disabled:shadow-none flex items-center gap-2"
-              >
-                {isDetonating ? <Loader2 className="w-3 h-3 animate-spin" /> : <Zap className="w-3 h-3" />}
-                {isDetonating ? 'Detonating...' : 'Detonate'}
-              </button>
-            </div>
-          </form>
+          <h1 className="text-5xl md:text-7xl font-bold tracking-tight">
+            Detonate any <span className="font-serif italic font-extralight opacity-60">link.</span>
+          </h1>
         </motion.div>
 
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-          {/* Detonation Chamber (Logs) */}
-          <motion.div 
-            initial={{ opacity: 0, x: -30 }}
-            animate={{ opacity: 1, x: 0 }}
-            className="bg-black/80 rounded-[2rem] border border-zinc-900 backdrop-blur-xl overflow-hidden flex flex-col h-[500px] shadow-2xl"
-          >
-            <div className="bg-zinc-900/50 px-6 py-4 border-b border-zinc-800 flex items-center justify-between">
-              <div className="flex items-center gap-2">
-                <Terminal className="w-4 h-4 text-cyan-500" />
-                <span className="text-[10px] font-black uppercase tracking-widest text-zinc-400">Sandbox.stdout</span>
-              </div>
-              <div className="flex gap-1.5 text-zinc-800">
-                <div className="w-2 h-2 rounded-full bg-red-500/20" />
-                <div className="w-2 h-2 rounded-full bg-orange-500/20" />
-                <div className="w-2 h-2 rounded-full bg-green-500/20" />
-              </div>
-            </div>
-            <div className="p-6 flex-grow overflow-y-auto font-mono text-[11px] space-y-2 custom-scrollbar">
-              {!logs.length && (
-                <div className="text-zinc-800 italic">Waiting for target acquisition...</div>
-              )}
-              {logs.map((log, i) => (
-                <div key={i} className="flex gap-3">
-                  <span className="text-zinc-700 shrink-0 select-none">{i + 1}</span>
-                  <span className={log.includes('successfully') || log.includes('complete') ? 'text-cyan-400' : 'text-zinc-400'}>
-                    {log}
-                  </span>
-                </div>
-              ))}
-              {isDetonating && (
-                <div className="flex gap-3 items-center">
-                   <span className="text-zinc-700 shrink-0 select-none">{logs.length + 1}</span>
-                   <span className="text-cyan-500/50 animate-pulse">Running diagnostic heuristics...</span>
-                </div>
-              )}
-              <div ref={terminalEndRef} />
-            </div>
-          </motion.div>
+        {/* Input */}
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.05 }}
+          className="max-w-3xl mx-auto mb-8"
+        >
+          <div className="bg-zinc-950 border border-zinc-800 rounded-[2.5rem] p-8 md:p-10 relative overflow-hidden">
+            <div className="absolute inset-0 bg-[radial-gradient(circle_at_1px_1px,rgba(103,232,249,0.06)_1px,transparent_1px)] bg-[size:20px_20px] [mask-image:radial-gradient(ellipse_60%_60%_at_50%_50%,#000_50%,transparent_100%)] opacity-40" />
 
-          {/* Visual Evidence Area */}
-          <motion.div 
-            initial={{ opacity: 0, x: 30 }}
-            animate={{ opacity: 1, x: 0 }}
-            className="space-y-8"
-          >
-            <div className="bg-zinc-950 rounded-[2rem] border border-zinc-900 p-8 h-[500px] flex flex-col items-center justify-center relative overflow-hidden group">
-               <AnimatePresence mode="wait">
-                {screenshot ? (
-                  <motion.div 
-                    key="screenshot"
-                    initial={{ opacity: 0, scale: 0.9 }}
-                    animate={{ opacity: 1, scale: 1 }}
-                    className="w-full h-full flex flex-col"
-                  >
-                    <div className="text-[10px] font-black uppercase tracking-widest text-zinc-600 mb-4 flex items-center gap-2">
-                       <Camera className="w-3 h-3" /> Visual Evidence Capture
-                    </div>
-                    <div className="flex-grow rounded-xl overflow-hidden border border-zinc-800 bg-black">
-                       <img src={`data:image/png;base64,${screenshot}`} alt="Detonation Screenshot" className="w-full h-full object-contain" />
-                    </div>
-                  </motion.div>
+            <form onSubmit={handleDetonate} className="relative z-10">
+              <label className="text-[10px] uppercase tracking-[0.25em] text-zinc-500 font-black mb-3 block">
+                Target URL
+              </label>
+              <div className="relative">
+                <Globe className="absolute left-5 top-1/2 -translate-y-1/2 w-4 h-4 text-zinc-500 pointer-events-none" />
+                <input
+                  type="url"
+                  required
+                  placeholder="https://suspected-target.example/login"
+                  value={url}
+                  onChange={e => setUrl(e.target.value)}
+                  className="w-full bg-zinc-900 border border-zinc-800 rounded-2xl pl-12 pr-4 py-4 text-zinc-200 font-mono text-sm focus:border-cyan-500/50 outline-none transition-colors placeholder:text-zinc-600"
+                />
+              </div>
+
+              <button
+                type="submit"
+                disabled={isDetonating || !url}
+                className="w-full mt-5 group bg-white text-black px-7 py-4 rounded-2xl text-sm font-black uppercase tracking-[0.2em] hover:bg-zinc-200 transition-all hover:scale-[1.01] active:scale-[0.99] disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:scale-100 shadow-[0_0_24px_rgba(255,255,255,0.12)] flex items-center justify-center gap-2"
+              >
+                {isDetonating ? (
+                  <>
+                    <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                    Detonating
+                  </>
                 ) : (
-                  <motion.div 
-                    key="placeholder"
-                    initial={{ opacity: 0 }}
-                    animate={{ opacity: 1 }}
-                    className="text-center space-y-6"
-                  >
-                    <div className="w-20 h-20 bg-zinc-900 rounded-3xl flex items-center justify-center mx-auto border border-zinc-800 shadow-inner">
-                       {isDetonating ? <Loader2 className="w-8 h-8 text-cyan-500 animate-spin" /> : <ShieldAlert className="w-8 h-8 text-zinc-700" />}
-                    </div>
-                    <div>
-                      <h3 className="text-white font-bold tracking-tight">Neutral Ground</h3>
-                      <p className="text-zinc-600 text-sm italic font-serif">Awaiting visual heuristics transmission.</p>
-                    </div>
-                  </motion.div>
+                  <>
+                    <Zap className="w-3.5 h-3.5" strokeWidth={3} />
+                    Detonate URL
+                  </>
                 )}
-               </AnimatePresence>
+              </button>
+            </form>
+          </div>
+        </motion.div>
 
-               {/* Analysis Overlay */}
-               <AnimatePresence>
-                {analysis && (
-                  <motion.div 
-                    layout
-                    transition={{ layout: { type: "spring", bounce: 0.1, duration: 0.6 } }}
-                    initial={{ opacity: 0, y: 100 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    exit={{ opacity: 0, y: 100 }}
-                    onClick={() => !isAnalysisExpanded && setIsAnalysisExpanded(true)}
-                    className={`absolute ${isAnalysisExpanded ? 'inset-4 p-8 flex flex-col z-40 bg-black/95' : 'inset-x-4 bottom-4 p-6 z-20 cursor-pointer bg-black/90'} border border-white/10 rounded-2xl backdrop-blur-2xl shadow-2xl transition-colors hover:bg-black/100 overflow-hidden`}
-                  >
-                    <motion.div layout className="flex flex-col sm:flex-row sm:items-end justify-between gap-4 sm:gap-6 mb-6">
-                       <motion.div layout className="flex flex-col items-start">
-                          <motion.div layout className={`inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full text-[9px] font-black uppercase tracking-widest mb-2 ${analysis.riskScore > 50 ? 'bg-red-500/20 text-red-400' : 'bg-cyan-500/20 text-cyan-400'}`}>
-                             {analysis.riskScore > 50 ? <ShieldAlert className="w-2.5 h-2.5" /> : <ShieldCheck className="w-2.5 h-2.5" />}
-                             {analysis.verdict}
-                          </motion.div>
-                          <motion.h4 layout className={`text-white font-black uppercase tracking-tighter leading-none transition-all duration-500 ${isAnalysisExpanded ? 'text-3xl' : 'text-xl'}`}>PHISHING ANALYSIS</motion.h4>
-                       </motion.div>
-                       <motion.div layout className="flex items-end justify-between w-full sm:w-auto sm:justify-end gap-6">
-                         <motion.div layout className="text-left sm:text-right">
-                            <motion.div layout className={`font-black text-white leading-none mb-1 transition-all duration-500 ${isAnalysisExpanded ? 'text-5xl' : 'text-3xl'}`}>{analysis.riskScore}</motion.div>
-                            <motion.div layout className="text-[9px] font-black text-zinc-500 uppercase tracking-widest leading-none">Risk Score</motion.div>
-                         </motion.div>
-                         <AnimatePresence>
-                           {isAnalysisExpanded && (
-                             <motion.button 
-                               initial={{ opacity: 0, scale: 0.8 }}
-                               animate={{ opacity: 1, scale: 1 }}
-                               exit={{ opacity: 0, scale: 0.8 }}
-                               onClick={(e) => {
-                                 e.stopPropagation();
-                                 setIsAnalysisExpanded(false);
-                               }}
-                               className="p-2.5 bg-white/5 hover:bg-white/10 rounded-full transition-colors self-center sm:self-end"
-                             >
-                               <X className="w-5 h-5 text-zinc-400 hover:text-white" />
-                             </motion.button>
-                           )}
-                         </AnimatePresence>
-                       </motion.div>
-                    </motion.div>
-                    <motion.div layout className="relative flex-grow overflow-hidden">
-                      <AnimatePresence mode="popLayout">
-                        <motion.div
-                          key={isAnalysisExpanded ? 'expanded' : 'collapsed'}
-                          initial={{ opacity: 0, filter: 'blur(4px)' }}
-                          animate={{ opacity: 1, filter: 'blur(0px)' }}
-                          exit={{ opacity: 0, filter: 'blur(4px)' }}
-                          transition={{ duration: 0.3 }}
-                          className={`text-zinc-400 italic font-serif leading-relaxed ${isAnalysisExpanded ? 'text-base h-full overflow-y-auto mb-8 pr-4' : 'text-xs mb-4 line-clamp-3'}`}
-                        >
-                          {analysis.reason}
-                        </motion.div>
-                      </AnimatePresence>
-                    </motion.div>
-                    <motion.div layout className="h-1.5 bg-zinc-900 rounded-full overflow-hidden shrink-0 mt-auto">
-                       <motion.div 
-                        initial={{ width: 0 }}
-                        animate={{ width: `${analysis.riskScore}%` }}
-                        transition={{ duration: 1, ease: "easeOut" }}
-                        className={`h-full ${analysis.riskScore > 50 ? 'bg-red-500' : 'bg-cyan-500'}`}
-                       />
-                    </motion.div>
-                  </motion.div>
-                )}
-               </AnimatePresence>
-
-               {error && (
-                 <div className="absolute inset-5 bg-red-500/90 flex items-center justify-center rounded-2xl p-8 text-center backdrop-blur-sm z-30">
-                    <div className="space-y-4">
-                       <ShieldAlert className="w-12 h-12 text-white mx-auto" />
-                       <h3 className="text-white font-black text-2xl uppercase tracking-tighter">DETONATION FAILED</h3>
-                       <p className="text-white/80 text-sm font-mono">{error}</p>
-                       <button onClick={() => setError(null)} className="bg-white text-red-500 px-6 py-2 rounded-lg text-[10px] font-black uppercase tracking-widest">Retry</button>
-                    </div>
-                 </div>
-               )}
-            </div>
-          </motion.div>
-        </div>
-
-        {/* Feature Cards */}
-        <div className="mt-20 grid grid-cols-1 md:grid-cols-3 gap-8">
-           {[
-             { icon: Cpu, name: 'Cloud Isolated', desc: 'Puppeteer node running in a sandboxed AWS Lambda container.' },
-             { icon: Globe, name: 'Neutral IP', desc: 'Target link sees a generic data center fingerprint, not yours.' },
-             { icon: Zap, name: 'Gemini Heuristics', desc: 'AI analyzes visual patterns to detect brand impersonation.' }
-           ].map((feat, i) => (
-             <motion.div 
-              key={feat.name}
+        {/* Results — terminal + visual */}
+        <AnimatePresence>
+          {hasResults && (
+            <motion.div
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.4 + (i * 0.1) }}
-              className="p-6 bg-zinc-950 border border-zinc-900 rounded-2xl"
-             >
-                <feat.icon className="w-5 h-5 text-zinc-400 mb-3" />
-                <h3 className="text-white font-bold text-sm mb-1">{feat.name}</h3>
-                <p className="text-zinc-600 text-xs leading-relaxed">{feat.desc}</p>
-             </motion.div>
-           ))}
-        </div>
+              exit={{ opacity: 0, y: 10 }}
+              className="grid grid-cols-1 lg:grid-cols-2 gap-4"
+            >
+              {/* Terminal */}
+              <div className="bg-zinc-950 border border-zinc-800 rounded-[2rem] overflow-hidden flex flex-col h-[480px]">
+                <div className="bg-zinc-900/60 px-5 py-3 border-b border-zinc-800 flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <Terminal className="w-3.5 h-3.5 text-cyan-400" />
+                    <span className="text-[10px] font-black uppercase tracking-[0.25em] text-zinc-400">
+                      sandbox.stdout
+                    </span>
+                  </div>
+                  <div className="flex gap-1.5">
+                    <div className="w-2 h-2 rounded-full bg-zinc-700" />
+                    <div className="w-2 h-2 rounded-full bg-zinc-700" />
+                    <div className={`w-2 h-2 rounded-full ${isDetonating ? 'bg-cyan-400 animate-pulse' : 'bg-zinc-700'}`} />
+                  </div>
+                </div>
+                <div className="p-5 flex-grow overflow-y-auto font-mono text-[11px] space-y-1.5 custom-scrollbar leading-relaxed">
+                  {!logs.length && !isDetonating && (
+                    <div className="text-zinc-700 italic">No log output yet.</div>
+                  )}
+                  {logs.map((log, i) => (
+                    <div key={i} className="flex gap-3">
+                      <span className="text-zinc-700 shrink-0 select-none w-6 text-right">{i + 1}</span>
+                      <span
+                        className={
+                          log.includes('successfully') || log.includes('complete')
+                            ? 'text-cyan-400'
+                            : 'text-zinc-400'
+                        }
+                      >
+                        {log}
+                      </span>
+                    </div>
+                  ))}
+                  {isDetonating && (
+                    <div className="flex gap-3 items-center">
+                      <span className="text-zinc-700 shrink-0 select-none w-6 text-right">
+                        {logs.length + 1}
+                      </span>
+                      <span className="text-cyan-400/60 animate-pulse">running diagnostics…</span>
+                    </div>
+                  )}
+                  <div ref={terminalEndRef} />
+                </div>
+              </div>
+
+              {/* Visual */}
+              <div className="bg-zinc-950 border border-zinc-800 rounded-[2rem] p-5 h-[480px] flex flex-col items-center justify-center relative overflow-hidden">
+                <AnimatePresence mode="wait">
+                  {screenshot ? (
+                    <motion.div
+                      key="screenshot"
+                      initial={{ opacity: 0, scale: 0.96 }}
+                      animate={{ opacity: 1, scale: 1 }}
+                      className="w-full h-full flex flex-col"
+                    >
+                      <div className="text-[10px] font-black uppercase tracking-[0.25em] text-zinc-500 mb-3 flex items-center gap-2">
+                        <Camera className="w-3 h-3" /> Visual capture
+                      </div>
+                      <div className="flex-grow rounded-xl overflow-hidden border border-zinc-800 bg-black">
+                        <img
+                          src={`data:image/png;base64,${screenshot}`}
+                          alt="Detonation screenshot"
+                          className="w-full h-full object-contain"
+                        />
+                      </div>
+                    </motion.div>
+                  ) : (
+                    <motion.div
+                      key="placeholder"
+                      initial={{ opacity: 0 }}
+                      animate={{ opacity: 1 }}
+                      className="text-center space-y-5"
+                    >
+                      <div className="w-16 h-16 bg-zinc-900 border border-zinc-800 rounded-2xl flex items-center justify-center mx-auto">
+                        {isDetonating ? (
+                          <Loader2 className="w-7 h-7 text-cyan-400 animate-spin" />
+                        ) : (
+                          <Camera className="w-7 h-7 text-zinc-600" strokeWidth={1.5} />
+                        )}
+                      </div>
+                      <div>
+                        <h3 className="text-white font-bold tracking-tight">
+                          {isDetonating ? 'Capturing page' : 'Awaiting capture'}
+                        </h3>
+                        <p className="text-zinc-500 text-xs mt-1">
+                          {isDetonating
+                            ? 'The sandbox is rendering the target.'
+                            : 'A screenshot will appear here when ready.'}
+                        </p>
+                      </div>
+                    </motion.div>
+                  )}
+                </AnimatePresence>
+
+                {/* Analysis overlay (collapsed pill, expandable) */}
+                <AnimatePresence>
+                  {analysis && (
+                    <motion.div
+                      layout
+                      transition={{ layout: { type: 'spring', bounce: 0.1, duration: 0.5 } }}
+                      initial={{ opacity: 0, y: 60 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      exit={{ opacity: 0, y: 60 }}
+                      onClick={() => !isAnalysisExpanded && setIsAnalysisExpanded(true)}
+                      className={`absolute ${isAnalysisExpanded ? 'inset-3 p-6 z-40 bg-zinc-950' : 'inset-x-3 bottom-3 p-4 z-20 cursor-pointer bg-zinc-950/95'} border ${analysis.riskScore > 50 ? 'border-red-500/30' : 'border-cyan-500/30'} rounded-2xl backdrop-blur-xl shadow-2xl flex flex-col overflow-hidden`}
+                    >
+                      <motion.div layout className="flex items-center justify-between gap-4 mb-3">
+                        <motion.div layout className="flex items-center gap-3 min-w-0">
+                          <motion.div
+                            layout
+                            className={`shrink-0 w-9 h-9 rounded-xl flex items-center justify-center border ${analysis.riskScore > 50
+                                ? 'bg-red-500/10 border-red-500/30'
+                                : 'bg-cyan-500/10 border-cyan-500/30'
+                              }`}
+                          >
+                            {analysis.riskScore > 50 ? (
+                              <ShieldAlert className="w-4 h-4 text-red-400" />
+                            ) : (
+                              <ShieldCheck className="w-4 h-4 text-cyan-400" />
+                            )}
+                          </motion.div>
+                          <motion.div layout className="min-w-0">
+                            <motion.div
+                              layout
+                              className="text-[9px] uppercase tracking-[0.25em] font-black text-zinc-500 mb-0.5"
+                            >
+                              Verdict
+                            </motion.div>
+                            <motion.h4
+                              layout
+                              className="text-white font-bold tracking-tight text-base truncate"
+                            >
+                              {analysis.verdict}
+                            </motion.h4>
+                          </motion.div>
+                        </motion.div>
+
+                        <motion.div layout className="flex items-center gap-3 shrink-0">
+                          <motion.div layout className="text-right">
+                            <motion.div
+                              layout
+                              className={`font-black tracking-tighter leading-none ${isAnalysisExpanded ? 'text-3xl' : 'text-xl'} ${analysis.riskScore > 50 ? 'text-red-400' : 'text-cyan-400'
+                                }`}
+                            >
+                              {analysis.riskScore}
+                            </motion.div>
+                            <motion.div
+                              layout
+                              className="text-[9px] uppercase tracking-widest text-zinc-600 font-black mt-0.5"
+                            >
+                              Risk score
+                            </motion.div>
+                          </motion.div>
+                          {isAnalysisExpanded && (
+                            <button
+                              onClick={e => {
+                                e.stopPropagation();
+                                setIsAnalysisExpanded(false);
+                              }}
+                              className="w-8 h-8 rounded-full bg-zinc-900 hover:bg-zinc-800 border border-zinc-800 flex items-center justify-center text-zinc-400 hover:text-white transition-colors"
+                            >
+                              <X className="w-4 h-4" />
+                            </button>
+                          )}
+                        </motion.div>
+                      </motion.div>
+
+                      <motion.div layout className="h-1 bg-zinc-900 rounded-full overflow-hidden mb-3 shrink-0">
+                        <motion.div
+                          initial={{ width: 0 }}
+                          animate={{ width: `${analysis.riskScore}%` }}
+                          transition={{ duration: 0.8, ease: 'easeOut' }}
+                          className={`h-full ${analysis.riskScore > 50
+                              ? 'bg-gradient-to-r from-red-500 to-red-400'
+                              : 'bg-gradient-to-r from-cyan-500 to-cyan-300'
+                            }`}
+                        />
+                      </motion.div>
+
+                      <motion.div layout className="relative flex-grow overflow-hidden">
+                        <AnimatePresence mode="popLayout">
+                          <motion.div
+                            key={isAnalysisExpanded ? 'expanded' : 'collapsed'}
+                            initial={{ opacity: 0 }}
+                            animate={{ opacity: 1 }}
+                            exit={{ opacity: 0 }}
+                            transition={{ duration: 0.2 }}
+                            className={`text-zinc-400 leading-relaxed ${isAnalysisExpanded
+                                ? 'text-sm h-full overflow-y-auto pr-2 custom-scrollbar'
+                                : 'text-xs line-clamp-2'
+                              }`}
+                          >
+                            {analysis.reason}
+                          </motion.div>
+                        </AnimatePresence>
+                      </motion.div>
+
+                      {!isAnalysisExpanded && (
+                        <motion.div
+                          layout
+                          className="text-[9px] text-zinc-600 mt-2 uppercase tracking-widest font-black shrink-0"
+                        >
+                          Tap to expand
+                        </motion.div>
+                      )}
+                    </motion.div>
+                  )}
+                </AnimatePresence>
+              </div>
+            </motion.div>
+          )}
+        </AnimatePresence>
+
+        {/* Error */}
+        <AnimatePresence>
+          {error && (
+            <motion.div
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0 }}
+              className="max-w-3xl mx-auto mt-6 px-5 py-4 rounded-2xl bg-red-500/5 border border-red-500/20 flex items-start gap-3"
+            >
+              <AlertTriangle className="w-4 h-4 text-red-400 shrink-0 mt-0.5" />
+              <div className="flex-1">
+                <div className="text-red-400 text-sm font-bold mb-1">Detonation failed</div>
+                <div className="text-zinc-400 text-xs leading-relaxed">{error}</div>
+              </div>
+              <button
+                onClick={() => setError(null)}
+                className="text-[10px] uppercase tracking-widest font-black text-zinc-400 hover:text-white px-3 py-1.5 rounded-lg bg-zinc-900 border border-zinc-800 hover:border-zinc-700 transition-colors shrink-0"
+              >
+                Dismiss
+              </button>
+            </motion.div>
+          )}
+        </AnimatePresence>
+
+        {/* Reset action when results are present */}
+        {(analysis || screenshot) && !isDetonating && (
+          <div className="mt-6 flex justify-center">
+            <button
+              onClick={reset}
+              className="px-6 py-2.5 rounded-full bg-zinc-900 border border-zinc-800 hover:border-cyan-500/40 text-zinc-400 hover:text-white text-[10px] font-black uppercase tracking-widest transition-colors flex items-center gap-2"
+            >
+              <LinkIcon className="w-3 h-3" /> Detonate another
+            </button>
+          </div>
+        )}
       </div>
     </section>
   );

@@ -98,6 +98,8 @@ provider:
             - s3:PutObject
             - s3:DeleteObject
             - s3:ListBucket
+            - s3:AbortMultipartUpload
+            - s3:ListMultipartUploadParts
           Resource:
             - "arn:aws:s3:::${self:custom.secureRoomBucketName}"
             - "arn:aws:s3:::${self:custom.secureRoomBucketName}/*"
@@ -161,6 +163,30 @@ functions:
       # Generate S3 Presigned URLs for upload
       - http:
           path: /rooms/{roomId}/upload-url
+          method: post
+          cors: true
+
+      # Multipart upload — start (large files)
+      - http:
+          path: /rooms/{roomId}/multipart/create
+          method: post
+          cors: true
+
+      # Multipart upload — presign one part
+      - http:
+          path: /rooms/{roomId}/multipart/part-url
+          method: post
+          cors: true
+
+      # Multipart upload — complete
+      - http:
+          path: /rooms/{roomId}/multipart/complete
+          method: post
+          cors: true
+
+      # Multipart upload — abort
+      - http:
+          path: /rooms/{roomId}/multipart/abort
           method: post
           cors: true
 
