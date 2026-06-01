@@ -448,6 +448,23 @@ Keepr Security • Zero-Knowledge Secure Storage
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <meta http-equiv="X-UA-Compatible" content="IE=edge">
   <title>Vault Created — Keepr</title>
+  <style>
+    @media only screen and (max-width: 600px) {
+      .mobile-label {
+        display: block !important;
+        width: 100% !important;
+        padding-bottom: 4px !important;
+      }
+      .mobile-value {
+        display: block !important;
+        width: 100% !important;
+        padding-top: 0 !important;
+      }
+      .mobile-row {
+        display: block !important;
+      }
+    }
+  </style>
 </head>
 <body style="margin:0;padding:0;background-color:#040405;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;">
 
@@ -461,43 +478,43 @@ Keepr Security • Zero-Knowledge Secure Storage
 
           <!-- Header banner -->
           <tr>
-            <td style="background:linear-gradient(135deg,#10b981,#059669);padding:20px 24px;border-radius:16px 16px 0 0;">
+            <td style="background:linear-gradient(135deg,#10b981,#059669);padding:20px 16px;border-radius:16px 16px 0 0;">
               <p style="margin:0;color:#ffffff;font-size:18px;font-weight:800;letter-spacing:0.03em;">🔐 Vault Created</p>
             </td>
           </tr>
 
           <!-- Body -->
           <tr>
-            <td style="padding:20px 24px 8px;">
+            <td style="padding:20px 16px 8px;">
               <p style="margin:0 0 20px;color:#ffffff;font-size:14px;font-weight:600;line-height:1.5;">
                 Your secure room <strong>${room.name}</strong> is live and armed.
               </p>
 
               <!-- Info rows table -->
-              <table role="presentation" cellpadding="0" cellspacing="0" border="0" width="100%" style="background-color:#12121a;border:1px solid #27273a;border-radius:10px;">
+              <table role="presentation" cellpadding="0" cellspacing="0" border="0" width="100%" style="background-color:#12121a;border:1px solid #27273a;border-radius:10px;table-layout:fixed;">
 
                 <!-- Vault ID -->
-                <tr>
-                  <td width="38%" style="padding:10px 12px;color:#71717a;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:0.08em;vertical-align:top;">Vault ID</td>
-                  <td style="padding:10px 12px;color:#ffffff;font-size:10px;font-family:Courier,monospace;word-break:break-all;overflow-wrap:anywhere;vertical-align:top;">${room.roomId}</td>
+                <tr class="mobile-row">
+                  <td class="mobile-label" style="padding:10px 12px;color:#71717a;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:0.05em;vertical-align:top;width:35%;">VAULT ID</td>
+                  <td class="mobile-value" style="padding:10px 12px;color:#ffffff;font-size:9px;font-family:Courier,monospace;word-break:break-all;overflow-wrap:anywhere;vertical-align:top;line-height:1.4;">${room.roomId}</td>
                 </tr>
 
                 <!-- Divider -->
                 <tr><td colspan="2" style="padding:0;"><div style="height:1px;background-color:#27273a;font-size:0;line-height:0;">&nbsp;</div></td></tr>
 
                 <!-- Safety -->
-                <tr>
-                  <td width="38%" style="padding:10px 12px;color:#71717a;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:0.08em;">Safety</td>
-                  <td style="padding:10px 12px;color:#10b981;font-size:11px;font-weight:700;text-transform:uppercase;">${room.safetyStrategy}</td>
+                <tr class="mobile-row">
+                  <td class="mobile-label" style="padding:10px 12px;color:#71717a;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:0.05em;width:35%;">SAFETY</td>
+                  <td class="mobile-value" style="padding:10px 12px;color:#10b981;font-size:11px;font-weight:700;text-transform:uppercase;">${room.safetyStrategy}</td>
                 </tr>
 
                 <!-- Divider -->
                 <tr><td colspan="2" style="padding:0;"><div style="height:1px;background-color:#27273a;font-size:0;line-height:0;">&nbsp;</div></td></tr>
 
                 <!-- Inactivity Timer -->
-                <tr>
-                  <td width="38%" style="padding:10px 12px;color:#71717a;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:0.08em;">Timer</td>
-                  <td style="padding:10px 12px;color:#e4e4e7;font-size:11px;">${room.inactivityDays === 0 ? '1 min (test mode)' : room.inactivityDays + ' days'}</td>
+                <tr class="mobile-row">
+                  <td class="mobile-label" style="padding:10px 12px;color:#71717a;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:0.05em;width:35%;">INACTIVITY TIMER</td>
+                  <td class="mobile-value" style="padding:10px 12px;color:#e4e4e7;font-size:11px;">${room.inactivityDays === 0 ? '1 min (test mode)' : room.inactivityDays + ' days'}</td>
                 </tr>
 
                 ${isMigration && room.transferEmail ? `
@@ -505,9 +522,9 @@ Keepr Security • Zero-Knowledge Secure Storage
                 <tr><td colspan="2" style="padding:0;"><div style="height:1px;background-color:#27273a;font-size:0;line-height:0;">&nbsp;</div></td></tr>
 
                 <!-- Backup Receiver -->
-                <tr>
-                  <td width="38%" style="padding:10px 12px;color:#71717a;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:0.08em;vertical-align:top;">Backup</td>
-                  <td style="padding:10px 12px;color:#e4e4e7;font-size:11px;word-break:break-all;overflow-wrap:anywhere;">${room.transferEmail}</td>
+                <tr class="mobile-row">
+                  <td class="mobile-label" style="padding:10px 12px;color:#71717a;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:0.05em;vertical-align:top;width:35%;">BACKUP RECEIVER</td>
+                  <td class="mobile-value" style="padding:10px 12px;color:#e4e4e7;font-size:10px;word-break:break-all;overflow-wrap:anywhere;line-height:1.4;">${room.transferEmail}</td>
                 </tr>
                 ` : ''}
 

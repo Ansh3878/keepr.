@@ -467,10 +467,12 @@ export const EphemeralChat = ({ initialRoomId, initialKey }: EphemeralChatProps)
         {/* Chat area — grows to fill remaining space, scrolls internally */}
         <div
           ref={chatContainerRef}
-          className="flex-1 min-h-0 bg-zinc-950 border border-zinc-800 rounded-[2rem] overflow-y-scroll custom-scrollbar relative"
+          className="flex-1 min-h-0 bg-zinc-950 border border-zinc-800 rounded-2xl sm:rounded-[2rem] overflow-hidden relative"
           style={{ overscrollBehavior: 'contain' }}
         >
-          <div className="p-4 sm:p-6 pr-3 sm:pr-4 h-full">
+          <div className="h-full overflow-y-scroll custom-scrollbar">
+          <div className="h-full overflow-y-scroll custom-scrollbar">
+            <div className="p-4 sm:p-6 pr-3 sm:pr-4 h-full">
             {/* Empty state */}
             {messages.length === 0 ? (
               <div className="h-full flex flex-col items-center justify-center px-6 text-center">
