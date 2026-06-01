@@ -93,7 +93,6 @@ Keepr Security System
   <div style="max-width:600px; margin:0 auto; background:#0b0b0f; border:1px solid #1f1f2e; border-radius:24px; overflow:hidden; box-shadow: 0 20px 40px rgba(0, 0, 0, 0.8);">
     <!-- Header with vibrant gradient -->
     <div style="background:linear-gradient(135deg, #0891b2, #0284c7); padding:32px; text-align: center;">
-      <span style="font-size: 32px;">🔐</span>
       <h1 style="margin:12px 0 0; color:#ffffff; font-size:22px; font-weight:800; letter-spacing:-0.02em; text-transform:uppercase; tracking:0.1em;">Keepr Secure Handoff</h1>
     </div>
     
@@ -132,7 +131,7 @@ Keepr Security System
       
       <!-- Warning box -->
       <div style="background:#450a0a; border:1px solid #991b1b; border-radius:16px; padding:20px; margin-bottom:32px;">
-        <p style="margin:0 0 8px; color:#fecdd3; font-size:14px; font-weight:700;">⚠️ Critical Action Required</p>
+        <p style="margin:0 0 8px; color:#fecdd3; font-size:14px; font-weight:700;">Critical Action Required</p>
         <p style="margin:0; color:#fca5a5; font-size:13px; line-height:1.6;">
           You must log in to Keepr and download your room contents as a <strong>ZIP archive</strong>. 
           All files remain fully end-to-end encrypted. You will need your original <strong>Vault Key</strong> to unlock the room and download the ZIP file.
@@ -209,7 +208,7 @@ Keepr Security System
 <body style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; background:#0a0a0a; color:#e4e4e7; padding:32px;">
   <div style="max-width:600px; margin:0 auto; background:#18181b; border:1px solid #27272a; border-radius:12px; overflow:hidden;">
     <div style="background:linear-gradient(135deg,#7f1d1d,#991b1b); padding:24px 32px;">
-      <h1 style="margin:0; color:#fff; font-size:20px; font-weight:700;">🔥 Keepr — Vault Purged</h1>
+      <h1 style="margin:0; color:#fff; font-size:20px; font-weight:700;">Keepr — Vault Purged</h1>
     </div>
     <div style="padding:32px;">
       <p style="color:#a1a1aa; margin-top:0;">Your secure room has reached its inactivity limit and has been automatically purged.</p>
@@ -224,7 +223,7 @@ Keepr Security System
         ${deletedFiles.map(f => `<p style="margin:4px 0; color:#e2e8f0; font-size:13px;">• ${f}</p>`).join('')}
       </div>` : ''}
       <div style="background:#1c1500; border:1px solid #92400e; border-radius:8px; padding:16px; margin:16px 0;">
-        <p style="margin:0; color:#fcd34d; font-size:13px;">⚠️ This action is irreversible. All files and room records have been permanently deleted from Keepr servers.</p>
+        <p style="margin:0; color:#fcd34d; font-size:13px;">This action is irreversible. All files and room records have been permanently deleted from Keepr servers.</p>
       </div>
       <p style="color:#52525b; font-size:12px; margin-top:24px; border-top:1px solid #27272a; padding-top:16px;">If this was unexpected, you can disable auto-purge in your room settings before the inactivity limit is reached.</p>
     </div>
@@ -429,7 +428,7 @@ async function sendCreationEmail(room: any, userEmail: string): Promise<void> {
   }
 
   const isMigration = room.safetyStrategy === 'migration';
-  const subject = `🔐 Vault "${room.name}" Created — Keepr`;
+  const subject = `Vault "${room.name}" Created — Keepr`;
   const bodyText = `
 Your secure room "${room.name}" is live and armed on Keepr.
 
@@ -479,7 +478,7 @@ Keepr Security • Zero-Knowledge Secure Storage
           <!-- Header banner -->
           <tr>
             <td style="background:linear-gradient(135deg,#10b981,#059669);padding:20px 16px;border-radius:16px 16px 0 0;">
-              <p style="margin:0;color:#ffffff;font-size:18px;font-weight:800;letter-spacing:0.03em;">🔐 Vault Created</p>
+              <p style="margin:0;color:#ffffff;font-size:18px;font-weight:800;letter-spacing:0.03em;">Vault Created</p>
             </td>
           </tr>
 
@@ -576,7 +575,7 @@ async function sendUpdateEmail(room: any, oldInactivityDays: number, newInactivi
   const oldTimerStr = oldInactivityDays === 0 ? '1 min (test mode)' : oldInactivityDays + ' days';
   const newTimerStr = newInactivityDays === 0 ? '1 min (test mode)' : newInactivityDays + ' days';
 
-  const subject = `⚙️ Vault "${room.name}" Settings Updated — Keepr`;
+  const subject = `Vault "${room.name}" Settings Updated — Keepr`;
   const bodyText = `
 Your secure room "${room.name}" settings have been updated on Keepr.
 
@@ -605,7 +604,7 @@ Keepr Security • Zero-Knowledge Secure Storage
           <!-- Header -->
           <tr>
             <td style="background:linear-gradient(135deg,#3b82f6,#2563eb);padding:20px 24px;border-radius:16px 16px 0 0;">
-              <p style="margin:0;color:#ffffff;font-size:18px;font-weight:800;letter-spacing:0.03em;">⚙️ Settings Updated</p>
+              <p style="margin:0;color:#ffffff;font-size:18px;font-weight:800;letter-spacing:0.03em;">Settings Updated</p>
             </td>
           </tr>
 
