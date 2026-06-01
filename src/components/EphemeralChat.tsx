@@ -333,8 +333,8 @@ export const EphemeralChat = ({ initialRoomId, initialKey }: EphemeralChatProps)
   }
 
   return (
-    <section className="relative pt-32 pb-20 px-6 min-h-screen overflow-hidden">
-      <div className="max-w-4xl mx-auto flex flex-col h-[calc(100vh-12rem)]">
+    <section className="relative pt-24 pb-4 px-4 sm:px-6 flex flex-col overflow-hidden" style={{ minHeight: '100dvh' }}>
+      <div className="max-w-4xl w-full mx-auto flex flex-col flex-1 min-h-0">
         {/* Header */}
         <motion.div
           initial={{ opacity: 0, y: 20 }}
@@ -362,7 +362,7 @@ export const EphemeralChat = ({ initialRoomId, initialKey }: EphemeralChatProps)
             </div>
           </div>
 
-          <div className="flex items-center gap-2">
+          <div className="flex flex-wrap items-center gap-2">
             <button
               onClick={() => setShowJoin(v => !v)}
               className={`flex items-center gap-2 px-4 py-2 rounded-xl border text-[10px] font-black uppercase tracking-widest transition-colors ${showJoin
@@ -467,7 +467,7 @@ export const EphemeralChat = ({ initialRoomId, initialKey }: EphemeralChatProps)
         {/* Chat area */}
         <div
           ref={chatContainerRef}
-          className="flex-grow bg-zinc-950 border border-zinc-800 rounded-[2rem] p-6 overflow-y-auto custom-scrollbar relative"
+          className="flex-1 min-h-0 bg-zinc-950 border border-zinc-800 rounded-[2rem] p-4 sm:p-6 overflow-y-auto custom-scrollbar relative"
         >
           {/* Empty state */}
           {messages.length === 0 ? (

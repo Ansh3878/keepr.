@@ -444,31 +444,35 @@ Keepr Security • Zero-Knowledge Secure Storage
   const bodyHtml = `
 <!DOCTYPE html>
 <html>
-<head><meta charset="UTF-8"></head>
-<body style="font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;background:#040405;color:#e4e4e7;padding:32px;margin:0;">
-  <div style="max-width:560px;margin:0 auto;background:#0b0b0f;border:1px solid #1f1f2e;border-radius:20px;overflow:hidden;">
-    <div style="background:linear-gradient(135deg,#10b981,#059669);padding:28px 32px;">
-      <h1 style="margin:0;color:#fff;font-size:20px;font-weight:800;letter-spacing:0.04em;">🔐 Vault Created</h1>
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+</head>
+<body style="font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;background:#040405;color:#e4e4e7;padding:16px;margin:0;">
+  <div style="max-width:560px;margin:0 auto;background:#0b0b0f;border:1px solid #1f1f2e;border-radius:20px;overflow:hidden;word-break:break-word;">
+    <div style="background:linear-gradient(135deg,#10b981,#059669);padding:24px 20px;">
+      <h1 style="margin:0;color:#fff;font-size:18px;font-weight:800;letter-spacing:0.04em;">🔐 Vault Created</h1>
     </div>
-    <div style="padding:32px;">
+    <div style="padding:20px;">
       <p style="color:#fff;font-size:15px;font-weight:600;margin:0 0 20px;">Your secure room <strong>${room.name}</strong> is live and armed.</p>
-      <table style="width:100%;border-collapse:collapse;background:#12121a;border-radius:12px;overflow:hidden;border:1px solid #27273a;">
+      <table style="width:100%;border-collapse:collapse;background:#12121a;border-radius:12px;overflow:hidden;border:1px solid #27273a;table-layout:fixed;">
+        <colgroup><col style="width:40%"><col style="width:60%"></colgroup>
         <tr>
-          <td style="color:#71717a;font-size:11px;font-weight:700;text-transform:uppercase;padding:10px 16px;">Vault ID</td>
-          <td style="color:#fff;font-size:12px;font-family:monospace;padding:10px 16px;">${room.roomId}</td>
+          <td style="color:#71717a;font-size:11px;font-weight:700;text-transform:uppercase;padding:10px 12px;vertical-align:top;">Vault ID</td>
+          <td style="color:#fff;font-size:11px;font-family:monospace;padding:10px 12px;word-break:break-all;overflow-wrap:anywhere;">${room.roomId}</td>
         </tr>
         <tr style="border-top:1px solid #27273a;">
-          <td style="color:#71717a;font-size:11px;font-weight:700;text-transform:uppercase;padding:10px 16px;">Safety</td>
-          <td style="color:#10b981;font-size:12px;font-weight:700;text-transform:uppercase;padding:10px 16px;">${room.safetyStrategy}</td>
+          <td style="color:#71717a;font-size:11px;font-weight:700;text-transform:uppercase;padding:10px 12px;">Safety</td>
+          <td style="color:#10b981;font-size:12px;font-weight:700;text-transform:uppercase;padding:10px 12px;">${room.safetyStrategy}</td>
         </tr>
         <tr style="border-top:1px solid #27273a;">
-          <td style="color:#71717a;font-size:11px;font-weight:700;text-transform:uppercase;padding:10px 16px;">Inactivity Timer</td>
-          <td style="color:#e4e4e7;font-size:12px;padding:10px 16px;">${room.inactivityDays === 0 ? '1 min (test mode)' : room.inactivityDays + ' days'}</td>
+          <td style="color:#71717a;font-size:11px;font-weight:700;text-transform:uppercase;padding:10px 12px;">Inactivity Timer</td>
+          <td style="color:#e4e4e7;font-size:12px;padding:10px 12px;">${room.inactivityDays === 0 ? '1 min (test mode)' : room.inactivityDays + ' days'}</td>
         </tr>
         ${isMigration && room.transferEmail ? `
         <tr style="border-top:1px solid #27273a;">
-          <td style="color:#71717a;font-size:11px;font-weight:700;text-transform:uppercase;padding:10px 16px;">Backup Receiver</td>
-          <td style="color:#e4e4e7;font-size:12px;padding:10px 16px;">${room.transferEmail}</td>
+          <td style="color:#71717a;font-size:11px;font-weight:700;text-transform:uppercase;padding:10px 12px;vertical-align:top;">Backup Receiver</td>
+          <td style="color:#e4e4e7;font-size:12px;padding:10px 12px;word-break:break-all;overflow-wrap:anywhere;">${room.transferEmail}</td>
         </tr>` : ''}
       </table>
       <p style="color:#52525b;font-size:11px;margin-top:28px;border-top:1px solid #1f1f2e;padding-top:16px;text-align:center;">Keepr Security • Zero-Knowledge Secure Storage</p>
@@ -518,26 +522,30 @@ Keepr Security • Zero-Knowledge Secure Storage
   const bodyHtml = `
 <!DOCTYPE html>
 <html>
-<head><meta charset="UTF-8"></head>
-<body style="font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;background:#040405;color:#e4e4e7;padding:32px;margin:0;">
-  <div style="max-width:560px;margin:0 auto;background:#0b0b0f;border:1px solid #1f1f2e;border-radius:20px;overflow:hidden;">
-    <div style="background:linear-gradient(135deg,#3b82f6,#2563eb);padding:28px 32px;">
-      <h1 style="margin:0;color:#fff;font-size:20px;font-weight:800;letter-spacing:0.04em;">⚙️ Settings Updated</h1>
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+</head>
+<body style="font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;background:#040405;color:#e4e4e7;padding:16px;margin:0;">
+  <div style="max-width:560px;margin:0 auto;background:#0b0b0f;border:1px solid #1f1f2e;border-radius:20px;overflow:hidden;word-break:break-word;">
+    <div style="background:linear-gradient(135deg,#3b82f6,#2563eb);padding:24px 20px;">
+      <h1 style="margin:0;color:#fff;font-size:18px;font-weight:800;letter-spacing:0.04em;">⚙️ Settings Updated</h1>
     </div>
-    <div style="padding:32px;">
+    <div style="padding:20px;">
       <p style="color:#fff;font-size:15px;font-weight:600;margin:0 0 20px;">Your secure room <strong>${room.name}</strong> settings have been updated.</p>
-      <table style="width:100%;border-collapse:collapse;background:#12121a;border-radius:12px;overflow:hidden;border:1px solid #27273a;">
+      <table style="width:100%;border-collapse:collapse;background:#12121a;border-radius:12px;overflow:hidden;border:1px solid #27273a;table-layout:fixed;">
+        <colgroup><col style="width:40%"><col style="width:60%"></colgroup>
         <tr>
-          <td style="color:#71717a;font-size:11px;font-weight:700;text-transform:uppercase;padding:10px 16px;">Vault ID</td>
-          <td style="color:#fff;font-size:12px;font-family:monospace;padding:10px 16px;">${room.roomId}</td>
+          <td style="color:#71717a;font-size:11px;font-weight:700;text-transform:uppercase;padding:10px 12px;vertical-align:top;">Vault ID</td>
+          <td style="color:#fff;font-size:11px;font-family:monospace;padding:10px 12px;word-break:break-all;overflow-wrap:anywhere;">${room.roomId}</td>
         </tr>
         <tr style="border-top:1px solid #27273a;">
-          <td style="color:#71717a;font-size:11px;font-weight:700;text-transform:uppercase;padding:10px 16px;">Old Timeout</td>
-          <td style="color:#f43f5e;font-size:12px;font-weight:700;padding:10px 16px;">${oldTimerStr}</td>
+          <td style="color:#71717a;font-size:11px;font-weight:700;text-transform:uppercase;padding:10px 12px;">Old Timeout</td>
+          <td style="color:#f43f5e;font-size:12px;font-weight:700;padding:10px 12px;">${oldTimerStr}</td>
         </tr>
         <tr style="border-top:1px solid #27273a;">
-          <td style="color:#71717a;font-size:11px;font-weight:700;text-transform:uppercase;padding:10px 16px;">New Timeout</td>
-          <td style="color:#10b981;font-size:12px;font-weight:700;padding:10px 16px;">${newTimerStr}</td>
+          <td style="color:#71717a;font-size:11px;font-weight:700;text-transform:uppercase;padding:10px 12px;">New Timeout</td>
+          <td style="color:#10b981;font-size:12px;font-weight:700;padding:10px 12px;">${newTimerStr}</td>
         </tr>
       </table>
       <p style="color:#52525b;font-size:11px;margin-top:28px;border-top:1px solid #1f1f2e;padding-top:16px;text-align:center;">Keepr Security • Zero-Knowledge Secure Storage</p>

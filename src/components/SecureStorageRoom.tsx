@@ -3000,47 +3000,60 @@ export function SecureStorageRoom() {
             ) : (
               
               /* PREMIER DETAILED LIST DISPLAY */
-              <div className="overflow-x-auto">
-                <table className="w-full text-left text-xs text-zinc-300 font-sans border-collapse">
-                  <thead>
-                    <tr className="border-b border-white/5 text-[10px] uppercase tracking-wider text-zinc-600 font-bold">
-                      <th className="py-3 px-4">File</th>
-                      <th className="py-3 px-4 flex-1">Size</th>
-                      <th className="py-3 px-4">Encryption</th>
-                      <th className="py-3 px-4">Modified</th>
-                      <th className="py-3 px-4 text-right">Actions</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {filteredFiles.map((fileItem) => (
-                      <tr
-                        key={fileItem.id}
-                        className="group border-b border-white/5 hover:bg-zinc-900/50 text-zinc-300 transition-colors cursor-pointer"
-                        onClick={() => handleDownloadFile(fileItem)}
-                      >
-                        <td className="py-3.5 px-4 flex items-center gap-3 max-w-sm">
-                          <div className="shrink-0 p-1.5 bg-zinc-900 rounded-lg border border-white/5">
-                            {getFileIcon(fileItem.type)}
-                          </div>
-                          <span className="font-semibold text-zinc-100 hover:text-cyan-400 transition-colors truncate block" title={fileItem.name}>
-                            {fileItem.name}
-                          </span>
-                        </td>
-                        <td className="py-3.5 px-4 font-mono text-zinc-400">{fileItem.size}</td>
-                        <td className="py-3.5 px-4">
-                          <span className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full bg-cyan-500/10 text-cyan-400 border border-cyan-500/15 text-[10px] font-mono">
-                            <span className="w-1 h-1 rounded-full bg-cyan-400" />
-                            AES-256-GCM
-                          </span>
-                        </td>
-                        <td className="py-3.5 px-4 text-zinc-400 font-mono">{fileItem.date}</td>
-                        <td className="py-3.5 px-4 text-right">
-                          {renderFileActionsMenu(fileItem, 'list')}
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
+              <div className="space-y-2">
+                {/* Desktop header row — hidden on small screens */}
+                <div className="hidden sm:grid sm:grid-cols-[1fr_80px_120px_90px_44px] gap-3 px-4 py-2 text-[10px] uppercase tracking-wider text-zinc-600 font-bold border-b border-white/5">
+                  <span>File</span>
+                  <span>Size</span>
+                  <span>Encryption</span>
+                  <span>Modified</span>
+                  <span />
+                </div>
+
+                {filteredFiles.map((fileItem) => (
+                  <div
+                    key={fileItem.id}
+                    className="group flex items-center gap-3 px-4 py-3.5 rounded-2xl border border-white/5 hover:bg-zinc-900/50 hover:border-zinc-800 transition-all cursor-pointer"
+                    onClick={() => handleDownloadFile(fileItem)}
+                  >
+                    {/* Icon — hidden on mobile */}
+                    <div className="hidden sm:flex shrink-0 p-1.5 bg-zinc-900 rounded-lg border border-white/5">
+                      {getFileIcon(fileItem.type)}
+                    </div>
+
+                    {/* Name + meta block */}
+                    <div className="flex-1 min-w-0">
+                      <span className="font-semibold text-sm text-zinc-100 group-hover:text-cyan-400 transition-colors truncate block" title={fileItem.name}>
+                        {fileItem.name}
+                      </span>
+                      {/* Mobile-only secondary row */}
+                      <div className="flex items-center gap-2 mt-1 sm:hidden flex-wrap">
+                        <span className="font-mono text-[10px] text-zinc-500">{fileItem.size}</span>
+                        <span className="text-zinc-700">·</span>
+                        <span className="font-mono text-[10px] text-zinc-500">{fileItem.date}</span>
+                        <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-full bg-cyan-500/10 text-cyan-400 border border-cyan-500/15 text-[9px] font-mono">
+                          <span className="w-1 h-1 rounded-full bg-cyan-400" />
+                          AES-256-GCM
+                        </span>
+                      </div>
+                    </div>
+
+                    {/* Desktop-only columns */}
+                    <span className="hidden sm:block w-20 font-mono text-xs text-zinc-400 shrink-0">{fileItem.size}</span>
+                    <span className="hidden sm:flex w-28 shrink-0">
+                      <span className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full bg-cyan-500/10 text-cyan-400 border border-cyan-500/15 text-[10px] font-mono">
+                        <span className="w-1 h-1 rounded-full bg-cyan-400" />
+                        AES-256-GCM
+                      </span>
+                    </span>
+                    <span className="hidden sm:block w-20 font-mono text-xs text-zinc-400 shrink-0">{fileItem.date}</span>
+
+                    {/* Actions — always visible */}
+                    <div className="shrink-0" onClick={(e) => e.stopPropagation()}>
+                      {renderFileActionsMenu(fileItem, 'list')}
+                    </div>
+                  </div>
+                ))}
               </div>
             )}
           </div>
