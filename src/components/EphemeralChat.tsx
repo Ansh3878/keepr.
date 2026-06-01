@@ -471,7 +471,6 @@ export const EphemeralChat = ({ initialRoomId, initialKey }: EphemeralChatProps)
           style={{ overscrollBehavior: 'contain' }}
         >
           <div className="h-full overflow-y-scroll custom-scrollbar">
-          <div className="h-full overflow-y-scroll custom-scrollbar">
             <div className="p-4 sm:p-6 pr-3 sm:pr-4 h-full">
             {/* Empty state */}
             {messages.length === 0 ? (
@@ -542,6 +541,7 @@ export const EphemeralChat = ({ initialRoomId, initialKey }: EphemeralChatProps)
                 <div ref={messagesEndRef} />
               </div>
             )}
+          </div>
           </div>
         </div>
 
