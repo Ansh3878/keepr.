@@ -333,13 +333,13 @@ export const EphemeralChat = ({ initialRoomId, initialKey }: EphemeralChatProps)
   }
 
   return (
-    <section className="relative pt-24 pb-4 px-4 sm:px-6 flex flex-col overflow-hidden" style={{ minHeight: '100dvh' }}>
-      <div className="max-w-4xl w-full mx-auto flex flex-col flex-1 min-h-0">
+    <section className="relative pt-24 pb-4 px-4 sm:px-6" style={{ minHeight: '100dvh' }}>
+      <div className="max-w-4xl w-full mx-auto flex flex-col" style={{ height: 'calc(100dvh - 7rem)' }}>
         {/* Header */}
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
-          className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-5"
+          className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-5 shrink-0"
         >
           <div className="flex items-center gap-3">
             <div className="w-10 h-10 rounded-xl bg-cyan-500/10 border border-cyan-500/30 flex items-center justify-center shrink-0">
@@ -403,7 +403,7 @@ export const EphemeralChat = ({ initialRoomId, initialKey }: EphemeralChatProps)
               initial={{ opacity: 0, height: 0 }}
               animate={{ opacity: 1, height: 'auto' }}
               exit={{ opacity: 0, height: 0 }}
-              className="overflow-hidden mb-3"
+              className="overflow-hidden mb-3 shrink-0"
             >
               <div className="flex gap-2">
                 <div className="relative flex-1">
@@ -443,7 +443,7 @@ export const EphemeralChat = ({ initialRoomId, initialKey }: EphemeralChatProps)
               initial={{ opacity: 0, height: 0 }}
               animate={{ opacity: 1, height: 'auto' }}
               exit={{ opacity: 0, height: 0 }}
-              className="overflow-hidden"
+              className="overflow-hidden shrink-0"
             >
               <div className="bg-red-500/5 border border-red-500/20 rounded-xl px-4 py-3 mb-3 flex items-center justify-between gap-3">
                 <div className="flex items-center gap-2 min-w-0">
@@ -464,84 +464,87 @@ export const EphemeralChat = ({ initialRoomId, initialKey }: EphemeralChatProps)
           ) : null}
         </AnimatePresence>
 
-        {/* Chat area */}
+        {/* Chat area — grows to fill remaining space, scrolls internally */}
         <div
           ref={chatContainerRef}
-          className="flex-1 min-h-0 bg-zinc-950 border border-zinc-800 rounded-[2rem] p-4 sm:p-6 overflow-y-auto custom-scrollbar relative"
+          className="flex-1 min-h-0 bg-zinc-950 border border-zinc-800 rounded-[2rem] overflow-y-scroll custom-scrollbar relative"
+          style={{ overscrollBehavior: 'contain' }}
         >
-          {/* Empty state */}
-          {messages.length === 0 ? (
-            <div className="absolute inset-0 flex flex-col items-center justify-center px-6 text-center">
-              <div className="w-14 h-14 rounded-2xl bg-zinc-900 border border-zinc-800 flex items-center justify-center mb-5">
-                <MessageSquare className="w-6 h-6 text-zinc-600" strokeWidth={1.5} />
-              </div>
-              <h3 className="text-white font-bold tracking-tight mb-1">Encrypted tunnel open</h3>
-              <p className="text-zinc-500 text-xs mb-6 max-w-xs">
-                Send a message or share the invite link with your peer to start.
-              </p>
-              <div className="flex items-center gap-2">
-                <button
-                  onClick={copyLink}
-                  className="flex items-center gap-2 px-4 py-2 rounded-xl bg-zinc-900 border border-zinc-800 hover:border-cyan-500/40 text-zinc-300 hover:text-white text-[10px] font-black uppercase tracking-widest transition-colors"
-                >
-                  {isCopied ? <Check className="w-3 h-3" /> : <Copy className="w-3 h-3" />}
-                  {isCopied ? 'Copied' : 'Copy invite'}
-                </button>
-                {!showJoin && (
+          <div className="p-4 sm:p-6 pr-3 sm:pr-4 h-full">
+            {/* Empty state */}
+            {messages.length === 0 ? (
+              <div className="h-full flex flex-col items-center justify-center px-6 text-center">
+                <div className="w-14 h-14 rounded-2xl bg-zinc-900 border border-zinc-800 flex items-center justify-center mb-5">
+                  <MessageSquare className="w-6 h-6 text-zinc-600" strokeWidth={1.5} />
+                </div>
+                <h3 className="text-white font-bold tracking-tight mb-1">Encrypted tunnel open</h3>
+                <p className="text-zinc-500 text-xs mb-6 max-w-xs">
+                  Send a message or share the invite link with your peer to start.
+                </p>
+                <div className="flex flex-wrap items-center justify-center gap-2">
                   <button
-                    onClick={() => setShowJoin(true)}
+                    onClick={copyLink}
                     className="flex items-center gap-2 px-4 py-2 rounded-xl bg-zinc-900 border border-zinc-800 hover:border-cyan-500/40 text-zinc-300 hover:text-white text-[10px] font-black uppercase tracking-widest transition-colors"
                   >
-                    <LogIn className="w-3 h-3" /> Join other room
+                    {isCopied ? <Check className="w-3 h-3" /> : <Copy className="w-3 h-3" />}
+                    {isCopied ? 'Copied' : 'Copy invite'}
                   </button>
-                )}
-              </div>
-            </div>
-          ) : (
-            <div className="space-y-3.5">
-              {messages.map(msg => (
-                <motion.div
-                  key={msg.id}
-                  initial={{ opacity: 0, y: 6 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  className={`flex ${msg.sender === 'system'
-                      ? 'justify-center'
-                      : msg.sender === 'me'
-                        ? 'justify-end'
-                        : 'justify-start'
-                    }`}
-                >
-                  {msg.sender === 'system' ? (
-                    <div className="px-3 py-1 bg-zinc-900 border border-zinc-800 rounded-full text-[10px] uppercase tracking-widest font-black text-zinc-500">
-                      {msg.text}
-                    </div>
-                  ) : (
-                    <div
-                      className={`max-w-[78%] flex flex-col ${msg.sender === 'me' ? 'items-end' : 'items-start'
-                        }`}
+                  {!showJoin && (
+                    <button
+                      onClick={() => setShowJoin(true)}
+                      className="flex items-center gap-2 px-4 py-2 rounded-xl bg-zinc-900 border border-zinc-800 hover:border-cyan-500/40 text-zinc-300 hover:text-white text-[10px] font-black uppercase tracking-widest transition-colors"
                     >
-                      <div
-                        className={`px-4 py-2.5 rounded-2xl text-sm leading-relaxed ${msg.sender === 'me'
-                            ? 'bg-white text-black rounded-br-md'
-                            : 'bg-zinc-900 text-zinc-200 border border-zinc-800 rounded-bl-md'
-                          }`}
-                      >
+                      <LogIn className="w-3 h-3" /> Join other room
+                    </button>
+                  )}
+                </div>
+              </div>
+            ) : (
+              <div className="space-y-3.5 w-full">
+                {messages.map(msg => (
+                  <motion.div
+                    key={msg.id}
+                    initial={{ opacity: 0, y: 6 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    className={`flex w-full ${msg.sender === 'system'
+                        ? 'justify-center'
+                        : msg.sender === 'me'
+                          ? 'justify-end'
+                          : 'justify-start'
+                      }`}
+                  >
+                    {msg.sender === 'system' ? (
+                      <div className="px-3 py-1 bg-zinc-900 border border-zinc-800 rounded-full text-[10px] uppercase tracking-widest font-black text-zinc-500">
                         {msg.text}
                       </div>
-                      <div className="text-[9px] uppercase tracking-widest text-zinc-700 font-black mt-1 px-1">
-                        {formatTime(msg.timestamp)}
+                    ) : (
+                      <div
+                        className={`max-w-[75%] flex flex-col ${msg.sender === 'me' ? 'items-end' : 'items-start'
+                          }`}
+                      >
+                        <div
+                          className={`px-4 py-2.5 rounded-2xl text-sm leading-relaxed break-words ${msg.sender === 'me'
+                              ? 'bg-white text-black rounded-br-md'
+                              : 'bg-zinc-900 text-zinc-200 border border-zinc-800 rounded-bl-md'
+                            }`}
+                        >
+                          {msg.text}
+                        </div>
+                        <div className="text-[9px] uppercase tracking-widest text-zinc-700 font-black mt-1 px-1">
+                          {formatTime(msg.timestamp)}
+                        </div>
                       </div>
-                    </div>
-                  )}
-                </motion.div>
-              ))}
-              <div ref={messagesEndRef} />
-            </div>
-          )}
+                    )}
+                  </motion.div>
+                ))}
+                <div ref={messagesEndRef} />
+              </div>
+            )}
+          </div>
         </div>
 
         {/* Input bar */}
-        <form onSubmit={sendMessage} className="mt-4">
+        <form onSubmit={sendMessage} className="mt-4 shrink-0">
           <div className="relative flex bg-zinc-950 border border-zinc-800 focus-within:border-cyan-500/40 rounded-2xl p-1.5 transition-colors">
             <Lock className="absolute left-5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-zinc-600 pointer-events-none" />
             <input

@@ -70,16 +70,17 @@ const BACKGROUNDS = [
 ];
 
 // File Type Helper
-const getFileIcon = (type: S3File['type']) => {
+const getFileIcon = (type: S3File['type'], sizeClass: string = "w-12 h-12") => {
+  const cn = `${sizeClass} shrink-0`;
   switch (type) {
-    case 'pdf': return <FileText className="w-12 h-12 text-rose-400 shrink-0" />;
-    case 'video': return <Video className="w-12 h-12 text-indigo-400 shrink-0" />;
-    case 'audio': return <Music className="w-12 h-12 text-emerald-400 shrink-0" />;
-    case 'image': return <ImageIcon className="w-12 h-12 text-amber-400 shrink-0" />;
-    case 'archive': return <FolderLock className="w-12 h-12 text-cyan-400 shrink-0" />;
-    case 'text': return <FileText className="w-12 h-12 text-zinc-400 shrink-0" />;
-    case 'spreadsheet': return <FileSpreadsheet className="w-12 h-12 text-emerald-500 shrink-0" />;
-    default: return <File className="w-12 h-12 text-zinc-500 shrink-0" />;
+    case 'pdf': return <FileText className={`${cn} text-rose-400`} />;
+    case 'video': return <Video className={`${cn} text-indigo-400`} />;
+    case 'audio': return <Music className={`${cn} text-emerald-400`} />;
+    case 'image': return <ImageIcon className={`${cn} text-amber-400`} />;
+    case 'archive': return <FolderLock className={`${cn} text-cyan-400`} />;
+    case 'text': return <FileText className={`${cn} text-zinc-400`} />;
+    case 'spreadsheet': return <FileSpreadsheet className={`${cn} text-emerald-500`} />;
+    default: return <File className={`${cn} text-zinc-500`} />;
   }
 };
 
@@ -3029,9 +3030,9 @@ export function SecureStorageRoom() {
                     className="group flex items-center gap-3 px-4 py-3.5 rounded-2xl border border-white/5 hover:bg-zinc-900/50 hover:border-zinc-800 transition-all cursor-pointer"
                     onClick={() => handleDownloadFile(fileItem)}
                   >
-                    {/* Icon — hidden on mobile */}
-                    <div className="hidden sm:flex shrink-0 p-1.5 bg-zinc-900 rounded-lg border border-white/5">
-                      {getFileIcon(fileItem.type)}
+                    {/* Icon — visible on both mobile and desktop */}
+                    <div className="flex shrink-0 p-1 md:p-1.5 bg-zinc-900 rounded-lg border border-white/5">
+                      {getFileIcon(fileItem.type, "w-7 h-7 md:w-10 md:h-10")}
                     </div>
 
                     {/* Name + meta block */}

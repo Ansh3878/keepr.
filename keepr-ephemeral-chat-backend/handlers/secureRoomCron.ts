@@ -441,46 +441,96 @@ ${isMigration && room.transferEmail ? `Backup Receiver: ${room.transferEmail}` :
 Keepr Security • Zero-Knowledge Secure Storage
 `;
 
-  const bodyHtml = `
-<!DOCTYPE html>
-<html>
+  const bodyHtml = `<!DOCTYPE html>
+<html lang="en">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <title>Vault Created — Keepr</title>
 </head>
-<body style="font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;background:#040405;color:#e4e4e7;padding:16px;margin:0;">
-  <div style="max-width:560px;margin:0 auto;background:#0b0b0f;border:1px solid #1f1f2e;border-radius:20px;overflow:hidden;word-break:break-word;">
-    <div style="background:linear-gradient(135deg,#10b981,#059669);padding:24px 20px;">
-      <h1 style="margin:0;color:#fff;font-size:18px;font-weight:800;letter-spacing:0.04em;">🔐 Vault Created</h1>
-    </div>
-    <div style="padding:20px;">
-      <p style="color:#fff;font-size:15px;font-weight:600;margin:0 0 20px;">Your secure room <strong>${room.name}</strong> is live and armed.</p>
-      <table style="width:100%;border-collapse:collapse;background:#12121a;border-radius:12px;overflow:hidden;border:1px solid #27273a;table-layout:fixed;">
-        <colgroup><col style="width:40%"><col style="width:60%"></colgroup>
-        <tr>
-          <td style="color:#71717a;font-size:11px;font-weight:700;text-transform:uppercase;padding:10px 12px;vertical-align:top;">Vault ID</td>
-          <td style="color:#fff;font-size:11px;font-family:monospace;padding:10px 12px;word-break:break-all;overflow-wrap:anywhere;">${room.roomId}</td>
-        </tr>
-        <tr style="border-top:1px solid #27273a;">
-          <td style="color:#71717a;font-size:11px;font-weight:700;text-transform:uppercase;padding:10px 12px;">Safety</td>
-          <td style="color:#10b981;font-size:12px;font-weight:700;text-transform:uppercase;padding:10px 12px;">${room.safetyStrategy}</td>
-        </tr>
-        <tr style="border-top:1px solid #27273a;">
-          <td style="color:#71717a;font-size:11px;font-weight:700;text-transform:uppercase;padding:10px 12px;">Inactivity Timer</td>
-          <td style="color:#e4e4e7;font-size:12px;padding:10px 12px;">${room.inactivityDays === 0 ? '1 min (test mode)' : room.inactivityDays + ' days'}</td>
-        </tr>
-        ${isMigration && room.transferEmail ? `
-        <tr style="border-top:1px solid #27273a;">
-          <td style="color:#71717a;font-size:11px;font-weight:700;text-transform:uppercase;padding:10px 12px;vertical-align:top;">Backup Receiver</td>
-          <td style="color:#e4e4e7;font-size:12px;padding:10px 12px;word-break:break-all;overflow-wrap:anywhere;">${room.transferEmail}</td>
-        </tr>` : ''}
-      </table>
-      <p style="color:#52525b;font-size:11px;margin-top:28px;border-top:1px solid #1f1f2e;padding-top:16px;text-align:center;">Keepr Security • Zero-Knowledge Secure Storage</p>
-    </div>
-  </div>
+<body style="margin:0;padding:0;background-color:#040405;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;">
+
+  <!-- Outer wrapper -->
+  <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="background-color:#040405;">
+    <tr>
+      <td align="center" style="padding:20px 12px;">
+
+        <!-- Card -->
+        <table role="presentation" cellpadding="0" cellspacing="0" border="0" width="100%" style="max-width:520px;background-color:#0b0b0f;border:1px solid #1f1f2e;border-radius:16px;">
+
+          <!-- Header banner -->
+          <tr>
+            <td style="background:linear-gradient(135deg,#10b981,#059669);padding:20px 24px;border-radius:16px 16px 0 0;">
+              <p style="margin:0;color:#ffffff;font-size:18px;font-weight:800;letter-spacing:0.03em;">🔐 Vault Created</p>
+            </td>
+          </tr>
+
+          <!-- Body -->
+          <tr>
+            <td style="padding:20px 24px 8px;">
+              <p style="margin:0 0 20px;color:#ffffff;font-size:14px;font-weight:600;line-height:1.5;">
+                Your secure room <strong>${room.name}</strong> is live and armed.
+              </p>
+
+              <!-- Info rows table -->
+              <table role="presentation" cellpadding="0" cellspacing="0" border="0" width="100%" style="background-color:#12121a;border:1px solid #27273a;border-radius:10px;">
+
+                <!-- Vault ID -->
+                <tr>
+                  <td width="38%" style="padding:10px 12px;color:#71717a;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:0.08em;vertical-align:top;">Vault ID</td>
+                  <td style="padding:10px 12px;color:#ffffff;font-size:10px;font-family:Courier,monospace;word-break:break-all;overflow-wrap:anywhere;vertical-align:top;">${room.roomId}</td>
+                </tr>
+
+                <!-- Divider -->
+                <tr><td colspan="2" style="padding:0;"><div style="height:1px;background-color:#27273a;font-size:0;line-height:0;">&nbsp;</div></td></tr>
+
+                <!-- Safety -->
+                <tr>
+                  <td width="38%" style="padding:10px 12px;color:#71717a;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:0.08em;">Safety</td>
+                  <td style="padding:10px 12px;color:#10b981;font-size:11px;font-weight:700;text-transform:uppercase;">${room.safetyStrategy}</td>
+                </tr>
+
+                <!-- Divider -->
+                <tr><td colspan="2" style="padding:0;"><div style="height:1px;background-color:#27273a;font-size:0;line-height:0;">&nbsp;</div></td></tr>
+
+                <!-- Inactivity Timer -->
+                <tr>
+                  <td width="38%" style="padding:10px 12px;color:#71717a;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:0.08em;">Timer</td>
+                  <td style="padding:10px 12px;color:#e4e4e7;font-size:11px;">${room.inactivityDays === 0 ? '1 min (test mode)' : room.inactivityDays + ' days'}</td>
+                </tr>
+
+                ${isMigration && room.transferEmail ? `
+                <!-- Divider -->
+                <tr><td colspan="2" style="padding:0;"><div style="height:1px;background-color:#27273a;font-size:0;line-height:0;">&nbsp;</div></td></tr>
+
+                <!-- Backup Receiver -->
+                <tr>
+                  <td width="38%" style="padding:10px 12px;color:#71717a;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:0.08em;vertical-align:top;">Backup</td>
+                  <td style="padding:10px 12px;color:#e4e4e7;font-size:11px;word-break:break-all;overflow-wrap:anywhere;">${room.transferEmail}</td>
+                </tr>
+                ` : ''}
+
+              </table>
+
+              <!-- Footer -->
+              <p style="margin:20px 0 12px;color:#52525b;font-size:10px;text-align:center;border-top:1px solid #1f1f2e;padding-top:16px;">
+                Keepr Security &bull; Zero-Knowledge Secure Storage
+              </p>
+            </td>
+          </tr>
+
+        </table>
+        <!-- /Card -->
+
+      </td>
+    </tr>
+  </table>
+  <!-- /Outer wrapper -->
+
 </body>
-</html>
-`;
+</html>`;
+
 
   try {
     await mailTransporter.sendMail({
@@ -519,41 +569,77 @@ Inactivity Timer: Updated from ${oldTimerStr} to ${newTimerStr}
 Keepr Security • Zero-Knowledge Secure Storage
 `;
 
-  const bodyHtml = `
-<!DOCTYPE html>
-<html>
+  const bodyHtml = `<!DOCTYPE html>
+<html lang="en">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <title>Settings Updated — Keepr</title>
 </head>
-<body style="font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;background:#040405;color:#e4e4e7;padding:16px;margin:0;">
-  <div style="max-width:560px;margin:0 auto;background:#0b0b0f;border:1px solid #1f1f2e;border-radius:20px;overflow:hidden;word-break:break-word;">
-    <div style="background:linear-gradient(135deg,#3b82f6,#2563eb);padding:24px 20px;">
-      <h1 style="margin:0;color:#fff;font-size:18px;font-weight:800;letter-spacing:0.04em;">⚙️ Settings Updated</h1>
-    </div>
-    <div style="padding:20px;">
-      <p style="color:#fff;font-size:15px;font-weight:600;margin:0 0 20px;">Your secure room <strong>${room.name}</strong> settings have been updated.</p>
-      <table style="width:100%;border-collapse:collapse;background:#12121a;border-radius:12px;overflow:hidden;border:1px solid #27273a;table-layout:fixed;">
-        <colgroup><col style="width:40%"><col style="width:60%"></colgroup>
-        <tr>
-          <td style="color:#71717a;font-size:11px;font-weight:700;text-transform:uppercase;padding:10px 12px;vertical-align:top;">Vault ID</td>
-          <td style="color:#fff;font-size:11px;font-family:monospace;padding:10px 12px;word-break:break-all;overflow-wrap:anywhere;">${room.roomId}</td>
-        </tr>
-        <tr style="border-top:1px solid #27273a;">
-          <td style="color:#71717a;font-size:11px;font-weight:700;text-transform:uppercase;padding:10px 12px;">Old Timeout</td>
-          <td style="color:#f43f5e;font-size:12px;font-weight:700;padding:10px 12px;">${oldTimerStr}</td>
-        </tr>
-        <tr style="border-top:1px solid #27273a;">
-          <td style="color:#71717a;font-size:11px;font-weight:700;text-transform:uppercase;padding:10px 12px;">New Timeout</td>
-          <td style="color:#10b981;font-size:12px;font-weight:700;padding:10px 12px;">${newTimerStr}</td>
-        </tr>
-      </table>
-      <p style="color:#52525b;font-size:11px;margin-top:28px;border-top:1px solid #1f1f2e;padding-top:16px;text-align:center;">Keepr Security • Zero-Knowledge Secure Storage</p>
-    </div>
-  </div>
+<body style="margin:0;padding:0;background-color:#040405;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;">
+
+  <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="background-color:#040405;">
+    <tr>
+      <td align="center" style="padding:20px 12px;">
+
+        <table role="presentation" cellpadding="0" cellspacing="0" border="0" width="100%" style="max-width:520px;background-color:#0b0b0f;border:1px solid #1f1f2e;border-radius:16px;">
+
+          <!-- Header -->
+          <tr>
+            <td style="background:linear-gradient(135deg,#3b82f6,#2563eb);padding:20px 24px;border-radius:16px 16px 0 0;">
+              <p style="margin:0;color:#ffffff;font-size:18px;font-weight:800;letter-spacing:0.03em;">⚙️ Settings Updated</p>
+            </td>
+          </tr>
+
+          <!-- Body -->
+          <tr>
+            <td style="padding:20px 24px 8px;">
+              <p style="margin:0 0 20px;color:#ffffff;font-size:14px;font-weight:600;line-height:1.5;">
+                Your secure room <strong>${room.name}</strong> settings have been updated.
+              </p>
+
+              <table role="presentation" cellpadding="0" cellspacing="0" border="0" width="100%" style="background-color:#12121a;border:1px solid #27273a;border-radius:10px;">
+
+                <!-- Vault ID -->
+                <tr>
+                  <td width="38%" style="padding:10px 12px;color:#71717a;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:0.08em;vertical-align:top;">Vault ID</td>
+                  <td style="padding:10px 12px;color:#ffffff;font-size:10px;font-family:Courier,monospace;word-break:break-all;overflow-wrap:anywhere;vertical-align:top;">${room.roomId}</td>
+                </tr>
+
+                <tr><td colspan="2" style="padding:0;"><div style="height:1px;background-color:#27273a;font-size:0;line-height:0;">&nbsp;</div></td></tr>
+
+                <!-- Old Timeout -->
+                <tr>
+                  <td width="38%" style="padding:10px 12px;color:#71717a;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:0.08em;">Old Timer</td>
+                  <td style="padding:10px 12px;color:#f43f5e;font-size:11px;font-weight:700;">${oldTimerStr}</td>
+                </tr>
+
+                <tr><td colspan="2" style="padding:0;"><div style="height:1px;background-color:#27273a;font-size:0;line-height:0;">&nbsp;</div></td></tr>
+
+                <!-- New Timeout -->
+                <tr>
+                  <td width="38%" style="padding:10px 12px;color:#71717a;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:0.08em;">New Timer</td>
+                  <td style="padding:10px 12px;color:#10b981;font-size:11px;font-weight:700;">${newTimerStr}</td>
+                </tr>
+
+              </table>
+
+              <p style="margin:20px 0 12px;color:#52525b;font-size:10px;text-align:center;border-top:1px solid #1f1f2e;padding-top:16px;">
+                Keepr Security &bull; Zero-Knowledge Secure Storage
+              </p>
+            </td>
+          </tr>
+
+        </table>
+
+      </td>
+    </tr>
+  </table>
+
 </body>
-</html>
-`;
+</html>`;
+
 
   try {
     await mailTransporter.sendMail({
