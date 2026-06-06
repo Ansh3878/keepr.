@@ -1532,6 +1532,58 @@ function AppContent() {
   const clerk = useClerk();
   const { getToken } = useAuth();
 
+  // Show loading screen while Clerk is initializing
+  if (!isLoaded) {
+    return (
+      <div className="min-h-screen bg-black flex flex-col items-center justify-center">
+        <motion.div
+          initial={{ opacity: 0, scale: 0.9 }}
+          animate={{ opacity: 1, scale: 1 }}
+          className="flex flex-col items-center gap-6"
+        >
+          {/* Logo */}
+          <div className="relative">
+            <motion.div
+              className="w-20 h-20 bg-white rounded-2xl flex items-center justify-center"
+              animate={{
+                boxShadow: [
+                  "0 0 20px rgba(255,255,255,0.2)",
+                  "0 0 40px rgba(6,182,212,0.4)",
+                  "0 0 20px rgba(255,255,255,0.2)",
+                ],
+              }}
+              transition={{
+                duration: 2,
+                repeat: Infinity,
+                ease: "easeInOut"
+              }}
+            >
+              <Lock className="w-10 h-10 text-black" strokeWidth={2.5} />
+            </motion.div>
+          </div>
+
+          {/* Text */}
+          <div className="flex flex-col items-center gap-2">
+            <h2 className="text-white font-bold text-2xl tracking-tight">Keepr.</h2>
+            <p className="text-zinc-500 text-sm uppercase tracking-widest font-black">Authenticating</p>
+          </div>
+
+          {/* Spinner */}
+          <motion.div
+            animate={{ rotate: 360 }}
+            transition={{ repeat: Infinity, duration: 1, ease: 'linear' }}
+            className="w-10 h-10 border-3 border-zinc-800 border-t-cyan-500 rounded-full"
+          />
+
+          {/* Hint */}
+          <p className="text-zinc-600 text-xs mt-4 max-w-xs text-center">
+            Securing your session with end-to-end encryption...
+          </p>
+        </motion.div>
+      </div>
+    );
+  }
+
   // Robust subscription detection
   const checkIfPro = (loadedUser: any): boolean => {
     if (!loadedUser) return false;
@@ -2365,7 +2417,55 @@ function AppContent() {
 
 export default function App() {
   if (window.location.pathname === '/sso-callback') {
-    return <AuthenticateWithRedirectCallback />;
+    return (
+      <div className="min-h-screen bg-black flex flex-col items-center justify-center">
+        <motion.div
+          initial={{ opacity: 0, scale: 0.9 }}
+          animate={{ opacity: 1, scale: 1 }}
+          className="flex flex-col items-center gap-6"
+        >
+          <div className="relative">
+            <motion.div
+              className="w-20 h-20 bg-white rounded-2xl flex items-center justify-center"
+              animate={{
+                boxShadow: [
+                  "0 0 20px rgba(255,255,255,0.2)",
+                  "0 0 40px rgba(6,182,212,0.4)",
+                  "0 0 20px rgba(255,255,255,0.2)",
+                ],
+              }}
+              transition={{
+                duration: 2,
+                repeat: Infinity,
+                ease: "easeInOut"
+              }}
+            >
+              <Lock className="w-10 h-10 text-black" strokeWidth={2.5} />
+            </motion.div>
+          </div>
+
+          <div className="flex flex-col items-center gap-2">
+            <h2 className="text-white font-bold text-2xl tracking-tight">Keepr.</h2>
+            <p className="text-zinc-500 text-sm uppercase tracking-widest font-black">Completing Sign In</p>
+          </div>
+
+          <motion.div
+            animate={{ rotate: 360 }}
+            transition={{ repeat: Infinity, duration: 1, ease: 'linear' }}
+            className="w-10 h-10 border-3 border-zinc-800 border-t-cyan-500 rounded-full"
+          />
+
+          <p className="text-zinc-600 text-xs mt-4 max-w-xs text-center">
+            Redirecting you to your secure workspace...
+          </p>
+        </motion.div>
+        
+        {/* Hidden callback handler */}
+        <div className="hidden">
+          <AuthenticateWithRedirectCallback />
+        </div>
+      </div>
+    );
   }
 
   return <AppContent />;

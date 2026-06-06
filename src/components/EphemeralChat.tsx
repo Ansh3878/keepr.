@@ -82,7 +82,10 @@ export const EphemeralChat = ({ initialRoomId, initialKey }: EphemeralChatProps)
 
   // ── WebSocket connection (with silent auto-retry for cold starts) ─────────
   const openSocket = useCallback((key: CryptoKey, room: string, attempt = 0) => {
+    console.log(`[Chat] Opening socket for room: ${room}, attempt: ${attempt + 1}`);
+    
     if (socketRef.current) {
+      console.log('[Chat] Cleaning up existing socket connection');
       socketRef.current.removeAllListeners();
       socketRef.current.disconnect();
     }
@@ -94,10 +97,18 @@ export const EphemeralChat = ({ initialRoomId, initialKey }: EphemeralChatProps)
       setErrorMsg('');
     }
 
-    const socket = io({ query: { room } });
+    const socket = io({ 
+      query: { room },
+      reconnection: true,
+      reconnectionAttempts: 5,
+      reconnectionDelay: 1000,
+      timeout: 10000,
+      transports: ['websocket', 'polling'] // Try WebSocket first, fallback to polling
+    });
 
     timeoutRef.current = setTimeout(() => {
       if (!socket.connected) {
+        console.warn('[Chat] Connection timeout, retrying...');
         socket.disconnect();
         handleFailure(key, room, attempt, 'Connection timed out.');
       }
@@ -108,34 +119,45 @@ export const EphemeralChat = ({ initialRoomId, initialKey }: EphemeralChatProps)
       retryCountRef.current = att + 1;
       if (att < MAX_RETRIES - 1) {
         const delay = Math.pow(2, att) * 1000;
+        console.log(`[Chat] Retrying in ${delay}ms...`);
         timeoutRef.current = setTimeout(() => openSocket(k, r, att + 1), delay);
       } else {
+        console.error('[Chat] Max retries reached:', reason);
         setStatus('error');
         setErrorMsg(`${reason} Press Retry.`);
       }
     };
 
     socket.on('connect', () => {
+      console.log('[Chat] Successfully connected to room:', room);
       clearTimeout(timeoutRef.current!);
       retryCountRef.current = 0;
       setStatus('connected');
       setErrorMsg('');
     });
 
+    socket.on('connect_error', (error) => {
+      console.error('[Chat] Connection error:', error.message);
+    });
+
     socket.on('chat-message', async (data: string) => {
       try {
         if (!data) return;
         const text = await decrypt(key, data);
+        console.log('[Chat] Received message from peer');
         setMessages(prev => [...prev, {
           id: `${Date.now()}-${Math.random()}`,
           text,
           sender: 'other',
           timestamp: new Date()
         }]);
-      } catch { /* wrong key or corrupt — ignore */ }
+      } catch (err) { 
+        console.error('[Chat] Failed to decrypt message:', err);
+      }
     });
 
     socket.on('peer-joined', () => {
+      console.log('[Chat] Peer joined the room');
       setMessages(prev => [...prev, {
         id: `${Date.now()}-${Math.random()}`,
         text: 'A peer connected',
@@ -145,6 +167,7 @@ export const EphemeralChat = ({ initialRoomId, initialKey }: EphemeralChatProps)
     });
 
     socket.on('peer-wiped', () => {
+      console.log('[Chat] Peer wiped their session');
       lastWipeTime.current = Date.now();
       setMessages(prev => [...prev, {
         id: `${Date.now()}-${Math.random()}`,
@@ -156,6 +179,7 @@ export const EphemeralChat = ({ initialRoomId, initialKey }: EphemeralChatProps)
 
     socket.on('peer-disconnected', () => {
       if (Date.now() - lastWipeTime.current < 2000) return;
+      console.log('[Chat] Peer disconnected');
       setMessages(prev => [...prev, {
         id: `${Date.now()}-${Math.random()}`,
         text: 'Peer disconnected',
@@ -165,6 +189,7 @@ export const EphemeralChat = ({ initialRoomId, initialKey }: EphemeralChatProps)
     });
 
     socket.on('disconnect', (reason) => {
+      console.warn('[Chat] Disconnected:', reason);
       clearTimeout(timeoutRef.current!);
       if (reason === 'io server disconnect' || reason === 'transport close') {
         handleFailure(key, room, attempt, 'Tunnel closed.');
@@ -174,7 +199,7 @@ export const EphemeralChat = ({ initialRoomId, initialKey }: EphemeralChatProps)
     socketRef.current = socket;
   }, []);
 
-  // ── Room initialisation ───────────────────────────────────────────────────
+  // ── Room initialisation ───────────────────────────────────────────────────  // ── Room initialisation ───────────────────────────────────────────────────
   const initRoom = useCallback(async (hashOverride?: string) => {
     const hash = (hashOverride ?? window.location.hash).replace(/^#/, '');
     const params = new URLSearchParams(hash);
@@ -185,27 +210,39 @@ export const EphemeralChat = ({ initialRoomId, initialKey }: EphemeralChatProps)
     let rawKey: string;
     let key: CryptoKey;
 
+    // Priority 1: URL parameters (from pasted link or direct navigation)
     if (urlRoom && urlKey) {
+      console.log('[Chat] Joining existing room from URL:', urlRoom);
       room = urlRoom;
       rawKey = urlKey;
       try {
         key = await importRawKey(urlKey);
-      } catch {
+        console.log('[Chat] Successfully imported key from URL');
+      } catch (err) {
+        console.error('[Chat] Failed to import key from URL, creating new room:', err);
         room = Math.random().toString(36).substring(2, 8).toUpperCase();
         rawKey = await generateRawKey();
         key = await importRawKey(rawKey);
       }
-    } else if (initialRoomId && initialKey) {
+    } 
+    // Priority 2: Props (from parent component)
+    else if (initialRoomId && initialKey) {
+      console.log('[Chat] Joining room from props:', initialRoomId);
       room = initialRoomId;
       rawKey = initialKey;
       try {
         key = await importRawKey(initialKey);
-      } catch {
+        console.log('[Chat] Successfully imported key from props');
+      } catch (err) {
+        console.error('[Chat] Failed to import key from props, creating new room:', err);
         room = Math.random().toString(36).substring(2, 8).toUpperCase();
         rawKey = await generateRawKey();
         key = await importRawKey(rawKey);
       }
-    } else {
+    } 
+    // Priority 3: Create new room
+    else {
+      console.log('[Chat] Creating new room');
       room = Math.random().toString(36).substring(2, 8).toUpperCase();
       rawKey = await generateRawKey();
       key = await importRawKey(rawKey);
@@ -220,19 +257,24 @@ export const EphemeralChat = ({ initialRoomId, initialKey }: EphemeralChatProps)
     setShareUrl(newUrl);
     setMessages([]);
 
-    history.replaceState(null, '', newUrl);
+    // Only update URL if it's different (prevents unnecessary history changes)
+    if (window.location.href !== newUrl) {
+      history.replaceState(null, '', newUrl);
+    }
 
     openSocket(key, room);
-  }, [openSocket]);
+  }, [openSocket, initialRoomId, initialKey]);
 
   useEffect(() => {
+    // Only initialize once on mount
     initRoom();
     return () => {
       if (timeoutRef.current) clearTimeout(timeoutRef.current);
       socketRef.current?.removeAllListeners();
       socketRef.current?.disconnect();
     };
-  }, [initRoom]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []); // Empty dependency array - only run once on mount
 
   useEffect(() => {
     const container = chatContainerRef.current;
@@ -267,14 +309,46 @@ export const EphemeralChat = ({ initialRoomId, initialKey }: EphemeralChatProps)
     const raw = joinInput.trim();
     if (!raw) return;
 
-    let hash = raw.includes('#') ? raw.split('#')[1] : raw;
-    if (!hash.includes('room=') || !hash.includes('key=')) {
-      setErrorMsg('Invalid invite link. Paste the full URL.');
+    // Extract hash from full URL or use as-is if it's just the hash
+    let hash = '';
+    
+    try {
+      // Try parsing as full URL
+      if (raw.includes('://')) {
+        const url = new URL(raw);
+        hash = url.hash.replace(/^#/, '');
+      } else if (raw.includes('#')) {
+        // Extract hash from partial URL
+        hash = raw.split('#')[1];
+      } else {
+        // Assume it's just the hash parameters
+        hash = raw;
+      }
+    } catch (err) {
+      console.error('[Chat] Failed to parse join URL:', err);
+      setErrorMsg('Invalid invite link format. Please paste the full URL.');
       return;
     }
 
+    // Validate hash contains required parameters
+    if (!hash || !hash.includes('room=') || !hash.includes('key=')) {
+      setErrorMsg('Invalid invite link. Missing room or key parameters.');
+      return;
+    }
+
+    console.log('[Chat] Joining room via pasted link:', hash);
+    
     setJoinInput('');
     setShowJoin(false);
+    setErrorMsg(''); // Clear any previous errors
+    
+    // Disconnect current socket before joining new room
+    if (socketRef.current) {
+      socketRef.current.removeAllListeners();
+      socketRef.current.disconnect();
+    }
+    
+    // Initialize with the new room parameters
     initRoom(`#${hash}`);
   };
 
