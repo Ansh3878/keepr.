@@ -1532,24 +1532,6 @@ function AppContent() {
   const clerk = useClerk();
   const { getToken } = useAuth();
 
-  // MINIMAL loading screen ONLY during Clerk initialization
-  if (!isLoaded) {
-    return (
-      <div className="min-h-screen bg-black flex items-center justify-center">
-        <div className="flex flex-col items-center gap-4">
-          <div className="w-12 h-12 bg-white/10 backdrop-blur-sm rounded-xl flex items-center justify-center">
-            <Lock className="w-6 h-6 text-white/60" strokeWidth={2} />
-          </div>
-          <div className="flex items-center gap-2">
-            <div className="w-2 h-2 bg-cyan-500 rounded-full animate-pulse" style={{ animationDelay: '0ms' }}></div>
-            <div className="w-2 h-2 bg-cyan-500 rounded-full animate-pulse" style={{ animationDelay: '150ms' }}></div>
-            <div className="w-2 h-2 bg-cyan-500 rounded-full animate-pulse" style={{ animationDelay: '300ms' }}></div>
-          </div>
-        </div>
-      </div>
-    );
-  }
-
   // Robust subscription detection
   const checkIfPro = (loadedUser: any): boolean => {
     if (!loadedUser) return false;
