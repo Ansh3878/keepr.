@@ -1928,8 +1928,8 @@ export function SecureStorageRoom() {
           <div className="relative flex flex-col md:flex-row md:items-end justify-between gap-8">
           <div className="flex flex-col">
             <div className="space-y-2 mb-3">
-              <h1 className="text-4xl md:text-6xl font-bold text-white tracking-tight">
-                Your <span className="font-serif font-extralight italic text-zinc-400">vault.</span>
+              <h1 className="text-4xl md:text-6xl font-bold tracking-tight bg-gradient-to-b from-white via-zinc-200 to-zinc-500 bg-clip-text text-transparent drop-shadow-[0_2px_8px_rgba(255,255,255,0.08)]">
+                Your <span className="font-serif font-extralight italic bg-gradient-to-b from-white via-zinc-100 to-zinc-400 bg-clip-text text-transparent">vault.</span>
               </h1>
               <div className="flex items-center gap-3 flex-wrap">
                 <span className="text-xs text-zinc-600 uppercase tracking-widest font-black">Signed in as {userName}</span>

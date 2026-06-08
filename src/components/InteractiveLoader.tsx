@@ -5,18 +5,20 @@
 
 import React, { useEffect, useState, useMemo } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
-import { Lock, Shield } from 'lucide-react';
+import { Lock } from 'lucide-react';
 import MouseAurora from './MouseAurora';
 
 export const InteractiveLoader: React.FC = () => {
   const [messageIndex, setMessageIndex] = useState(0);
+  const [clickCount, setClickCount] = useState(0);
+  const [isHovered, setIsHovered] = useState(false);
 
   const loadingMessages = useMemo(() => [
-    "Establishing zero-knowledge protocol and secure keys.",
-    "Verifying cryptographic handshake tokens with Clerk.",
-    "Mounting sandboxed vault environment for session.",
-    "Synchronizing end-to-end keys across instances.",
-    "Securing local vault parameters and connection details."
+    "Establishing zero-knowledge protocol...",
+    "Verifying handshake tokens...",
+    "Mounting sandboxed vault...",
+    "Synchronizing end-to-end keys...",
+    "Securing local vault parameters..."
   ], []);
 
   useEffect(() => {
@@ -26,98 +28,130 @@ export const InteractiveLoader: React.FC = () => {
     return () => clearInterval(interval);
   }, [loadingMessages.length]);
 
+  const handleLockClick = () => {
+    setClickCount((prev) => prev + 1);
+  };
+
   return (
     <div className="min-h-screen w-full bg-black flex flex-col items-center justify-center relative overflow-hidden select-none">
       {/* Background Interactive Aurora */}
       <MouseAurora position="fixed" grid={false} />
 
-      {/* Main Interactive Loader Container */}
-      <div className="relative z-10 w-full max-w-md px-6 flex flex-col items-center">
-        {/* Brand Header */}
-        <motion.div
-          initial={{ opacity: 0, y: -10 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.5, ease: 'easeOut' }}
-          className="flex items-center gap-3 mb-8"
-        >
-          <div className="w-10 h-10 bg-white flex items-center justify-center rounded-xl shadow-[0_0_20px_rgba(255,255,255,0.15)]">
-            <Shield className="w-5.5 h-5.5 text-black" strokeWidth={2.5} />
-          </div>
-          <span className="text-white font-bold text-2xl tracking-tighter">Keepr.</span>
-        </motion.div>
 
-        {/* Center Card (styled exactly like the feature cards) */}
+
+
+      {/* Main Content */}
+      <div className="relative z-10 w-full max-w-[340px] px-6 flex flex-col items-center">
+
+        {/* Lock Centerpiece */}
         <motion.div
-          initial={{ opacity: 0, scale: 0.97 }}
+          initial={{ opacity: 0, scale: 0.9 }}
           animate={{ opacity: 1, scale: 1 }}
-          transition={{ delay: 0.05, duration: 0.5, ease: 'easeOut' }}
-          className="w-full bg-zinc-900/60 backdrop-blur-xl border border-zinc-800 rounded-[2.5rem] p-10 relative overflow-hidden shadow-[0_30px_60px_rgba(0,0,0,0.8)] text-left hover:border-cyan-500/40 transition-colors duration-300"
+          transition={{ delay: 0.1, duration: 0.5, ease: [0.16, 1, 0.3, 1] }}
+          className="relative mb-10 flex items-center justify-center"
         >
-          {/* Top Sheen */}
-          <div className="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-cyan-500/30 to-transparent pointer-events-none" />
-
-          {/* Badge */}
-          <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full border border-white/10 bg-white/[0.02] text-[9px] font-mono tracking-widest uppercase text-zinc-400 mb-8">
-            SECURE INITIALIZATION
-          </div>
-
-          {/* Icon Wrapper with glowing cyan aura */}
-          <div className="relative w-36 h-36 mx-auto mb-8 flex items-center justify-center">
-            {/* Cyan blur aura behind the icon (blends perfectly) */}
-            <div className="absolute w-28 h-28 bg-cyan-500/15 blur-[40px] rounded-full pointer-events-none" />
-
-            {/* Lock Icon */}
+          {/* Click shockwave ripples — only on click */}
+          {clickCount > 0 && Array.from({ length: 3 }).map((_, i) => (
             <motion.div
-              whileHover={{ scale: 1.08 }}
-              whileTap={{ scale: 0.92 }}
-              transition={{ type: "spring", stiffness: 450, damping: 15 }}
-              className="relative z-10 cursor-pointer"
-            >
-              <Lock className="w-16 h-16 text-cyan-400 filter drop-shadow-[0_0_15px_rgba(6,182,212,0.3)]" strokeWidth={1.5} />
-            </motion.div>
-          </div>
-
-          {/* Simplified & Styled Typography */}
-          <div className="space-y-3 mt-4">
-            <h3 className="text-white font-bold text-2xl tracking-tight select-none">
-              Securing Connection
-            </h3>
-
-            <div className="h-14 relative overflow-hidden flex items-start text-zinc-400 text-sm font-light leading-relaxed select-none">
-              <AnimatePresence mode="wait">
-                <motion.p
-                  key={messageIndex}
-                  initial={{ opacity: 0, y: 8 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  exit={{ opacity: 0, y: -8 }}
-                  transition={{ duration: 0.22, ease: 'easeOut' }}
-                  className="absolute"
-                >
-                  {loadingMessages[messageIndex]}
-                </motion.p>
-              </AnimatePresence>
-            </div>
-          </div>
-
-          {/* Sleek Progress Bar inside the card */}
-          <div className="w-full h-[2px] bg-zinc-950 rounded-full mt-6 overflow-hidden relative border border-white/5">
-            <motion.div
-              initial={{ left: '-100%', width: '40%' }}
-              animate={{ left: '100%', width: ['40%', '60%', '40%'] }}
+              key={`${clickCount}-${i}`}
+              initial={{ scale: 0.5, opacity: 0.6 }}
+              animate={{ scale: 2.6, opacity: 0 }}
               transition={{
-                repeat: Infinity,
-                duration: 2.0,
-                ease: 'easeInOut',
+                duration: 1.2,
+                ease: "easeOut",
+                delay: i * 0.22,
               }}
-              className="absolute h-full bg-gradient-to-r from-transparent via-cyan-500 to-transparent shadow-[0_0_6px_rgba(6,182,212,0.6)]"
+              className="absolute w-20 h-20 rounded-full pointer-events-none"
+              style={{ border: '1px solid rgba(6,182,212,0.6)' }}
             />
+          ))}
+
+          {/* Interactive Lock Button */}
+          <motion.button
+            onClick={handleLockClick}
+            onMouseEnter={() => setIsHovered(true)}
+            onMouseLeave={() => setIsHovered(false)}
+            whileHover={{ scale: 1.08 }}
+            whileTap={{ scale: 0.92 }}
+            transition={{ type: "spring", stiffness: 380, damping: 16 }}
+            className="relative z-10 cursor-pointer w-20 h-20 rounded-full flex items-center justify-center bg-zinc-950/80 border border-zinc-800/80 hover:border-cyan-500/40 transition-all duration-300 outline-none shadow-[0_0_30px_rgba(0,0,0,0.5)]"
+            style={{
+              boxShadow: isHovered
+                ? '0 0 0 1px rgba(6,182,212,0.25), 0 0 30px rgba(6,182,212,0.1), 0 20px 40px rgba(0,0,0,0.4)'
+                : '0 0 0 1px rgba(255,255,255,0.04), 0 20px 40px rgba(0,0,0,0.4)',
+            }}
+          >
+            <Lock
+              className={`w-8 h-8 transition-all duration-300 ${isHovered ? 'text-cyan-300' : 'text-cyan-400/80'
+                }`}
+              strokeWidth={1.5}
+              style={{
+                filter: isHovered
+                  ? 'drop-shadow(0 0 12px rgba(6,182,212,0.5))'
+                  : 'drop-shadow(0 0 6px rgba(6,182,212,0.25))',
+              }}
+            />
+          </motion.button>
+        </motion.div>
+
+        {/* Typography */}
+        <motion.div
+          initial={{ opacity: 0, y: 8 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.2, duration: 0.5, ease: 'easeOut' }}
+          className="text-center mb-8"
+        >
+          <h2 className="text-white font-bold text-2xl tracking-tight mb-2 select-none bg-gradient-to-b from-white to-zinc-400 bg-clip-text text-transparent">
+            Securing Connection
+          </h2>
+
+          <div className="h-9 relative overflow-hidden flex items-center justify-center select-none">
+            <AnimatePresence mode="wait">
+              <motion.p
+                key={messageIndex}
+                initial={{ opacity: 0, y: 5 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: -5 }}
+                transition={{ duration: 0.22, ease: 'easeOut' }}
+                className="absolute text-center text-zinc-500 text-[11px] font-light leading-relaxed px-2"
+              >
+                {loadingMessages[messageIndex]}
+              </motion.p>
+            </AnimatePresence>
           </div>
         </motion.div>
 
-        {/* Bottom Encrypted Label */}
-        <div className="mt-6 flex items-center justify-center gap-1.5 text-[9px] uppercase tracking-[0.2em] text-zinc-700 font-bold">
-          <Lock className="w-3 h-3 text-zinc-700" /> End-to-end encrypted
-        </div>
+        {/* Progress Bar */}
+        <motion.div
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          transition={{ delay: 0.3, duration: 0.4 }}
+          className="w-full h-px bg-zinc-900 rounded-full overflow-hidden relative mb-10"
+        >
+          <motion.div
+            initial={{ left: '-60%', width: '40%' }}
+            animate={{ left: '110%', width: ['35%', '55%', '35%'] }}
+            transition={{
+              repeat: Infinity,
+              duration: 2.2,
+              ease: 'easeInOut',
+            }}
+            className="absolute h-full bg-gradient-to-r from-transparent via-cyan-500/70 to-transparent"
+            style={{ filter: 'blur(0.5px)' }}
+          />
+        </motion.div>
+
+        {/* Bottom Label */}
+        <motion.div
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          transition={{ delay: 0.4, duration: 0.5 }}
+          className="flex items-center justify-center gap-1.5 text-[9px] uppercase tracking-[0.22em] text-zinc-700 font-medium"
+        >
+          <Lock className="w-2.5 h-2.5 text-zinc-700" strokeWidth={2} />
+          AES-256-GCM Encrypted
+        </motion.div>
+
       </div>
     </div>
   );

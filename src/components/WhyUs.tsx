@@ -63,10 +63,15 @@ const Hero: React.FC = () => {
           initial={{ opacity: 0, y: 30 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.05 }}
-          className="text-5xl sm:text-6xl md:text-7xl lg:text-8xl font-bold tracking-tight leading-[0.95] bg-gradient-to-b from-white via-zinc-200 to-zinc-500 bg-clip-text text-transparent drop-shadow-[0_2px_8px_rgba(255,255,255,0.08)]"
+          className="text-5xl sm:text-6xl md:text-7xl lg:text-8xl font-bold tracking-tight leading-[0.95] drop-shadow-[0_2px_8px_rgba(255,255,255,0.08)]"
         >
-          Privacy isn't a <br />
-          <span className="font-serif font-extralight italic text-zinc-400">feature.</span>
+          <span className="bg-gradient-to-b from-white via-zinc-200 to-zinc-500 bg-clip-text text-transparent">
+            Privacy isn't a
+          </span>
+          <br />
+          <span className="font-serif font-extralight italic bg-gradient-to-b from-white via-zinc-100 to-zinc-400 bg-clip-text text-transparent">
+            feature.
+          </span>
         </motion.h1>
 
         <motion.p
@@ -91,9 +96,14 @@ const Hero: React.FC = () => {
               key={c.label}
               initial={{ opacity: 0, y: 10 }}
               animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.4 + i * 0.06, duration: 0.3 }}
-              whileHover={{ y: -3, transition: { duration: 0.15, ease: 'easeOut' } }}
-              className="flex items-center gap-2 px-4 py-2 rounded-full bg-zinc-900/60 border border-zinc-800 hover:border-cyan-500/50 text-zinc-300 text-xs font-medium backdrop-blur-sm transition-colors duration-150"
+              whileHover={{ y: -6 }}
+              transition={{
+                type: "spring",
+                stiffness: 500,
+                damping: 22,
+                opacity: { type: "tween", ease: "easeOut", delay: 0.4 + i * 0.06, duration: 0.3 }
+              }}
+              className="flex items-center gap-2 px-4 py-2 rounded-full bg-zinc-900/60 border border-zinc-800 hover:border-cyan-500/50 text-zinc-300 text-xs font-medium backdrop-blur-sm transition-colors duration-100 cursor-pointer"
             >
               <c.icon className="w-3.5 h-3.5 text-cyan-400" /> {c.label}
             </motion.div>
@@ -108,11 +118,11 @@ const Hero: React.FC = () => {
 // Live Encryption Demo — user-driven, watch your file get encrypted on-device
 // ─────────────────────────────────────────────────────────────────────────────
 const sampleMessages = [
-  'Tax returns 2025.pdf',
-  'Project blueprint v3',
-  'Hello, can you keep this safe?',
-  'Bank credentials.txt',
-  'Family photos archive'
+  'recovery_codes.txt',
+  'api_secrets.env',
+  'personal_diary.md',
+  'ssh_private_key.pem',
+  'bitcoin_wallet_seed.txt'
 ];
 
 const LiveEncryptionDemo: React.FC = () => {
@@ -884,9 +894,14 @@ const ThreatModelSection: React.FC = () => {
               initial={{ opacity: 0, y: 20 }}
               whileInView={{ opacity: 1, y: 0 }}
               viewport={{ once: true, margin: '-50px' }}
-              transition={{ delay: i * 0.06 }}
-              whileHover={{ y: -4 }}
-              className="group bg-zinc-900/40 border border-zinc-800 rounded-3xl p-7 hover:border-cyan-500/30 transition-colors"
+              whileHover={{ y: -8 }}
+              transition={{
+                type: "spring",
+                stiffness: 500,
+                damping: 22,
+                opacity: { type: "tween", ease: "easeOut", delay: i * 0.06, duration: 0.3 }
+              }}
+              className="group bg-zinc-900/40 border border-zinc-800 rounded-3xl p-7 hover:border-cyan-500/30 transition-colors duration-100 cursor-pointer"
             >
               <div className="flex items-start justify-between mb-6">
                 <div className="w-12 h-12 rounded-2xl bg-zinc-800 border border-zinc-700 flex items-center justify-center group-hover:border-cyan-500/40 transition-colors">
@@ -951,8 +966,14 @@ const StatsSection: React.FC = () => {
               initial={{ opacity: 0, y: 16 }}
               whileInView={{ opacity: 1, y: 0 }}
               viewport={{ once: true, margin: '-80px' }}
-              transition={{ duration: 0.4, delay: i * 0.06, ease: 'easeOut' }}
-              className="group relative bg-zinc-900/40 border border-zinc-800 rounded-3xl p-6 hover:border-cyan-500/30 transition-colors"
+              whileHover={{ y: -8 }}
+              transition={{
+                type: "spring",
+                stiffness: 500,
+                damping: 22,
+                opacity: { type: "tween", ease: "easeOut", delay: i * 0.06, duration: 0.4 }
+              }}
+              className="group relative bg-zinc-900/40 border border-zinc-800 rounded-3xl p-6 hover:border-cyan-500/30 transition-colors duration-100 cursor-pointer"
             >
               <div className="flex items-center justify-between mb-6">
                 <div className="w-10 h-10 rounded-xl bg-zinc-800 border border-zinc-700 flex items-center justify-center group-hover:border-cyan-500/40 transition-colors">

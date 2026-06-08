@@ -30,6 +30,13 @@ export const DetonatorView = () => {
   const [isAnalysisExpanded, setIsAnalysisExpanded] = useState(false);
   const socketRef = useRef<Socket | null>(null);
   const terminalEndRef = useRef<HTMLDivElement>(null);
+  const textRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (!isAnalysisExpanded && textRef.current) {
+      textRef.current.scrollTop = 0;
+    }
+  }, [isAnalysisExpanded]);
 
   useEffect(() => {
     socketRef.current = io();
@@ -100,8 +107,8 @@ export const DetonatorView = () => {
           animate={{ opacity: 1, y: 0 }}
           className="text-center mb-12"
         >
-          <h1 className="text-5xl md:text-7xl font-bold tracking-tight">
-            Detonate any <span className="font-serif italic font-extralight opacity-60">link.</span>
+          <h1 className="text-5xl md:text-7xl font-bold tracking-tight bg-gradient-to-b from-white via-zinc-200 to-zinc-500 bg-clip-text text-transparent drop-shadow-[0_2px_8px_rgba(255,255,255,0.08)]">
+            Detonate any <span className="font-serif italic font-extralight bg-gradient-to-b from-white via-zinc-100 to-zinc-400 bg-clip-text text-transparent opacity-60">link.</span>
           </h1>
         </motion.div>
 
@@ -259,113 +266,138 @@ export const DetonatorView = () => {
                 <AnimatePresence>
                   {analysis && (
                     <motion.div
-                      layout
-                      transition={{ layout: { type: 'spring', bounce: 0.1, duration: 0.5 } }}
                       initial={{ opacity: 0, y: 60 }}
-                      animate={{ opacity: 1, y: 0 }}
+                      animate={{
+                        opacity: 1,
+                        y: 0,
+                        height: isAnalysisExpanded ? 'calc(100% - 24px)' : '172px',
+                      }}
+                      style={{ padding: '20px' }}
                       exit={{ opacity: 0, y: 60 }}
+                      transition={{
+                        duration: 0.4,
+                        ease: [0.16, 1, 0.3, 1],
+                      }}
                       onClick={() => !isAnalysisExpanded && setIsAnalysisExpanded(true)}
-                      className={`absolute ${isAnalysisExpanded ? 'inset-3 p-6 z-40 bg-zinc-950' : 'inset-x-3 bottom-3 p-4 z-20 cursor-pointer bg-zinc-950/95'} border ${analysis.riskScore > 50 ? 'border-red-500/30' : 'border-cyan-500/30'} rounded-2xl backdrop-blur-xl shadow-2xl flex flex-col overflow-hidden`}
+                      className={`absolute inset-x-3 bottom-3 border ${
+                        analysis.riskScore > 50 ? 'border-red-500/30' : 'border-cyan-500/30'
+                      } rounded-2xl backdrop-blur-xl shadow-2xl flex flex-col overflow-hidden bg-zinc-950 ${
+                        isAnalysisExpanded ? 'z-40' : 'z-20 cursor-pointer'
+                      }`}
                     >
-                      <motion.div layout className="flex items-center justify-between gap-4 mb-3">
-                        <motion.div layout className="flex items-center gap-3 min-w-0">
-                          <motion.div
-                            layout
-                            className={`shrink-0 w-9 h-9 rounded-xl flex items-center justify-center border ${analysis.riskScore > 50
+                      <div className="flex items-center justify-between gap-4 mb-3 shrink-0">
+                        <div className="flex items-center gap-3 min-w-0">
+                          <div
+                            className={`shrink-0 w-9 h-9 rounded-xl flex items-center justify-center border ${
+                              analysis.riskScore > 50
                                 ? 'bg-red-500/10 border-red-500/30'
                                 : 'bg-cyan-500/10 border-cyan-500/30'
-                              }`}
+                            }`}
                           >
                             {analysis.riskScore > 50 ? (
                               <ShieldAlert className="w-4 h-4 text-red-400" />
                             ) : (
                               <ShieldCheck className="w-4 h-4 text-cyan-400" />
                             )}
-                          </motion.div>
-                          <motion.div layout className="min-w-0">
-                            <motion.div
-                              layout
+                          </div>
+                          <div className="min-w-0">
+                            <div
                               className="text-[9px] uppercase tracking-[0.25em] font-black text-zinc-500 mb-0.5"
                             >
                               Verdict
-                            </motion.div>
-                            <motion.h4
-                              layout
+                            </div>
+                            <h4
                               className="text-white font-bold tracking-tight text-base truncate"
                             >
                               {analysis.verdict}
-                            </motion.h4>
-                          </motion.div>
-                        </motion.div>
+                            </h4>
+                          </div>
+                        </div>
 
-                        <motion.div layout className="flex items-center gap-3 shrink-0">
-                          <motion.div layout className="text-right">
-                            <motion.div
-                              layout
-                              className={`font-black tracking-tighter leading-none ${isAnalysisExpanded ? 'text-3xl' : 'text-xl'} ${analysis.riskScore > 50 ? 'text-red-400' : 'text-cyan-400'
-                                }`}
+                        <div className="flex items-center gap-3 shrink-0">
+                          <div className="text-right">
+                            <div
+                              className={`font-black tracking-tighter leading-none text-2xl ${
+                                analysis.riskScore > 50 ? 'text-red-400' : 'text-cyan-400'
+                              }`}
                             >
                               {analysis.riskScore}
-                            </motion.div>
-                            <motion.div
-                              layout
+                            </div>
+                            <div
                               className="text-[9px] uppercase tracking-widest text-zinc-600 font-black mt-0.5"
                             >
                               Risk score
-                            </motion.div>
-                          </motion.div>
-                          {isAnalysisExpanded && (
+                            </div>
+                          </div>
+                          <motion.div
+                            initial={{ width: 0, opacity: 0, marginLeft: 0 }}
+                            animate={{
+                              width: isAnalysisExpanded ? 32 : 0,
+                              opacity: isAnalysisExpanded ? 1 : 0,
+                              marginLeft: isAnalysisExpanded ? 12 : 0,
+                            }}
+                            transition={{ duration: 0.35, ease: [0.16, 1, 0.3, 1] }}
+                            className="overflow-hidden shrink-0 flex items-center justify-center"
+                          >
                             <button
                               onClick={e => {
                                 e.stopPropagation();
                                 setIsAnalysisExpanded(false);
                               }}
-                              className="w-8 h-8 rounded-full bg-zinc-900 hover:bg-zinc-800 border border-zinc-800 flex items-center justify-center text-zinc-400 hover:text-white transition-colors"
+                              className="w-8 h-8 rounded-full bg-zinc-900 hover:bg-zinc-800 border border-zinc-800 flex items-center justify-center text-zinc-400 hover:text-white transition-colors cursor-pointer"
                             >
                               <X className="w-4 h-4" />
                             </button>
-                          )}
-                        </motion.div>
-                      </motion.div>
+                          </motion.div>
+                        </div>
+                      </div>
 
-                      <motion.div layout className="h-1 bg-zinc-900 rounded-full overflow-hidden mb-3 shrink-0">
+                      <div className="h-1 bg-zinc-900 rounded-full overflow-hidden mb-3 shrink-0">
                         <motion.div
                           initial={{ width: 0 }}
                           animate={{ width: `${analysis.riskScore}%` }}
                           transition={{ duration: 0.8, ease: 'easeOut' }}
-                          className={`h-full ${analysis.riskScore > 50
+                          className={`h-full ${
+                            analysis.riskScore > 50
                               ? 'bg-gradient-to-r from-red-500 to-red-400'
                               : 'bg-gradient-to-r from-cyan-500 to-cyan-300'
-                            }`}
+                          }`}
                         />
-                      </motion.div>
+                      </div>
 
-                      <motion.div layout className="relative flex-grow overflow-hidden">
-                        <AnimatePresence mode="popLayout">
-                          <motion.div
-                            key={isAnalysisExpanded ? 'expanded' : 'collapsed'}
-                            initial={{ opacity: 0 }}
-                            animate={{ opacity: 1 }}
-                            exit={{ opacity: 0 }}
-                            transition={{ duration: 0.2 }}
-                            className={`text-zinc-400 leading-relaxed ${isAnalysisExpanded
-                                ? 'text-sm h-full overflow-y-auto pr-2 custom-scrollbar'
-                                : 'text-xs line-clamp-2'
-                              }`}
-                          >
-                            {analysis.reason}
-                          </motion.div>
-                        </AnimatePresence>
-                      </motion.div>
-
-                      {!isAnalysisExpanded && (
-                        <motion.div
-                          layout
-                          className="text-[9px] text-zinc-600 mt-2 uppercase tracking-widest font-black shrink-0"
+                      <div className="relative w-full flex-grow overflow-hidden mt-2">
+                        <div
+                          ref={textRef}
+                          style={{
+                            maskImage: isAnalysisExpanded
+                              ? 'none'
+                              : 'linear-gradient(to bottom, rgba(0,0,0,1) 0%, rgba(0,0,0,1) 50%, rgba(0,0,0,0) 100%)',
+                            WebkitMaskImage: isAnalysisExpanded
+                              ? 'none'
+                              : 'linear-gradient(to bottom, rgba(0,0,0,1) 0%, rgba(0,0,0,1) 50%, rgba(0,0,0,0) 100%)',
+                          }}
+                          className={`text-zinc-400 leading-relaxed font-sans text-xs w-full h-full ${
+                            isAnalysisExpanded
+                              ? 'overflow-y-auto pr-2 custom-scrollbar'
+                              : 'overflow-hidden'
+                          }`}
                         >
-                          Tap to expand
-                        </motion.div>
-                      )}
+                          {analysis.reason}
+                        </div>
+                      </div>
+
+                      <motion.div
+                        initial={false}
+                        animate={{
+                          height: isAnalysisExpanded ? 0 : 20,
+                          opacity: isAnalysisExpanded ? 0 : 1,
+                          marginTop: isAnalysisExpanded ? 0 : 8,
+                        }}
+                        transition={{ duration: 0.25, ease: 'easeInOut' }}
+                        className="text-[9px] text-zinc-600 uppercase tracking-widest font-black shrink-0 overflow-hidden"
+                      >
+                        Tap to expand
+                      </motion.div>
                     </motion.div>
                   )}
                 </AnimatePresence>

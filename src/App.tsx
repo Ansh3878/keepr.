@@ -1533,18 +1533,7 @@ function AppContent() {
   const clerk = useClerk();
   const { getToken } = useAuth();
 
-  const isTransitioning = typeof window !== 'undefined' && sessionStorage.getItem('keepr_auth_transition') === 'true';
 
-  // Clear transition flag synchronously to prevent double flashes/blinks on re-renders or page redirects
-  if (isLoaded && typeof window !== 'undefined' && isTransitioning) {
-    sessionStorage.removeItem('keepr_auth_transition');
-  }
-
-  useEffect(() => {
-    if (isLoaded && typeof window !== 'undefined') {
-      sessionStorage.removeItem('keepr_auth_transition');
-    }
-  }, [isLoaded]);
 
   // Robust subscription detection
   const checkIfPro = (loadedUser: any): boolean => {
@@ -2126,7 +2115,7 @@ function AppContent() {
     }
   };
 
-  if (!isLoaded && isTransitioning) {
+  if (!isLoaded) {
     return <InteractiveLoader />;
   }
 
@@ -2136,7 +2125,7 @@ function AppContent() {
         <AuthPage />
       </SignedOut>
       <SignedIn>
-        <div className="min-h-screen bg-black text-zinc-400 overflow-x-hidden selection:bg-cyan-500/30 selection:text-cyan-200 relative isolate">
+        <div className="min-h-screen bg-black text-zinc-400 selection:bg-cyan-500/30 selection:text-cyan-200 relative isolate">
           <Navbar
             activeView={activeView}
             navigateTo={navigateTo}
