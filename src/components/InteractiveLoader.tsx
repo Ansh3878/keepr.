@@ -101,7 +101,7 @@ export const InteractiveLoader: React.FC = () => {
           transition={{ delay: 0.2, duration: 0.5, ease: 'easeOut' }}
           className="text-center mb-8"
         >
-          <h2 className="text-white font-bold text-2xl tracking-tight mb-2 select-none bg-gradient-to-b from-white to-zinc-400 bg-clip-text text-transparent">
+          <h2 className="text-white font-bold text-2xl tracking-tight mb-2 select-none bg-gradient-to-b from-white to-zinc-400 gradient-text">
             Securing Connection
           </h2>
 

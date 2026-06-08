@@ -107,8 +107,8 @@ export const DetonatorView = () => {
           animate={{ opacity: 1, y: 0 }}
           className="text-center mb-12"
         >
-          <h1 className="text-5xl md:text-7xl font-bold tracking-tight bg-gradient-to-b from-white via-zinc-200 to-zinc-500 bg-clip-text text-transparent drop-shadow-[0_2px_8px_rgba(255,255,255,0.08)]">
-            Detonate any <span className="font-serif italic font-extralight bg-gradient-to-b from-white via-zinc-100 to-zinc-400 bg-clip-text text-transparent opacity-60">link.</span>
+          <h1 className="text-5xl md:text-7xl font-bold tracking-tight bg-gradient-to-b from-white via-zinc-200 to-zinc-500 gradient-text drop-shadow-[0_2px_8px_rgba(255,255,255,0.08)]">
+            Detonate any <span className="font-serif italic font-extralight bg-gradient-to-b from-white via-zinc-100 to-zinc-400 gradient-text opacity-60">link.</span>
           </h1>
         </motion.div>
 

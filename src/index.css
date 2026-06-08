@@ -42,6 +42,13 @@
   .text-glow {
     text-shadow: 0 0 20px rgba(6, 182, 212, 0.5);
   }
+
+  .gradient-text {
+    background-clip: text;
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    color: transparent;
+  }
 }
 
 /* ── Custom Scrollbar ──────────────────────────────────────────────────────── */

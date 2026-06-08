@@ -65,11 +65,11 @@ const Hero: React.FC = () => {
           transition={{ delay: 0.05 }}
           className="text-5xl sm:text-6xl md:text-7xl lg:text-8xl font-bold tracking-tight leading-[0.95] drop-shadow-[0_2px_8px_rgba(255,255,255,0.08)]"
         >
-          <span className="bg-gradient-to-b from-white via-zinc-200 to-zinc-500 bg-clip-text text-transparent">
+          <span className="bg-gradient-to-b from-white via-zinc-200 to-zinc-500 gradient-text">
             Privacy isn't a
           </span>
           <br />
-          <span className="font-serif font-extralight italic bg-gradient-to-b from-white via-zinc-100 to-zinc-400 bg-clip-text text-transparent">
+          <span className="font-serif font-extralight italic bg-gradient-to-b from-white via-zinc-100 to-zinc-400 gradient-text">
             feature.
           </span>
         </motion.h1>

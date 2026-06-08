@@ -172,22 +172,22 @@ const Navbar = ({ activeView, navigateTo, isMenuOpen, setIsMenuOpen, isPro, isFr
   };
 
   return (
-    <nav className="fixed top-0 left-0 right-0 z-50 px-6 py-4">
-      <div className="max-w-7xl mx-auto flex items-center justify-between glass rounded-full px-6 py-3">
+    <nav className="fixed top-0 left-0 right-0 z-50 px-3 py-3 sm:px-6 sm:py-4">
+      <div className="max-w-7xl mx-auto flex items-center justify-between glass rounded-full px-4 py-2.5 sm:px-6 sm:py-3">
         <button onClick={() => navigateTo('home')} className="flex items-center gap-2 group cursor-pointer">
           <motion.div
             initial={false}
             whileHover={{ scale: 1.1 }}
             transition={{ duration: 0.18, ease: 'easeOut' }}
-            className="relative w-8 h-8 bg-white rounded-lg shrink-0 transform-gpu"
+            className="relative w-7 h-7 sm:w-8 sm:h-8 bg-white rounded-lg shrink-0 transform-gpu"
             style={{ transformOrigin: 'center center', willChange: 'transform', backfaceVisibility: 'hidden' }}
           >
             <Lock
-              className="absolute inset-0 m-auto w-5 h-5 text-black"
+              className="absolute inset-0 m-auto w-4 h-4 sm:w-5 sm:h-5 text-black"
               strokeWidth={2.5}
             />
           </motion.div>
-          <span className="text-white font-bold text-xl tracking-tighter transition-colors group-hover:text-cyan-400">Keepr.</span>
+          <span className="text-white font-bold text-lg sm:text-xl tracking-tighter transition-colors group-hover:text-cyan-400">Keepr.</span>
         </button>
 
         {/* Desktop Nav */}
@@ -338,9 +338,9 @@ const Navbar = ({ activeView, navigateTo, isMenuOpen, setIsMenuOpen, isPro, isFr
           </button>
         </div>
 
-        <div className="flex items-center gap-3 sm:gap-4">
+        <div className="flex items-center gap-2 sm:gap-4">
           <div className="relative flex items-center justify-center group">
-            <UserButton appearance={{ elements: { userButtonAvatarBox: `w-10 h-10 shadow-[0_0_20px_rgba(255,255,255,0.2)] ${isPro ? 'ring-2 ring-cyan-500 shadow-[0_0_12px_rgba(34,211,238,0.6)]' : ''}` } }} />
+            <UserButton appearance={{ elements: { userButtonAvatarBox: `w-8 h-8 sm:w-10 sm:h-10 shadow-[0_0_20px_rgba(255,255,255,0.2)] ${isPro ? 'ring-2 ring-cyan-500 shadow-[0_0_12px_rgba(34,211,238,0.6)]' : ''}` } }} />
             {isPro && (
               <div className="absolute -top-8 left-1/2 -translate-x-1/2 px-2 py-1 bg-cyan-500 text-black text-[10px] font-black rounded whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none">
                 PREMIUM
@@ -355,7 +355,7 @@ const Navbar = ({ activeView, navigateTo, isMenuOpen, setIsMenuOpen, isPro, isFr
             <ChevronRight className="w-4 h-4" />
           </button>
           <button
-            className="md:hidden text-white p-2 flex items-center justify-center hover:text-cyan-400 transition-all cursor-pointer"
+            className="md:hidden text-white p-1.5 sm:p-2 flex items-center justify-center hover:text-cyan-400 transition-all cursor-pointer"
             onClick={() => setIsMenuOpen(!isMenuOpen)}
           >
             {isMenuOpen ? <X className="w-6 h-6" /> : <Menu className="w-6 h-6" />}
@@ -367,7 +367,7 @@ const Navbar = ({ activeView, navigateTo, isMenuOpen, setIsMenuOpen, isPro, isFr
 };
 
 const HomeHero = ({ navigateTo }: { navigateTo: (v: ViewType) => void }) => (
-  <section className="relative px-6">
+  <section className="relative px-6 overflow-hidden">
     {/* Silk spans the hero AND the transition gap below; fade lives only at the very bottom (below the fold) */}
     <div className="absolute inset-0 z-0">
       <div className="absolute inset-0 top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[800px] h-[800px] bg-cyan-500/5 blur-[120px] rounded-full pointer-events-none" />
@@ -388,9 +388,9 @@ const HomeHero = ({ navigateTo }: { navigateTo: (v: ViewType) => void }) => (
         <motion.h1
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
-          className="text-5xl md:text-7xl font-bold tracking-tight mb-3 bg-gradient-to-b from-white via-zinc-200 to-zinc-500 bg-clip-text text-transparent drop-shadow-[0_2px_8px_rgba(255,255,255,0.08)]"
+          className="text-5xl md:text-7xl font-bold tracking-tight mb-3 bg-gradient-to-b from-white via-zinc-200 to-zinc-500 gradient-text drop-shadow-[0_2px_8px_rgba(255,255,255,0.08)]"
         >
-          Share Files <span className="bg-gradient-to-b from-white via-zinc-100 to-zinc-400 bg-clip-text text-transparent">Securely.</span>
+          Share Files <span className="bg-gradient-to-b from-white via-zinc-100 to-zinc-400 gradient-text">Securely.</span>
         </motion.h1>
         <motion.p
           initial={{ opacity: 0, y: 20 }}
@@ -589,7 +589,7 @@ const SendView = ({
           animate={{ opacity: 1, y: 0 }}
           className="text-center mb-14"
         >
-          <h1 className="text-5xl md:text-7xl font-bold tracking-tight bg-gradient-to-b from-white via-zinc-200 to-zinc-500 bg-clip-text text-transparent drop-shadow-[0_2px_8px_rgba(255,255,255,0.08)]">
+          <h1 className="text-5xl md:text-7xl font-bold tracking-tight bg-gradient-to-b from-white via-zinc-200 to-zinc-500 gradient-text drop-shadow-[0_2px_8px_rgba(255,255,255,0.08)]">
             Send a file <span className="font-serif font-extralight italic text-zinc-300">privately.</span>
           </h1>
         </motion.div>
@@ -866,7 +866,7 @@ const ReceiveView = ({
           animate={{ opacity: 1, y: 0 }}
           className="text-center mb-14"
         >
-          <h1 className="text-5xl md:text-7xl font-bold tracking-tight bg-gradient-to-b from-white via-zinc-200 to-zinc-500 bg-clip-text text-transparent drop-shadow-[0_2px_8px_rgba(255,255,255,0.08)]">
+          <h1 className="text-5xl md:text-7xl font-bold tracking-tight bg-gradient-to-b from-white via-zinc-200 to-zinc-500 gradient-text drop-shadow-[0_2px_8px_rgba(255,255,255,0.08)]">
             Decrypt your <span className="font-serif font-extralight italic text-zinc-400">file.</span>
           </h1>
         </motion.div>
@@ -1034,7 +1034,7 @@ const ScanView = ({
           animate={{ opacity: 1, y: 0 }}
           className="text-center mb-12"
         >
-          <h1 className="text-5xl md:text-7xl font-bold tracking-tight bg-gradient-to-b from-white via-zinc-200 to-zinc-500 bg-clip-text text-transparent drop-shadow-[0_2px_8px_rgba(255,255,255,0.08)]">
+          <h1 className="text-5xl md:text-7xl font-bold tracking-tight bg-gradient-to-b from-white via-zinc-200 to-zinc-500 gradient-text drop-shadow-[0_2px_8px_rgba(255,255,255,0.08)]">
             Scan before you <span className="font-serif font-extralight italic text-zinc-400">trust.</span>
           </h1>
 
@@ -1846,6 +1846,16 @@ function AppContent() {
     };
   }, [isMenuOpen]);
 
+  useEffect(() => {
+    const handleResize = () => {
+      if (window.innerWidth >= 768) {
+        setIsMenuOpen(false);
+      }
+    };
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, []);
+
   // Logic states
   const [file, setFile] = useState<File | null>(null);
   const [status, setStatus] = useState<'idle' | 'processing' | 'success' | 'error'>('idle');
@@ -2159,9 +2169,9 @@ function AppContent() {
                   <div className="space-y-4">
                     <p className="text-[10px] text-zinc-600 uppercase tracking-[0.3em] font-black">Main Navigation</p>
                     <div className="flex flex-col gap-4">
-                      <button onClick={() => navigateTo('home')} className={`text-4xl font-bold text-left tracking-tighter transition-colors ${activeView === 'home' ? 'text-cyan-400' : 'text-white'}`}>Home.</button>
-                      <button onClick={() => navigateTo('whyus')} className={`text-4xl font-bold text-left tracking-tighter transition-colors ${activeView === 'whyus' ? 'text-cyan-400' : 'text-white'}`}>Why Us.</button>
-                      <button onClick={() => navigateTo('pricing')} className={`text-4xl font-bold text-left tracking-tighter transition-colors ${activeView === 'pricing' ? 'text-cyan-400' : 'text-white'}`}>Pricing.</button>
+                      <button onClick={() => navigateTo('home')} className={`text-3xl sm:text-4xl font-bold text-left tracking-tighter transition-colors ${activeView === 'home' ? 'text-cyan-400' : 'text-white'}`}>Home.</button>
+                      <button onClick={() => navigateTo('whyus')} className={`text-3xl sm:text-4xl font-bold text-left tracking-tighter transition-colors ${activeView === 'whyus' ? 'text-cyan-400' : 'text-white'}`}>Why Us.</button>
+                      <button onClick={() => navigateTo('pricing')} className={`text-3xl sm:text-4xl font-bold text-left tracking-tighter transition-colors ${activeView === 'pricing' ? 'text-cyan-400' : 'text-white'}`}>Pricing.</button>
                     </div>
                   </div>
 
