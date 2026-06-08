@@ -61,15 +61,24 @@ export const AuthPage = () => {
     setError('');
 
     try {
+      if (typeof window !== 'undefined') {
+        sessionStorage.setItem('keepr_auth_transition', 'true');
+      }
       const result = await signIn.create({ identifier: email, password });
 
       if (result.status === 'complete') {
         await setSignInActive({ session: result.createdSessionId });
       } else {
+        if (typeof window !== 'undefined') {
+          sessionStorage.removeItem('keepr_auth_transition');
+        }
         console.log(result);
         setError('Additional verification is required. Please try another method.');
       }
     } catch (err: any) {
+      if (typeof window !== 'undefined') {
+        sessionStorage.removeItem('keepr_auth_transition');
+      }
       setError(err.errors?.[0]?.longMessage || 'Could not sign in. Check your email and password.');
     } finally {
       setLoading(false);
@@ -106,15 +115,24 @@ export const AuthPage = () => {
     setError('');
 
     try {
+      if (typeof window !== 'undefined') {
+        sessionStorage.setItem('keepr_auth_transition', 'true');
+      }
       const completeSignUp = await signUp.attemptEmailAddressVerification({ code });
 
       if (completeSignUp.status === 'complete') {
         await setSignUpActive({ session: completeSignUp.createdSessionId });
       } else {
+        if (typeof window !== 'undefined') {
+          sessionStorage.removeItem('keepr_auth_transition');
+        }
         console.log(completeSignUp);
         setError('Verification incomplete. Please re-enter the code.');
       }
     } catch (err: any) {
+      if (typeof window !== 'undefined') {
+        sessionStorage.removeItem('keepr_auth_transition');
+      }
       setError(err.errors?.[0]?.longMessage || 'That code is incorrect or expired.');
     } finally {
       setLoading(false);
@@ -152,6 +170,10 @@ export const AuthPage = () => {
         throw new Error('Please allow pop-ups for Keepr to continue.');
       }
 
+      if (typeof window !== 'undefined') {
+        sessionStorage.setItem('keepr_auth_transition', 'true');
+      }
+
       await authResource.authenticateWithPopup({
         strategy,
         redirectUrl: ssoCallbackUrl,
@@ -159,6 +181,9 @@ export const AuthPage = () => {
         popup,
       });
     } catch (err: any) {
+      if (typeof window !== 'undefined') {
+        sessionStorage.removeItem('keepr_auth_transition');
+      }
       popup?.close();
       setError(err.errors?.[0]?.longMessage || err.message || `Unable to continue with ${OAUTH_LABELS[strategy]}.`);
     } finally {

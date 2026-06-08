@@ -28,15 +28,15 @@ export const AnimatedSVG: React.FC<AnimatedSVGProps> = ({ kind }) => {
 
   return (
     <div className="relative w-full h-full flex items-center justify-center">
-      {/* Single soft cyan glow behind the icon */}
-      <div className="absolute w-32 h-32 rounded-full bg-cyan-500/20 blur-3xl pointer-events-none" />
+      {/* Single soft cyan glow behind the icon - radial gradient for perfect blending */}
+      <div className="absolute w-40 h-40 rounded-full bg-[radial-gradient(circle,rgba(6,182,212,0.18)_0%,rgba(6,182,212,0)_70%)] pointer-events-none" />
 
       {/* The icon */}
       <Icon
         className="relative z-10 text-cyan-400"
         strokeWidth={1.25}
         size={88}
-        style={{ filter: 'drop-shadow(0 6px 18px rgba(6, 182, 212, 0.4))' }}
+        style={{ filter: 'drop-shadow(0 4px 12px rgba(6, 182, 212, 0.35))' }}
       />
     </div>
   );

@@ -13,10 +13,10 @@ interface CardItem {
 
 // Scene wrapper — soft cyan glow + the animated SVG illustration
 const IsoScene: React.FC<{ shape: SVGKind }> = ({ shape }) => (
-  <div className="relative w-full h-full flex items-center justify-center overflow-hidden">
-    {/* Ambient cyan glow */}
-    <div className="absolute w-48 h-48 rounded-full bg-cyan-500/10 blur-2xl pointer-events-none" />
-    <div className="absolute w-32 h-32 rounded-full bg-cyan-400/15 blur-xl pointer-events-none" />
+  <div className="relative w-full h-full flex items-center justify-center">
+    {/* Ambient cyan glow - radial gradient for perfect blending */}
+    <div className="absolute w-64 h-64 rounded-full bg-[radial-gradient(circle,rgba(6,182,212,0.12)_0%,rgba(6,182,212,0)_70%)] pointer-events-none" />
+    <div className="absolute w-48 h-48 rounded-full bg-[radial-gradient(circle,rgba(6,182,212,0.08)_0%,rgba(6,182,212,0)_70%)] pointer-events-none" />
 
     {/* Animated SVG */}
     <div className="relative z-10 w-[220px] h-[220px]">
@@ -115,8 +115,8 @@ const CarouselCard: React.FC<CarouselCardProps> = ({
             : undefined
         }
         className={`relative w-full h-full rounded-[32px] cursor-pointer group flex flex-col justify-between px-6 pt-6 pb-9 md:px-8 md:pt-7 md:pb-11 select-none overflow-hidden ${isActive
-            ? 'bg-zinc-900 border border-cyan-500/30 shadow-[0_25px_60px_-10px_rgba(6,182,212,0.22)]'
-            : 'bg-transparent border-0 hover:opacity-90'
+          ? 'bg-zinc-900 border border-cyan-500/30 shadow-[0_25px_60px_-10px_rgba(6,182,212,0.22)]'
+          : 'bg-transparent border-0 hover:opacity-90'
           }`}
       >
         {/* Cursor-tracked spotlight (active card only) */}
@@ -138,7 +138,7 @@ const CarouselCard: React.FC<CarouselCardProps> = ({
         )}
 
         {/* Card graphic viewport */}
-        <div className="relative flex-1 w-full flex items-center justify-center overflow-hidden min-h-[160px] pb-2 z-10">
+        <div className="relative flex-1 w-full flex items-center justify-center min-h-[160px] pb-2 z-10">
           {card.graphic}
 
           {/* Bottom fade only — keeps the graphic legible without a hard rectangle */}
@@ -380,8 +380,8 @@ export const JourneySection: React.FC = () => {
               setActiveIndex(idx);
             }}
             className={`h-1.5 rounded-full transition-all duration-300 ${idx === activeIndex
-                ? 'w-6 bg-cyan-400'
-                : 'w-1.5 bg-zinc-800 hover:bg-zinc-700'
+              ? 'w-6 bg-cyan-400'
+              : 'w-1.5 bg-zinc-800 hover:bg-zinc-700'
               }`}
             title={`Slide ${idx + 1}`}
           />

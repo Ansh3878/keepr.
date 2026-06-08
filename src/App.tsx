@@ -37,6 +37,7 @@ import { CheckoutButton } from '@clerk/clerk-react/experimental';
 import { AuthPage } from './components/AuthPage';
 import { TiltCard } from './components/TiltCard';
 import { MouseAurora } from './components/MouseAurora';
+import { InteractiveLoader } from './components/InteractiveLoader';
 
 // Heavy / route-specific components are lazy-loaded so they aren't part of the
 // initial home-page payload. Silk pulls in three.js (~600 KB), chat/detonator
@@ -1532,6 +1533,19 @@ function AppContent() {
   const clerk = useClerk();
   const { getToken } = useAuth();
 
+  const isTransitioning = typeof window !== 'undefined' && sessionStorage.getItem('keepr_auth_transition') === 'true';
+
+  // Clear transition flag synchronously to prevent double flashes/blinks on re-renders or page redirects
+  if (isLoaded && typeof window !== 'undefined' && isTransitioning) {
+    sessionStorage.removeItem('keepr_auth_transition');
+  }
+
+  useEffect(() => {
+    if (isLoaded && typeof window !== 'undefined') {
+      sessionStorage.removeItem('keepr_auth_transition');
+    }
+  }, [isLoaded]);
+
   // Robust subscription detection
   const checkIfPro = (loadedUser: any): boolean => {
     if (!loadedUser) return false;
@@ -2112,6 +2126,10 @@ function AppContent() {
     }
   };
 
+  if (!isLoaded && isTransitioning) {
+    return <InteractiveLoader />;
+  }
+
   return (
     <>
       <SignedOut>
@@ -2365,7 +2383,12 @@ function AppContent() {
 
 export default function App() {
   if (window.location.pathname === '/sso-callback') {
-    return <AuthenticateWithRedirectCallback />;
+    return (
+      <div className="relative">
+        <AuthenticateWithRedirectCallback />
+        <InteractiveLoader />
+      </div>
+    );
   }
 
   return <AppContent />;
