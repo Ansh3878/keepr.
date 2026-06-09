@@ -265,20 +265,45 @@ async function startServer() {
 
   // FEATURE 3: LINK DETONATOR
 
+  const activeRooms = new Set<string>();
+  const destroyedRooms = new Set<string>();
+
   io.on('connection', (socket) => {
     console.log('Client connected');
 
     // EPHEMERAL CHAT LOGIC
     const room = socket.handshake.query.room as string;
     if (room) {
+      if (destroyedRooms.has(room)) {
+        socket.emit('error', 'This room has been destroyed and cannot be re-opened.');
+        socket.disconnect(true);
+        return;
+      }
+
+      activeRooms.add(room);
       socket.join(room);
       socket.to(room).emit('peer-joined');
       
       socket.on('sendMessage', (payload) => {
+        if (destroyedRooms.has(payload.roomId)) return;
         socket.to(payload.roomId).emit('chat-message', payload.data);
       });
       socket.on('wipe-session', () => {
+        destroyedRooms.add(room);
+        activeRooms.delete(room);
         socket.to(room).emit('peer-wiped');
+
+        // Forcefully disconnect all sockets currently in this room
+        const roomSockets = io.sockets.adapter.rooms.get(room);
+        if (roomSockets) {
+          for (const socketId of roomSockets) {
+            const clientSocket = io.sockets.sockets.get(socketId);
+            if (clientSocket) {
+              clientSocket.emit('error', 'This room was wiped and destroyed.');
+              clientSocket.disconnect(true);
+            }
+          }
+        }
       });
       socket.on('disconnect', () => {
         socket.to(room).emit('peer-disconnected');

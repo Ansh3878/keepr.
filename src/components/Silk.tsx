@@ -106,25 +106,31 @@ const Silk: React.FC<SilkProps> = ({
   const propsRef = useRef({ speed, scale, color, noiseIntensity, rotation });
   propsRef.current = { speed, scale, color, noiseIntensity, rotation };
 
+  // Detect mobile/touch once at component level
+  const isMobileDevice = typeof window !== 'undefined' &&
+    (window.matchMedia?.('(pointer: coarse)').matches || window.innerWidth < 768);
+
   useEffect(() => {
     const container = containerRef.current;
     if (!container) return;
 
+    // ── Mobile: skip WebGL entirely — show a plain gradient background ──────
+    // The Three.js fragment shader at full screen is the single largest GPU
+    // draw call on mobile. On mid-range phones it causes 100–200ms frame
+    // times (massive jank). A static gradient looks nearly identical at rest.
+    if (isMobileDevice) return;
+
     const canvas = document.createElement('canvas');
     let renderer: THREE.WebGLRenderer;
     try {
-      renderer = new THREE.WebGLRenderer({ canvas, alpha: true, antialias: true, powerPreference: 'high-performance' });
+      renderer = new THREE.WebGLRenderer({ canvas, alpha: true, antialias: false, powerPreference: 'low-power' });
     } catch (err) {
       console.warn('WebGL not available for Silk background:', err);
       return;
     }
 
-    // Mobile GPUs choke on full-screen fragment shaders at high DPR. Cap the
-    // pixel ratio lower on small/touch screens to keep it smooth and avoid the
-    // out-of-memory crashes that show up as a frozen/black background.
-    const isMobile = typeof window !== 'undefined' &&
-      (window.matchMedia?.('(pointer: coarse)').matches || window.innerWidth < 768);
-    const maxDpr = isMobile ? 1.5 : 2;
+    // Cap DPR aggressively to reduce fragment shader workload
+    const maxDpr = 1.25;
     renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, maxDpr));
     renderer.domElement.style.width = '100%';
     renderer.domElement.style.height = '100%';
@@ -164,20 +170,21 @@ const Silk: React.FC<SilkProps> = ({
     ro.observe(container);
 
     // ── Crash hardening ──────────────────────────────────────────────────
-    // 1) WebGL context can be lost on mobile (memory pressure, tab switch).
-    //    Without handling it the render loop throws every frame. Stop the loop
-    //    on loss and resume on restore instead of crashing.
-    // 2) Pause rendering when the background is off-screen or the tab is
-    //    hidden — saves battery/GPU and prevents background memory buildup.
     let raf = 0;
     let running = true;
     let visible = true;
     let contextLost = false;
+    // Frame skip: render every Nth requestAnimationFrame to throttle GPU load.
+    // Desktop = every frame (0 skips), mobile = every 2nd frame (30fps effective).
+    const frameSkip = 0; // desktop only now; mobile exits early above
+    let frameCount = 0;
 
     const clock = new THREE.Clock();
     const animate = () => {
       raf = requestAnimationFrame(animate);
       if (!running || !visible || contextLost) return;
+      frameCount++;
+      if (frameCount % (frameSkip + 1) !== 0) return; // throttle
       const p = propsRef.current;
       uniforms.uTime.value = clock.getElapsedTime();
       uniforms.uSpeed.value = p.speed;
@@ -188,14 +195,13 @@ const Silk: React.FC<SilkProps> = ({
       try {
         renderer.render(scene, camera);
       } catch (err) {
-        // Bail out gracefully rather than spamming errors / crashing the page.
         console.warn('Silk render error, stopping background:', err);
         running = false;
       }
     };
 
     const onContextLost = (e: Event) => {
-      e.preventDefault(); // tells the browser we'll handle restoration
+      e.preventDefault();
       contextLost = true;
     };
     const onContextRestored = () => {
@@ -208,7 +214,6 @@ const Silk: React.FC<SilkProps> = ({
     const onVisibility = () => { running = document.visibilityState === 'visible'; };
     document.addEventListener('visibilitychange', onVisibility);
 
-    // Pause when the hero background scrolls out of view.
     const io = new IntersectionObserver(
       (entries) => { visible = entries[0]?.isIntersecting ?? true; },
       { threshold: 0 }
@@ -237,6 +242,21 @@ const Silk: React.FC<SilkProps> = ({
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+
+  // On mobile: render a simple CSS gradient that looks like the silk background
+  // without any GPU shader work. Imperceptible difference, massive perf win.
+  if (isMobileDevice) {
+    return (
+      <div
+        className={`w-full h-full relative overflow-hidden ${className}`}
+        style={{
+          background: 'radial-gradient(ellipse 80% 60% at 50% 30%, #0b2a33 0%, #050f14 55%, #000 100%)',
+          ...style
+        }}
+        aria-label="Silk animated background"
+      />
+    );
+  }
 
   return (
     <div

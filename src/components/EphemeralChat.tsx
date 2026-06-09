@@ -30,8 +30,12 @@ const generateRawKey = async (): Promise<string> => {
   return btoa(String.fromCharCode(...new Uint8Array(raw)));
 };
 
+// Sanitize a base64 key that may have had '+' corrupted to ' ' by URLSearchParams
+const sanitizeBase64Key = (b64: string): string => b64.replace(/ /g, '+');
+
 const importRawKey = async (b64: string): Promise<CryptoKey> => {
-  const bin = atob(b64);
+  const safe = sanitizeBase64Key(b64);
+  const bin = atob(safe);
   const bytes = new Uint8Array(bin.length);
   for (let i = 0; i < bin.length; i++) bytes[i] = bin.charCodeAt(i);
   return window.crypto.subtle.importKey('raw', bytes, { name: 'AES-GCM' }, false, ['encrypt', 'decrypt']);
@@ -99,7 +103,7 @@ export const EphemeralChat = ({ initialRoomId, initialKey }: EphemeralChatProps)
 
     const socket = io({ 
       query: { room },
-      reconnection: true,
+      reconnection: false,
       reconnectionAttempts: 5,
       reconnectionDelay: 1000,
       timeout: 10000,
@@ -168,13 +172,10 @@ export const EphemeralChat = ({ initialRoomId, initialKey }: EphemeralChatProps)
 
     socket.on('peer-wiped', () => {
       console.log('[Chat] Peer wiped their session');
-      lastWipeTime.current = Date.now();
-      setMessages(prev => [...prev, {
-        id: `${Date.now()}-${Math.random()}`,
-        text: 'Peer wiped their session',
-        sender: 'system',
-        timestamp: new Date()
-      }]);
+      alert('This room was wiped and permanently destroyed by the peer.');
+      setMessages([]);
+      history.replaceState(null, '', location.pathname);
+      location.reload();
     });
 
     socket.on('peer-disconnected', () => {
@@ -186,6 +187,14 @@ export const EphemeralChat = ({ initialRoomId, initialKey }: EphemeralChatProps)
         sender: 'system',
         timestamp: new Date()
       }]);
+    });
+
+    socket.on('error', (msg: string) => {
+      console.error('[Chat] Server error:', msg);
+      setStatus('error');
+      setErrorMsg(msg);
+      // Clear hash so they don't keep trying to connect to a destroyed room
+      history.replaceState(null, '', location.pathname);
     });
 
     socket.on('disconnect', (reason) => {
@@ -214,30 +223,31 @@ export const EphemeralChat = ({ initialRoomId, initialKey }: EphemeralChatProps)
     if (urlRoom && urlKey) {
       console.log('[Chat] Joining existing room from URL:', urlRoom);
       room = urlRoom;
-      rawKey = urlKey;
+      // sanitizeBase64Key fixes '+' → ' ' corruption by URLSearchParams
+      rawKey = sanitizeBase64Key(urlKey);
       try {
-        key = await importRawKey(urlKey);
+        key = await importRawKey(rawKey);
         console.log('[Chat] Successfully imported key from URL');
       } catch (err) {
-        console.error('[Chat] Failed to import key from URL, creating new room:', err);
-        room = Math.random().toString(36).substring(2, 8).toUpperCase();
-        rawKey = await generateRawKey();
-        key = await importRawKey(rawKey);
+        console.error('[Chat] FATAL: Failed to import key from URL – key is malformed:', err);
+        setStatus('error');
+        setErrorMsg('Invalid invite link – the encryption key is corrupted. Ask the host to share a fresh link.');
+        return;
       }
     } 
     // Priority 2: Props (from parent component)
     else if (initialRoomId && initialKey) {
       console.log('[Chat] Joining room from props:', initialRoomId);
       room = initialRoomId;
-      rawKey = initialKey;
+      rawKey = sanitizeBase64Key(initialKey);
       try {
-        key = await importRawKey(initialKey);
+        key = await importRawKey(rawKey);
         console.log('[Chat] Successfully imported key from props');
       } catch (err) {
-        console.error('[Chat] Failed to import key from props, creating new room:', err);
-        room = Math.random().toString(36).substring(2, 8).toUpperCase();
-        rawKey = await generateRawKey();
-        key = await importRawKey(rawKey);
+        console.error('[Chat] FATAL: Failed to import key from props – key is malformed:', err);
+        setStatus('error');
+        setErrorMsg('Invalid room key – the encryption key is corrupted. Ask the host to share a fresh link.');
+        return;
       }
     } 
     // Priority 3: Create new room
@@ -248,7 +258,9 @@ export const EphemeralChat = ({ initialRoomId, initialKey }: EphemeralChatProps)
       key = await importRawKey(rawKey);
     }
 
-    const newUrl = `${location.origin}${location.pathname}#room=${room}&key=${rawKey}`;
+    // encodeURIComponent ensures '+' and '/' in the base64 key are preserved
+    // in the URL hash (URLSearchParams would otherwise decode '+' as a space)
+    const newUrl = `${location.origin}${location.pathname}#room=${room}&key=${encodeURIComponent(rawKey)}`;
 
     keyRef.current = key;
     roomIdRef.current = room;
@@ -266,15 +278,13 @@ export const EphemeralChat = ({ initialRoomId, initialKey }: EphemeralChatProps)
   }, [openSocket, initialRoomId, initialKey]);
 
   useEffect(() => {
-    // Only initialize once on mount
     initRoom();
     return () => {
       if (timeoutRef.current) clearTimeout(timeoutRef.current);
       socketRef.current?.removeAllListeners();
       socketRef.current?.disconnect();
     };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []); // Empty dependency array - only run once on mount
+  }, [initRoom]);
 
   useEffect(() => {
     const container = chatContainerRef.current;

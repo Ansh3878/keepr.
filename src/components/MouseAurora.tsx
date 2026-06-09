@@ -108,19 +108,39 @@ export const MouseAurora: React.FC<MouseAuroraProps> = ({
       )}
 
       {/* Cursor-following aurora */}
-      <motion.div
-        style={{
-          left,
-          top,
-          width: size,
-          height: size,
-          background: color,
-          filter: 'blur(140px)',
-          x: '-50%',
-          y: '-50%'
-        }}
-        className="absolute rounded-full"
-      />
+      {isTouch ? (
+        // On touch devices: static centered glow with NO blur filter.
+        // filter:blur(140px) on a 700px div is the most expensive single
+        // CSS property on mobile — it forces a full raster repaint every frame.
+        // A simple semi-transparent radial gradient is imperceptible in practice.
+        <div
+          className="absolute rounded-full pointer-events-none"
+          style={{
+            left: '50%',
+            top: '33%',
+            width: 320,
+            height: 320,
+            background: color,
+            opacity: 0.5,
+            transform: 'translate(-50%, -50%)',
+          }}
+        />
+      ) : (
+        <motion.div
+          style={{
+            left,
+            top,
+            width: size,
+            height: size,
+            background: color,
+            filter: 'blur(140px)',
+            x: '-50%',
+            y: '-50%',
+            willChange: 'transform',
+          }}
+          className="absolute rounded-full"
+        />
+      )}
 
       {/* Soft depth gradients at top and bottom so the aurora region
           melts into adjacent sections instead of showing a hard seam. */}

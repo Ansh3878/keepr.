@@ -15,12 +15,16 @@
     overflow-x: hidden;
     -webkit-text-size-adjust: 100%;
     text-size-adjust: 100%;
+    /* Enable hardware-accelerated scrolling globally */
+    scroll-behavior: smooth;
   }
 
   body {
     @apply bg-black text-zinc-400 font-sans antialiased selection:bg-cyan-500/30 selection:text-cyan-200;
     /* Smoother momentum scrolling on iOS. */
     -webkit-overflow-scrolling: touch;
+    /* Prevent the entire body from being repainted on scroll */
+    contain: paint;
   }
 
   h1, h2, h3, h4, h5, h6 {
@@ -31,6 +35,87 @@
   img, video {
     max-width: 100%;
     height: auto;
+  }
+}
+
+/* ── Mobile Performance: Reduce / Kill expensive effects on touch devices ── */
+
+/* On coarse-pointer (touch) devices, disable heavy blur effects that crush
+   mobile GPU. backdrop-blur and filter:blur are the #1 cause of jank on
+   Android/iOS mid-range phones. We downgrade them significantly. */
+@media (pointer: coarse) {
+  /* Kill backdrop-blur completely — replace with opaque bg so it still looks dark */
+  .backdrop-blur-3xl,
+  .backdrop-blur-2xl,
+  .backdrop-blur-xl,
+  .backdrop-blur-lg,
+  .backdrop-blur-md,
+  .backdrop-blur-sm,
+  .backdrop-blur {
+    -webkit-backdrop-filter: none !important;
+    backdrop-filter: none !important;
+  }
+
+  /* Replace translucent glass panels with fully opaque equivalents */
+  .glass {
+    background: rgba(9, 9, 11, 0.97) !important;
+    -webkit-backdrop-filter: none !important;
+    backdrop-filter: none !important;
+  }
+
+  /* Reduce continuous pulsing animations — use a slower, less GPU-intensive version */
+  .animate-pulse {
+    animation-duration: 3s !important;
+  }
+
+  /* Disable Framer Motion whileHover scale effects that require GPU compositing on each hover */
+  * {
+    /* Ensure transforms happen on the compositor thread, not the main thread */
+    -webkit-transform: translateZ(0);
+  }
+}
+
+/* ── GPU Compositing Hints ── */
+
+/* Promote elements that animate frequently to their own compositor layer.
+   This tells the browser to keep them on the GPU, so they don't cause the
+   rest of the page to repaint when they change. */
+.animate-spin,
+.animate-pulse,
+[style*="transform"],
+[style*="will-change"] {
+  will-change: transform;
+  transform: translateZ(0);
+  -webkit-transform: translateZ(0);
+  backface-visibility: hidden;
+  -webkit-backface-visibility: hidden;
+}
+
+/* Navbar: keep on GPU since it's fixed and always painted */
+nav[class*="fixed"] {
+  will-change: transform;
+  transform: translateZ(0);
+  -webkit-transform: translateZ(0);
+}
+
+/* ── Scrolling Performance ── */
+
+/* Allow the browser to skip painting offscreen scroll content */
+.overflow-y-scroll,
+.overflow-y-auto,
+[class*="overflow-y-"] {
+  contain: strict;
+}
+
+/* Reduce motion for users/devices that request it */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  ::before,
+  ::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
   }
 }
 

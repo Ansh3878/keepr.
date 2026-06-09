@@ -14,9 +14,16 @@ interface TiltCardProps {
  * TiltCard — interactive frosted-glass card that tilts in 3D toward the cursor
  * and reveals a soft cyan spotlight that follows the pointer. Pure CSS 3D + motion,
  * no extra deps. Matches Keepr's dark / cyan theme.
+ *
+ * On touch/mobile devices: tilt, spotlight, and backdrop-blur are all disabled
+ * since they cause continuous repaints and jank. The card still looks great.
  */
 export const TiltCard: React.FC<TiltCardProps> = ({ children, className = '', contentClassName = '', intensity = 10 }) => {
   const ref = useRef<HTMLDivElement>(null);
+
+  // Detect touch once — avoids re-detection on every render
+  const isTouch = typeof window !== 'undefined' &&
+    (window.matchMedia?.('(pointer: coarse)').matches || 'ontouchstart' in window);
 
   // Normalised pointer position (-0.5 .. 0.5)
   const px = useMotionValue(0);
@@ -36,6 +43,7 @@ export const TiltCard: React.FC<TiltCardProps> = ({ children, className = '', co
   });
 
   const handleMove = (e: React.MouseEvent<HTMLDivElement>) => {
+    if (isTouch) return; // skip on touch
     const rect = ref.current?.getBoundingClientRect();
     if (!rect) return;
     const x = (e.clientX - rect.left) / rect.width;
@@ -47,6 +55,7 @@ export const TiltCard: React.FC<TiltCardProps> = ({ children, className = '', co
   };
 
   const handleLeave = () => {
+    if (isTouch) return;
     px.set(0);
     py.set(0);
     sx.set(50);
@@ -58,6 +67,21 @@ export const TiltCard: React.FC<TiltCardProps> = ({ children, className = '', co
     ([x, y]) =>
       `radial-gradient(circle at ${x}% ${y}%, rgba(6,182,212,0.15), transparent 55%)`
   );
+
+  // On mobile: render a flat, non-animated card with no blur/tilt/spotlight
+  if (isTouch) {
+    return (
+      <div
+        className={`group relative rounded-3xl border border-zinc-800 bg-zinc-900 overflow-hidden ${className}`}
+      >
+        {/* Top sheen */}
+        <div className="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-cyan-500/30 to-transparent pointer-events-none" />
+        <div className={`relative h-full ${contentClassName}`}>
+          {children}
+        </div>
+      </div>
+    );
+  }
 
   return (
     <motion.div

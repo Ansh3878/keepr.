@@ -415,7 +415,9 @@ const HomeHero = ({ navigateTo }: { navigateTo: (v: ViewType) => void }) => (
                 transition={{ duration: 20, repeat: Infinity, ease: "linear" }}
                 className="relative w-[75%] h-[75%] rounded-full shadow-[0_0_50px_rgba(255,255,255,0.1),inset_0_0_30px_rgba(0,0,0,0.5)] border-4 border-zinc-400 p-1"
                 style={{
-                  background: 'conic-gradient(from 0deg, #f5f5f5 0deg, #525252 45deg, #f5f5f5 90deg, #525252 135deg, #f5f5f5 180deg, #525252 225deg, #f5f5f5 270deg, #525252 315deg, #f5f5f5 360deg)'
+                  background: 'conic-gradient(from 0deg, #f5f5f5 0deg, #525252 45deg, #f5f5f5 90deg, #525252 135deg, #f5f5f5 180deg, #525252 225deg, #f5f5f5 270deg, #525252 315deg, #f5f5f5 360deg)',
+                  willChange: 'transform',
+                  backfaceVisibility: 'hidden',
                 }}
               >
                 <div className="w-full h-full rounded-full border border-zinc-300 flex items-center justify-center bg-transparent">
@@ -438,7 +440,8 @@ const HomeHero = ({ navigateTo }: { navigateTo: (v: ViewType) => void }) => (
               </motion.button>
             </div>
           </div>
-          <div className="absolute -bottom-6 w-[60%] h-8 bg-cyan-500/10 blur-3xl rounded-full" />
+          {/* Glow blob — hidden on mobile (blur-3xl is expensive on mobile GPU) */}
+          <div className="absolute -bottom-6 w-[60%] h-8 bg-cyan-500/10 blur-3xl rounded-full hidden md:block" />
         </motion.div>
       </div>
     </div>
@@ -1892,19 +1895,56 @@ function AppContent() {
     setScanResult(null);
   };
 
+  // 1. Save pending room hash if found on mount (e.g. before OAuth login redirect)
   useEffect(() => {
-    // Check for chat room link: #room=ID&key=KEY
     if (window.location.hash.includes('room=')) {
-      const hash = window.location.hash.replace(/^#/, '');
-      const params = new URLSearchParams(hash);
-      const roomId = params.get('room');
-      const key = params.get('key');
+      sessionStorage.setItem('keepr_pending_room_hash', window.location.hash);
+    }
+  }, []);
 
-      if (roomId && key) {
-        setRoomToJoin({ id: roomId, key: key });
-        setActiveView('chat');
+  // 2. Restore pending room hash after login completes
+  useEffect(() => {
+    if (isLoaded && user) {
+      const pendingHash = sessionStorage.getItem('keepr_pending_room_hash');
+      if (pendingHash) {
+        sessionStorage.removeItem('keepr_pending_room_hash');
+        // Restore hash to the URL
+        window.location.hash = pendingHash;
+        
+        // Parse the restored hash
+        const hash = pendingHash.replace(/^#/, '');
+        const params = new URLSearchParams(hash);
+        const roomId = params.get('room');
+        const key = params.get('key');
+        if (roomId && key) {
+          setRoomToJoin({ id: roomId, key: key });
+          setActiveView('chat');
+        }
       }
     }
+  }, [isLoaded, user]);
+
+  // 3. Dynamic hashchange listener (handles link pasting on active tabs/devices)
+  useEffect(() => {
+    const handleHashChange = () => {
+      if (window.location.hash.includes('room=')) {
+        const hash = window.location.hash.replace(/^#/, '');
+        const params = new URLSearchParams(hash);
+        const roomId = params.get('room');
+        const key = params.get('key');
+
+        if (roomId && key) {
+          setRoomToJoin({ id: roomId, key: key });
+          setActiveView('chat');
+        }
+      }
+    };
+    
+    // Check if there is an active hash on mount
+    handleHashChange();
+
+    window.addEventListener('hashchange', handleHashChange);
+    return () => window.removeEventListener('hashchange', handleHashChange);
   }, []);
 
 
