@@ -86,6 +86,8 @@ export const MouseAurora: React.FC<MouseAuroraProps> = ({
     return () => window.removeEventListener('pointermove', handle);
   }, [mx, my, isTouch]);
 
+  if (isTouch) return null;
+
   // Container styling — fill, fixed-viewport, or banded
   const containerClass = isFixed
     ? 'fixed inset-0'
