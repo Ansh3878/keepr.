@@ -66,34 +66,24 @@
     animation-duration: 3s !important;
   }
 
-  /* Disable Framer Motion whileHover scale effects that require GPU compositing on each hover */
-  * {
-    /* Ensure transforms happen on the compositor thread, not the main thread */
-    -webkit-transform: translateZ(0);
-  }
+  /* NOTE: Do NOT apply transform/translateZ to * here.
+     On iOS Safari, setting transform on ANY ancestor of a position:fixed element
+     breaks fixed positioning — the fixed element scrolls with the page instead
+     of staying viewport-anchored. This was causing the hamburger menu to go
+     out of bounds and scroll off into the black page. */
 }
 
 /* ── GPU Compositing Hints ── */
 
-/* Promote elements that animate frequently to their own compositor layer.
-   This tells the browser to keep them on the GPU, so they don't cause the
-   rest of the page to repaint when they change. */
+/* Promote ONLY specific named animation classes to their own compositor layer.
+   IMPORTANT: Do NOT use [style*="transform"] or [style*="will-change"] selectors
+   here — they match Framer Motion inline styles and override the animation
+   transform values, breaking slide-in/out animations. */
 .animate-spin,
-.animate-pulse,
-[style*="transform"],
-[style*="will-change"] {
+.animate-pulse {
   will-change: transform;
-  transform: translateZ(0);
-  -webkit-transform: translateZ(0);
   backface-visibility: hidden;
   -webkit-backface-visibility: hidden;
-}
-
-/* Navbar: keep on GPU since it's fixed and always painted */
-nav[class*="fixed"] {
-  will-change: transform;
-  transform: translateZ(0);
-  -webkit-transform: translateZ(0);
 }
 
 /* ── Scrolling Performance ── */
