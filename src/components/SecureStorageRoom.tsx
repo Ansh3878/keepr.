@@ -1457,7 +1457,7 @@ export function SecureStorageRoom() {
     };
 
     const menuShellClass = placement === 'grid'
-      ? `absolute top-2 right-2 z-20 ${isMenuOpen ? 'opacity-100' : 'opacity-0 group-hover:opacity-100 group-focus-within:opacity-100'} transition-opacity duration-200`
+      ? `absolute top-2 right-2 z-20 ${isMenuOpen ? 'opacity-100' : 'opacity-100 md:opacity-0 md:group-hover:opacity-100 md:group-focus-within:opacity-100'} transition-opacity duration-200`
       : 'relative z-20 inline-flex justify-end';
 
     return (
@@ -1889,7 +1889,7 @@ export function SecureStorageRoom() {
     : 0;
 
   return (
-    <div className="min-h-screen bg-black text-zinc-200 pt-32 pb-24 px-4 md:px-8 relative font-sans">
+    <div className="min-h-screen bg-black text-zinc-200 pt-32 pb-24 px-4 md:px-8 relative overflow-x-hidden font-sans">
       <style dangerouslySetInnerHTML={{ __html: `
         .glass-card {
           background: rgba(9, 9, 11, 0.55);
@@ -1923,7 +1923,7 @@ export function SecureStorageRoom() {
 
       <div className="max-w-7xl mx-auto relative z-10 space-y-8">
         
-        <header className="relative overflow-hidden rounded-[2.5rem] border border-zinc-900 bg-zinc-950/50 p-6 md:p-10 shadow-2xl" data-purpose="workspace-header">
+        <header className="relative overflow-hidden rounded-3xl md:rounded-[2.5rem] border border-zinc-900 bg-zinc-950/50 p-4 sm:p-6 md:p-10 shadow-2xl" data-purpose="workspace-header">
           <div className="absolute right-0 top-0 h-64 w-64 rounded-full bg-cyan-500/5 blur-[80px] pointer-events-none" />
           <div className="relative flex flex-col md:flex-row md:items-end justify-between gap-8">
           <div className="flex flex-col">
@@ -2104,7 +2104,7 @@ export function SecureStorageRoom() {
           showCreateWizard ? (
             
             /* ROOM CREATION MULTI-STEP WIZARD */
-            <div className="max-w-xl mx-auto my-6 bg-zinc-950/70 border border-zinc-800 rounded-[2.5rem] p-6 md:p-8 shadow-2xl space-y-6">
+            <div className="max-w-xl mx-auto my-6 bg-zinc-950/70 border border-zinc-800 rounded-3xl md:rounded-[2.5rem] p-4 sm:p-6 md:p-8 shadow-2xl space-y-6">
               <div className="flex items-center justify-between border-b border-zinc-900 pb-4">
                 <div className="flex items-center gap-3">
                   <div className="w-10 h-10 rounded-xl bg-cyan-500/10 border border-cyan-500/20 flex items-center justify-center">
@@ -2466,7 +2466,7 @@ export function SecureStorageRoom() {
           ) : selectedRoomToUnlock ? (
             
             /* PIN & KEY ENTRY LOCK SCREEN (Unlock selected chamber) */
-            <div className="max-w-md mx-auto my-12 bg-zinc-950/70 border border-zinc-800 rounded-[2.5rem] p-6 md:p-10 shadow-2xl relative overflow-hidden">
+            <div className="max-w-md mx-auto my-12 bg-zinc-950/70 border border-zinc-800 rounded-3xl md:rounded-[2.5rem] p-4 sm:p-6 md:p-10 shadow-2xl relative overflow-hidden">
               <div className="absolute -top-24 left-1/2 h-48 w-48 -translate-x-1/2 rounded-full bg-cyan-500/5 blur-[70px] pointer-events-none" />
               <div className="text-center space-y-6">
                 <div className="relative w-16 h-16 bg-zinc-900 rounded-2xl flex items-center justify-center mx-auto border border-zinc-800 shadow-md">
@@ -2631,7 +2631,7 @@ export function SecureStorageRoom() {
                     return (
                       <div
                         key={room.id}
-                        className={`group bg-zinc-900/40 border rounded-[2rem] p-6 transition-all duration-300 flex flex-col justify-between space-y-5 relative cursor-pointer active:scale-[0.98] select-none ${
+                        className={`group bg-zinc-900/40 border rounded-3xl p-4 sm:p-6 transition-all duration-300 flex flex-col justify-between space-y-5 relative cursor-pointer active:scale-[0.98] select-none ${
                           isHashMatched 
                             ? 'border-cyan-500/50 ring-2 ring-cyan-500/10 shadow-lg bg-zinc-900/80' 
                             : 'border-zinc-800 hover:border-cyan-500/30 shadow-md hover:-translate-y-0.5 hover:bg-zinc-900/60'
@@ -2733,7 +2733,7 @@ export function SecureStorageRoom() {
               initial={{ opacity: 0, y: 16 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.4, ease: 'easeOut' }}
-              className="relative bg-zinc-950 border border-red-500/20 rounded-[2rem] overflow-hidden shadow-2xl shadow-black/60"
+              className="relative bg-zinc-950 border border-red-500/20 rounded-3xl md:rounded-[2rem] overflow-hidden shadow-2xl shadow-black/60"
             >
               {/* Subtle top glow */}
               <div className="absolute -top-20 left-1/2 -translate-x-1/2 w-48 h-48 bg-red-500/5 blur-[80px] rounded-full pointer-events-none" />
@@ -2823,7 +2823,7 @@ export function SecureStorageRoom() {
           </div>
         ) : (
           /* FILE EXPLORER MAIN MODULE (Active Selected chamber is unlocked) */
-          <div className="bg-zinc-950/50 border border-zinc-900 rounded-[2.5rem] p-5 md:p-6 shadow-2xl space-y-6">
+          <div className="bg-zinc-950/50 border border-zinc-900 rounded-3xl md:rounded-[2.5rem] p-4 sm:p-5 md:p-6 shadow-2xl space-y-6">
 
             {/* PER-ROOM STORAGE STRIP */}
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
@@ -2964,7 +2964,7 @@ export function SecureStorageRoom() {
             ) : viewMode === 'grid' ? (
               
               /* PREMIER GRID DISPLAY */
-              <div id="macos-grid" className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-5 bg-black/30 border border-zinc-900 p-4 md:p-6 rounded-[2rem] backdrop-blur-md shadow-inner">
+              <div id="macos-grid" className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-3 sm:gap-5 bg-black/30 border border-zinc-900 p-3 sm:p-4 md:p-6 rounded-3xl md:rounded-[2rem] backdrop-blur-md shadow-inner">
                 {filteredFiles.map((fileItem) => {
                   return (
                     <div
@@ -2983,7 +2983,7 @@ export function SecureStorageRoom() {
                         }
                         handleDownloadFile(fileItem);
                       }}
-                      className={`flex flex-col items-center p-5 md:p-6 rounded-[1.75rem] transition-all duration-300 cursor-grab active:cursor-grabbing group relative border select-none ${
+                      className={`flex flex-col items-center p-3 sm:p-5 md:p-6 rounded-2xl md:rounded-[1.75rem] transition-all duration-300 cursor-grab active:cursor-grabbing group relative border select-none ${
                         draggedFileId === fileItem.id 
                           ? 'opacity-30 border-white/5 scale-[0.97]' 
                           : dragOverFileId === fileItem.id
