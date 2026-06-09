@@ -23,8 +23,6 @@
     @apply bg-black text-zinc-400 font-sans antialiased selection:bg-cyan-500/30 selection:text-cyan-200;
     /* Smoother momentum scrolling on iOS. */
     -webkit-overflow-scrolling: touch;
-    /* Prevent the entire body from being repainted on scroll */
-    contain: paint;
   }
 
   h1, h2, h3, h4, h5, h6 {
@@ -99,13 +97,9 @@ nav[class*="fixed"] {
 }
 
 /* ── Scrolling Performance ── */
-
-/* Allow the browser to skip painting offscreen scroll content */
-.overflow-y-scroll,
-.overflow-y-auto,
-[class*="overflow-y-"] {
-  contain: strict;
-}
+/* Note: contain:strict is intentionally NOT applied globally to overflow-y
+   elements — it breaks position:fixed children and nested scrollable panels
+   like the hamburger menu overlay. */
 
 /* Reduce motion for users/devices that request it */
 @media (prefers-reduced-motion: reduce) {
