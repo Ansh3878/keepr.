@@ -379,8 +379,6 @@ async function startServer() {
         socket.emit('log', 'Analyzing visuals for phishing & impersonation tokens...');
 
         const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
-        const model = 'gemini-2.5-flash';
-
         const prompt = `You are a cybersecurity expert. Analyze this website screenshot and its URL: "${url}". 
         Check for:
         1. Phishing or Credential Harvesting.
@@ -393,18 +391,37 @@ async function startServer() {
         "reason" (string). 
         BE EXTREMELY STRICT.`;
 
-        const result = await ai.models.generateContent({
-          model,
-          contents: {
-            parts: [
-              { inlineData: { data: screenshotBase64, mimeType } },
-              { text: prompt }
-            ]
-          },
-          config: {
-            responseMimeType: 'application/json'
-          }
-        });
+        let result;
+        try {
+          // Use stable gemini-1.5-flash as primary workhorse
+          result = await ai.models.generateContent({
+            model: 'gemini-1.5-flash',
+            contents: {
+              parts: [
+                { inlineData: { data: screenshotBase64, mimeType } },
+                { text: prompt }
+              ]
+            },
+            config: {
+              responseMimeType: 'application/json'
+            }
+          });
+        } catch (apiError: any) {
+          console.warn('Primary model (gemini-1.5-flash) failed, attempting fallback (gemini-2.5-flash)...', apiError);
+          // Fall back to gemini-2.5-flash if stable is down or rate-limited
+          result = await ai.models.generateContent({
+            model: 'gemini-2.5-flash',
+            contents: {
+              parts: [
+                { inlineData: { data: screenshotBase64, mimeType } },
+                { text: prompt }
+              ]
+            },
+            config: {
+              responseMimeType: 'application/json'
+            }
+          });
+        }
 
         const analysis = JSON.parse(result.text || '{}');
         socket.emit('log', 'Threat analysis synthesis complete.');
@@ -412,7 +429,16 @@ async function startServer() {
 
       } catch (error: any) {
         console.error('Detonation Error:', error);
-        socket.emit('error', error.message || 'Detonation sequence failed due to atmospheric interference.');
+        let errorMsg = error.message || 'Detonation sequence failed due to atmospheric interference.';
+        if (typeof errorMsg === 'string' && errorMsg.trim().startsWith('{')) {
+          try {
+            const parsed = JSON.parse(errorMsg);
+            if (parsed.error && parsed.error.message) {
+              errorMsg = parsed.error.message;
+            }
+          } catch (e) { }
+        }
+        socket.emit('error', errorMsg);
       }
     });
 
