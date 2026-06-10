@@ -1889,7 +1889,7 @@ export function SecureStorageRoom() {
     : 0;
 
   return (
-    <div className="min-h-screen bg-black text-zinc-200 pt-32 pb-24 px-4 md:px-8 relative overflow-x-hidden font-sans">
+    <div className="min-h-screen w-full max-w-full bg-black text-zinc-200 pt-32 pb-24 px-4 md:px-8 relative overflow-x-clip font-sans">
       <style dangerouslySetInnerHTML={{ __html: `
         .glass-card {
           background: rgba(9, 9, 11, 0.55);
@@ -1906,24 +1906,14 @@ export function SecureStorageRoom() {
         .status-glow {
           box-shadow: 0 0 8px rgba(34, 197, 94, 0.5);
         }
-        /* Custom scrollbar */
-        ::-webkit-scrollbar {
-          width: 6px;
-        }
-        ::-webkit-scrollbar-track {
-          background: #000000;
-        }
-        ::-webkit-scrollbar-thumb {
-          background: rgba(6, 182, 212, 0.22);
-          border-radius: 10px;
-        }
+
       `}} />
 
       <div className="absolute top-1/2 left-1/2 -z-0 h-[900px] w-[900px] -translate-x-1/2 -translate-y-1/2 rounded-full bg-cyan-500/[0.03] blur-[150px] pointer-events-none" />
 
       <div className="max-w-7xl mx-auto relative z-10 space-y-8">
         
-        {activeRoomId && isUnlocked && (
+        {activeRoomId && isUnlocked ? (
           <header className="relative overflow-hidden rounded-3xl md:rounded-[2.5rem] border border-zinc-900 bg-zinc-950/50 p-4 sm:p-6 md:p-10 shadow-2xl" data-purpose="workspace-header">
             <div className="absolute right-0 top-0 h-64 w-64 rounded-full bg-cyan-500/5 blur-[80px] pointer-events-none" />
             <div className="relative flex flex-col md:flex-row md:items-end justify-between gap-8">
@@ -1987,6 +1977,74 @@ export function SecureStorageRoom() {
                 <X className="w-4 h-4" />
                 <span className="text-xs font-bold uppercase tracking-widest">Exit room</span>
               </button>
+            </div>
+            </div>
+          </header>
+        ) : (
+          <header className="relative overflow-hidden rounded-3xl md:rounded-[2.5rem] border border-zinc-900 bg-zinc-950/50 p-4 sm:p-6 md:p-10 shadow-2xl" data-purpose="workspace-header">
+            <div className="absolute right-0 top-0 h-64 w-64 rounded-full bg-cyan-500/5 blur-[80px] pointer-events-none" />
+            <div className="relative flex flex-col md:flex-row md:items-end justify-between gap-8">
+            <div className="flex flex-col">
+              <div className="space-y-2 mb-3">
+                <h1 className="text-4xl md:text-6xl font-bold tracking-tight bg-gradient-to-b from-white via-zinc-200 to-zinc-500 bg-clip-text text-transparent drop-shadow-[0_2px_8px_rgba(255,255,255,0.08)] text-left">
+                  Your <span className="font-serif font-extralight italic bg-gradient-to-b from-white via-zinc-100 to-zinc-400 bg-clip-text text-transparent">vaults.</span>
+                </h1>
+                <div className="flex items-center gap-3 flex-wrap">
+                  <span className="text-xs text-zinc-600 uppercase tracking-widest font-black">Signed in as {userName}</span>
+                  <span className="flex items-center px-2.5 py-1 rounded-full bg-cyan-500/10 text-cyan-400 text-[9px] font-black uppercase tracking-wider border border-cyan-500/20">
+                    <span className="w-1.5 h-1.5 bg-cyan-400 rounded-full mr-1.5 status-glow"></span>
+                    End-to-end encrypted
+                  </span>
+                </div>
+              </div>
+              
+              <div className="space-y-2 mt-1 text-left">
+                <p className="text-sm text-zinc-500 max-w-xl">
+                  Vaults are decrypted in your browser. Nothing readable ever leaves your machine.
+                </p>
+              </div>
+            </div>
+
+            <div className="flex items-center gap-3 shrink-0 flex-wrap md:justify-end">
+              {selectedRoomToUnlock ? (
+                <button
+                  onClick={() => {
+                    setSelectedRoomToUnlock(null);
+                    setEnteredPasskey('');
+                    setEnteredVaultKey('');
+                    setPasskeyError('');
+                  }}
+                  className="flex items-center space-x-2 px-4 py-2.5 bg-zinc-900 hover:bg-zinc-800 border border-zinc-800 text-zinc-300 rounded-xl transition-all cursor-pointer text-xs font-bold"
+                >
+                  <span>← Back to vaults</span>
+                </button>
+              ) : showCreateWizard ? (
+                <button
+                  onClick={() => {
+                    setShowCreateWizard(false);
+                    setWizardStep(1);
+                  }}
+                  className="flex items-center space-x-2 px-4 py-2.5 bg-zinc-900 hover:bg-zinc-800 border border-zinc-800 text-zinc-300 rounded-xl transition-all cursor-pointer text-xs font-bold"
+                >
+                  <span>Cancel</span>
+                </button>
+              ) : (
+                <button
+                  onClick={() => {
+                    setNewRoomName('');
+                    setNewRoomPin('');
+                    setNewRoomKey('');
+                    setNewRoomStrategy('purge');
+                    setWizardStep(1);
+                    setWizardError('');
+                    setShowCreateWizard(true);
+                  }}
+                  className="flex items-center space-x-2 px-4 py-2.5 bg-white text-black hover:bg-zinc-200 font-bold rounded-xl transition-colors cursor-pointer text-xs"
+                >
+                  <Plus className="w-4 h-4 text-black" />
+                  <span>New room</span>
+                </button>
+              )}
             </div>
             </div>
           </header>
@@ -2481,81 +2539,7 @@ export function SecureStorageRoom() {
           ) : (
             
             /* ROOM MANAGEMENT DASHBOARD LIST */
-            <div className="space-y-6">
-              <div className="flex items-center justify-between gap-4 flex-wrap">
-                <div className="space-y-1 text-left">
-                  <div className="flex items-center gap-3">
-                    <h2 className="text-2xl font-bold text-white tracking-tight">Your rooms</h2>
-                    <button
-                      type="button"
-                      onClick={fetchRoomsFromBackend}
-                      disabled={isLoadingRooms}
-                      title="Refresh rooms list"
-                      className="p-2 bg-zinc-900/60 hover:bg-zinc-800 border border-zinc-800 hover:border-zinc-700 text-zinc-400 hover:text-white rounded-xl transition-all cursor-pointer outline-none active:scale-95 disabled:opacity-50 shrink-0"
-                    >
-                      <RefreshCw className={`w-3.5 h-3.5 ${isLoadingRooms ? 'animate-spin' : ''}`} />
-                    </button>
-                  </div>
-                  <p className="text-xs text-zinc-500 font-light font-sans">Tap any room to unlock and access its files.</p>
-                </div>
-                
-                <div className="flex items-center gap-3">
-                  <span className="text-[10px] uppercase text-cyan-400 bg-cyan-500/10 px-3 py-1.5 rounded-full border border-cyan-500/15 font-black tracking-widest">
-                    {rooms.length} {rooms.length === 1 ? 'room' : 'rooms'}
-                  </span>
-                  <button
-                    onClick={() => {
-                      setNewRoomName('');
-                      setNewRoomPin('');
-                      setNewRoomKey('');
-                      setNewRoomStrategy('purge');
-                      setWizardStep(1);
-                      setWizardError('');
-                      setShowCreateWizard(true);
-                    }}
-                    className="flex items-center space-x-2 px-4 py-2 bg-white text-black hover:bg-zinc-200 font-black rounded-xl transition-colors cursor-pointer text-[10px] uppercase tracking-widest font-sans font-bold"
-                  >
-                    <Plus className="w-3.5 h-3.5 text-black" />
-                    <span>New room</span>
-                  </button>
-                </div>
-              </div>
-
-              {/* Real-time storage usage meter */}
-              <div className="relative border border-zinc-900 bg-zinc-950/40 p-4 sm:p-5 rounded-2xl">
-                <div className="flex items-center justify-between gap-4 mb-2 flex-wrap">
-                  <div className="flex items-center gap-2">
-                    <FolderLock className="w-3.5 h-3.5 text-cyan-400" />
-                    <span className="text-[10px] uppercase tracking-[0.25em] text-zinc-500 font-black">
-                      Storage used
-                    </span>
-                  </div>
-                  <div className="text-xs font-mono">
-                    <span className={totalUsedBytes / S3_FREE_TIER_BYTES > 0.9 ? 'text-red-400' : totalUsedBytes / S3_FREE_TIER_BYTES > 0.75 ? 'text-amber-400' : 'text-cyan-400'}>{formatBytes(totalUsedBytes)}</span>
-                    <span className="text-zinc-600"> / {formatBytes(S3_FREE_TIER_BYTES)}</span>
-                  </div>
-                </div>
-                <div className="relative h-1.5 bg-zinc-900 rounded-full overflow-hidden">
-                  <motion.div
-                    initial={{ width: 0 }}
-                    animate={{ width: `${Math.min(100, (totalUsedBytes / S3_FREE_TIER_BYTES) * 100).toFixed(2)}%` }}
-                    transition={{ duration: 0.8, ease: 'easeOut' }}
-                    className={`h-full rounded-full ${
-                      totalUsedBytes / S3_FREE_TIER_BYTES > 0.9
-                        ? 'bg-gradient-to-r from-red-500 to-red-400'
-                        : totalUsedBytes / S3_FREE_TIER_BYTES > 0.75
-                          ? 'bg-gradient-to-r from-amber-500 to-amber-400'
-                          : 'bg-gradient-to-r from-cyan-500 to-cyan-300'
-                    }`}
-                  />
-                </div>
-                {totalUsedBytes / S3_FREE_TIER_BYTES > 0.9 && (
-                  <div className="mt-2.5 flex items-start gap-2 text-[10px] text-red-400">
-                    <AlertTriangle className="w-3 h-3 shrink-0 mt-0.5" />
-                    <span>Approaching the 5 GB free tier ceiling. Purge unused rooms to free space.</span>
-                  </div>
-                )}
-              </div>
+            <div className="space-y-4">
 
               {rooms.length === 0 ? (
                 <div className="flex flex-col items-center justify-center p-12 text-center text-zinc-500 bg-zinc-950/50 border border-zinc-900 rounded-[2.5rem] h-80 space-y-5">
@@ -3407,5 +3391,4 @@ export function SecureStorageRoom() {
     </div>
   );
 }
-
 

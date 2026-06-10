@@ -21,8 +21,22 @@
 
   body {
     @apply bg-black text-zinc-400 font-sans antialiased selection:bg-cyan-500/30 selection:text-cyan-200;
+    overflow-x: hidden;
     /* Smoother momentum scrolling on iOS. */
     -webkit-overflow-scrolling: touch;
+  }
+
+  #root {
+    max-width: 100%;
+    overflow-x: hidden;
+  }
+
+  @supports (overflow: clip) {
+    html,
+    body,
+    #root {
+      overflow-x: clip;
+    }
   }
 
   h1, h2, h3, h4, h5, h6 {
