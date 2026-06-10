@@ -1923,24 +1923,24 @@ export function SecureStorageRoom() {
 
       <div className="max-w-7xl mx-auto relative z-10 space-y-8">
         
-        <header className="relative overflow-hidden rounded-3xl md:rounded-[2.5rem] border border-zinc-900 bg-zinc-950/50 p-4 sm:p-6 md:p-10 shadow-2xl" data-purpose="workspace-header">
-          <div className="absolute right-0 top-0 h-64 w-64 rounded-full bg-cyan-500/5 blur-[80px] pointer-events-none" />
-          <div className="relative flex flex-col md:flex-row md:items-end justify-between gap-8">
-          <div className="flex flex-col">
-            <div className="space-y-2 mb-3">
-              <h1 className="text-4xl md:text-6xl font-bold tracking-tight bg-gradient-to-b from-white via-zinc-200 to-zinc-500 bg-clip-text text-transparent drop-shadow-[0_2px_8px_rgba(255,255,255,0.08)]">
-                Your <span className="font-serif font-extralight italic bg-gradient-to-b from-white via-zinc-100 to-zinc-400 bg-clip-text text-transparent">vault.</span>
-              </h1>
-              <div className="flex items-center gap-3 flex-wrap">
-                <span className="text-xs text-zinc-600 uppercase tracking-widest font-black">Signed in as {userName}</span>
-                <span className="flex items-center px-2.5 py-1 rounded-full bg-cyan-500/10 text-cyan-400 text-[9px] font-black uppercase tracking-wider border border-cyan-500/20">
-                  <span className="w-1.5 h-1.5 bg-cyan-400 rounded-full mr-1.5 status-glow"></span>
-                  End-to-end encrypted
-                </span>
+        {activeRoomId && isUnlocked && (
+          <header className="relative overflow-hidden rounded-3xl md:rounded-[2.5rem] border border-zinc-900 bg-zinc-950/50 p-4 sm:p-6 md:p-10 shadow-2xl" data-purpose="workspace-header">
+            <div className="absolute right-0 top-0 h-64 w-64 rounded-full bg-cyan-500/5 blur-[80px] pointer-events-none" />
+            <div className="relative flex flex-col md:flex-row md:items-end justify-between gap-8">
+            <div className="flex flex-col">
+              <div className="space-y-2 mb-3">
+                <h1 className="text-4xl md:text-6xl font-bold tracking-tight bg-gradient-to-b from-white via-zinc-200 to-zinc-500 bg-clip-text text-transparent drop-shadow-[0_2px_8px_rgba(255,255,255,0.08)]">
+                  Your <span className="font-serif font-extralight italic bg-gradient-to-b from-white via-zinc-100 to-zinc-400 bg-clip-text text-transparent">vault.</span>
+                </h1>
+                <div className="flex items-center gap-3 flex-wrap">
+                  <span className="text-xs text-zinc-600 uppercase tracking-widest font-black">Signed in as {userName}</span>
+                  <span className="flex items-center px-2.5 py-1 rounded-full bg-cyan-500/10 text-cyan-400 text-[9px] font-black uppercase tracking-wider border border-cyan-500/20">
+                    <span className="w-1.5 h-1.5 bg-cyan-400 rounded-full mr-1.5 status-glow"></span>
+                    End-to-end encrypted
+                  </span>
+                </div>
               </div>
-            </div>
-            
-            {activeRoomId && isUnlocked ? (
+              
               <div className="space-y-2 mt-1">
                 <p className="text-sm text-zinc-500 max-w-xl">
                   Files are decrypted in your browser. Nothing readable ever leaves your machine.
@@ -1959,130 +1959,38 @@ export function SecureStorageRoom() {
                   </button>
                 </div>
               </div>
-            ) : null}
-          </div>
-
-          <div className="flex items-center gap-3 shrink-0 flex-wrap md:justify-end">
-            {activeRoomId && isUnlocked ? (
-              <>
-                {activeRoomStrategy !== 'handoff_unlocked' && (
-                  <>
-                    <div 
-                      onClick={() => setShowSettings(true)}
-                      className="flex items-center px-4 py-2 bg-zinc-900/70 border border-zinc-800 hover:border-cyan-500/30 rounded-2xl space-x-3 text-zinc-300 text-xs font-bold cursor-pointer transition-all"
-                    >
-                      <Clock className="w-4 h-4 text-cyan-400" />
-                      <span>{inactivityDays}d inactivity lock</span>
-                    </div>
-                    <button 
-                      onClick={() => setShowSettings(true)}
-                      className="p-2.5 rounded-2xl border border-white/10 hover:bg-white/5 text-zinc-400 hover:text-white transition-colors cursor-pointer"
-                      title="Room settings"
-                    >
-                      <Settings className="w-5 h-5" />
-                    </button>
-                  </>
-                )}
-                <button 
-                  onClick={handleExitRoom}
-                  className="flex items-center space-x-2 px-4 py-2 bg-red-500/10 hover:bg-red-500/20 text-red-400 border border-red-500/20 rounded-2xl transition-colors cursor-pointer"
-                >
-                  <X className="w-4 h-4" />
-                  <span className="text-xs font-bold uppercase tracking-widest">Exit room</span>
-                </button>
-              </>
-            ) : selectedRoomToUnlock ? (
-              <button
-                onClick={() => {
-                  setSelectedRoomToUnlock(null);
-                  setEnteredPasskey('');
-                  setPasskeyError('');
-                }}
-                className="flex items-center space-x-2 px-4 py-3 bg-zinc-900 hover:bg-zinc-800 border border-white/5 text-zinc-300 rounded-2xl transition-all cursor-pointer text-xs uppercase font-black tracking-widest"
-              >
-                <span>← Back to vaults</span>
-              </button>
-            ) : !showCreateWizard ? (
-              <button
-                onClick={() => {
-                  setNewRoomName('');
-                  setNewRoomPin('');
-                  setNewRoomKey('');
-                  setNewRoomStrategy('purge');
-                  setWizardStep(1);
-                  setWizardError('');
-                  setShowCreateWizard(true);
-                }}
-                className="flex items-center space-x-2 px-6 py-3 bg-white text-black hover:bg-zinc-200 font-black rounded-2xl transition-colors shadow-[0_0_20px_rgba(255,255,255,0.12)] cursor-pointer text-[10px] uppercase tracking-widest"
-              >
-                <Plus className="w-4 h-4 text-black" />
-                <span>New room</span>
-              </button>
-            ) : (
-              <button
-                onClick={() => {
-                  setShowCreateWizard(false);
-                  setWizardStep(1);
-                }}
-                className="flex items-center space-x-2 px-4 py-3 bg-zinc-900 hover:bg-zinc-800 border border-white/5 text-zinc-300 rounded-2xl transition-all cursor-pointer text-xs uppercase font-black tracking-widest"
-              >
-                <span>Cancel</span>
-              </button>
-            )}
-          </div>
-          </div>
-
-          {/* Real-time storage usage meter */}
-          <div className="relative mt-6 pt-6 border-t border-white/5">
-            <div className="flex items-center justify-between gap-4 mb-3 flex-wrap">
-              <div className="flex items-center gap-2.5">
-                <div className="w-7 h-7 rounded-lg bg-cyan-500/10 border border-cyan-500/20 flex items-center justify-center">
-                  <FolderLock className="w-3.5 h-3.5 text-cyan-400" />
-                </div>
-                <div>
-                  <div className="text-[10px] uppercase tracking-[0.25em] text-zinc-500 font-black leading-tight">
-                    Storage used
-                  </div>
-                  <div className="text-xs font-mono mt-0.5">
-                    <span className={totalUsedBytes / S3_FREE_TIER_BYTES > 0.9 ? 'text-red-400' : totalUsedBytes / S3_FREE_TIER_BYTES > 0.75 ? 'text-amber-400' : 'text-cyan-400'}>{formatBytes(totalUsedBytes)}</span>
-                    <span className="text-zinc-600"> / {formatBytes(S3_FREE_TIER_BYTES)}</span>
-                  </div>
-                </div>
-              </div>
-              <div className="flex items-center gap-3">
-                <div>
-                  <div className="text-[10px] uppercase tracking-[0.25em] text-zinc-500 font-black leading-tight">Rooms</div>
-                  <div className="text-xs text-white font-mono mt-0.5 font-bold">{rooms.length}</div>
-                </div>
-                <div className="hidden sm:block w-px h-7 bg-white/5" />
-                <div className="hidden sm:block">
-                  <div className="text-[10px] uppercase tracking-[0.25em] text-zinc-500 font-black leading-tight">Plan</div>
-                  <div className="text-xs text-white font-mono mt-0.5 font-bold">Free</div>
-                </div>
-              </div>
             </div>
-            <div className="relative h-1.5 bg-zinc-900 rounded-full overflow-hidden">
-              <motion.div
-                initial={{ width: 0 }}
-                animate={{ width: `${Math.min(100, (totalUsedBytes / S3_FREE_TIER_BYTES) * 100).toFixed(2)}%` }}
-                transition={{ duration: 0.8, ease: 'easeOut' }}
-                className={`h-full rounded-full ${
-                  totalUsedBytes / S3_FREE_TIER_BYTES > 0.9
-                    ? 'bg-gradient-to-r from-red-500 to-red-400'
-                    : totalUsedBytes / S3_FREE_TIER_BYTES > 0.75
-                      ? 'bg-gradient-to-r from-amber-500 to-amber-400'
-                      : 'bg-gradient-to-r from-cyan-500 to-cyan-300'
-                }`}
-              />
+
+            <div className="flex items-center gap-3 shrink-0 flex-wrap md:justify-end">
+              {activeRoomStrategy !== 'handoff_unlocked' && (
+                <>
+                  <div 
+                    onClick={() => setShowSettings(true)}
+                    className="flex items-center px-4 py-2 bg-zinc-900/70 border border-zinc-800 hover:border-cyan-500/30 rounded-2xl space-x-3 text-zinc-300 text-xs font-bold cursor-pointer transition-all"
+                  >
+                    <Clock className="w-4 h-4 text-cyan-400" />
+                    <span>{inactivityDays}d inactivity lock</span>
+                  </div>
+                  <button 
+                    onClick={() => setShowSettings(true)}
+                    className="p-2.5 rounded-2xl border border-white/10 hover:bg-white/5 text-zinc-400 hover:text-white transition-colors cursor-pointer"
+                    title="Room settings"
+                  >
+                    <Settings className="w-5 h-5" />
+                  </button>
+                </>
+              )}
+              <button 
+                onClick={handleExitRoom}
+                className="flex items-center space-x-2 px-4 py-2 bg-red-500/10 hover:bg-red-500/20 text-red-400 border border-red-500/20 rounded-2xl transition-colors cursor-pointer"
+              >
+                <X className="w-4 h-4" />
+                <span className="text-xs font-bold uppercase tracking-widest">Exit room</span>
+              </button>
             </div>
-            {totalUsedBytes / S3_FREE_TIER_BYTES > 0.9 && (
-              <div className="mt-3 flex items-start gap-2 text-[10px] text-red-400">
-                <AlertTriangle className="w-3 h-3 shrink-0 mt-0.5" />
-                <span>Approaching the 5 GB free tier ceiling. Purge unused rooms to free space.</span>
-              </div>
-            )}
-          </div>
-        </header>
+            </div>
+          </header>
+        )}
 
         {/* FEEDBACK TOAST BANNER */}
         <AnimatePresence>
@@ -2575,7 +2483,7 @@ export function SecureStorageRoom() {
             /* ROOM MANAGEMENT DASHBOARD LIST */
             <div className="space-y-6">
               <div className="flex items-center justify-between gap-4 flex-wrap">
-                <div className="space-y-1">
+                <div className="space-y-1 text-left">
                   <div className="flex items-center gap-3">
                     <h2 className="text-2xl font-bold text-white tracking-tight">Your rooms</h2>
                     <button
@@ -2588,12 +2496,65 @@ export function SecureStorageRoom() {
                       <RefreshCw className={`w-3.5 h-3.5 ${isLoadingRooms ? 'animate-spin' : ''}`} />
                     </button>
                   </div>
-                  <p className="text-sm text-zinc-500 font-light font-sans">Tap any room to unlock and access its files.</p>
+                  <p className="text-xs text-zinc-500 font-light font-sans">Tap any room to unlock and access its files.</p>
                 </div>
                 
-                <span className="text-[10px] uppercase text-cyan-400 bg-cyan-500/10 px-3 py-1.5 rounded-full border border-cyan-500/15 font-black tracking-widest">
-                  {rooms.length} {rooms.length === 1 ? 'room' : 'rooms'}
-                </span>
+                <div className="flex items-center gap-3">
+                  <span className="text-[10px] uppercase text-cyan-400 bg-cyan-500/10 px-3 py-1.5 rounded-full border border-cyan-500/15 font-black tracking-widest">
+                    {rooms.length} {rooms.length === 1 ? 'room' : 'rooms'}
+                  </span>
+                  <button
+                    onClick={() => {
+                      setNewRoomName('');
+                      setNewRoomPin('');
+                      setNewRoomKey('');
+                      setNewRoomStrategy('purge');
+                      setWizardStep(1);
+                      setWizardError('');
+                      setShowCreateWizard(true);
+                    }}
+                    className="flex items-center space-x-2 px-4 py-2 bg-white text-black hover:bg-zinc-200 font-black rounded-xl transition-colors cursor-pointer text-[10px] uppercase tracking-widest font-sans font-bold"
+                  >
+                    <Plus className="w-3.5 h-3.5 text-black" />
+                    <span>New room</span>
+                  </button>
+                </div>
+              </div>
+
+              {/* Real-time storage usage meter */}
+              <div className="relative border border-zinc-900 bg-zinc-950/40 p-4 sm:p-5 rounded-2xl">
+                <div className="flex items-center justify-between gap-4 mb-2 flex-wrap">
+                  <div className="flex items-center gap-2">
+                    <FolderLock className="w-3.5 h-3.5 text-cyan-400" />
+                    <span className="text-[10px] uppercase tracking-[0.25em] text-zinc-500 font-black">
+                      Storage used
+                    </span>
+                  </div>
+                  <div className="text-xs font-mono">
+                    <span className={totalUsedBytes / S3_FREE_TIER_BYTES > 0.9 ? 'text-red-400' : totalUsedBytes / S3_FREE_TIER_BYTES > 0.75 ? 'text-amber-400' : 'text-cyan-400'}>{formatBytes(totalUsedBytes)}</span>
+                    <span className="text-zinc-600"> / {formatBytes(S3_FREE_TIER_BYTES)}</span>
+                  </div>
+                </div>
+                <div className="relative h-1.5 bg-zinc-900 rounded-full overflow-hidden">
+                  <motion.div
+                    initial={{ width: 0 }}
+                    animate={{ width: `${Math.min(100, (totalUsedBytes / S3_FREE_TIER_BYTES) * 100).toFixed(2)}%` }}
+                    transition={{ duration: 0.8, ease: 'easeOut' }}
+                    className={`h-full rounded-full ${
+                      totalUsedBytes / S3_FREE_TIER_BYTES > 0.9
+                        ? 'bg-gradient-to-r from-red-500 to-red-400'
+                        : totalUsedBytes / S3_FREE_TIER_BYTES > 0.75
+                          ? 'bg-gradient-to-r from-amber-500 to-amber-400'
+                          : 'bg-gradient-to-r from-cyan-500 to-cyan-300'
+                    }`}
+                  />
+                </div>
+                {totalUsedBytes / S3_FREE_TIER_BYTES > 0.9 && (
+                  <div className="mt-2.5 flex items-start gap-2 text-[10px] text-red-400">
+                    <AlertTriangle className="w-3 h-3 shrink-0 mt-0.5" />
+                    <span>Approaching the 5 GB free tier ceiling. Purge unused rooms to free space.</span>
+                  </div>
+                )}
               </div>
 
               {rooms.length === 0 ? (
