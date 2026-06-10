@@ -7,7 +7,7 @@
 #    Feature 4 – Secure Cloud Storage Room     (S3 + DynamoDB + Lambda API + Cron)
 #
 #  Deploy:
-#    cd keeper-ephemeral-chat-backend
+#    cd aws-backend
 #    serverless deploy --stage prod
 #
 #  Serverless v4 features:

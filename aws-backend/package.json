@@ -1,5 +1,5 @@
 {
-  "name": "keepr-ephemeral-chat-backend",
+  "name": "aws-backend",
   "version": "1.0.0",
   "description": "Serverless WebSocket Backend for Ephemeral Chat",
   "main": "handler.js",

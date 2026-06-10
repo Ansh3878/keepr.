@@ -1187,7 +1187,7 @@ export function SecureStorageRoom() {
       createData = await createRes.json();
     } catch {
       throw new Error(
-        `large-file uploads (${formatBytes(file.size)}) need the multipart backend deployed. Run "serverless deploy" in keepr-ephemeral-chat-backend.`
+        `large-file uploads (${formatBytes(file.size)}) need the multipart backend deployed. Run "serverless deploy" in aws-backend.`
       );
     }
     uploadId = createData.uploadId;

@@ -196,7 +196,7 @@ unified Node server (`server.ts`) used for local development and single-host dep
 ```
 
 **Two backends, by design:**
-- `keepr-ephemeral-chat-backend/` — the **AWS Serverless Framework** stack: WebSocket chat
+- `aws-backend/` — the **AWS Serverless Framework** stack: WebSocket chat
   handlers, the Secure Room REST API (presigned uploads, multipart, room CRUD), and the
   scheduled cleanup/handoff cron.
 - `server.ts` — a unified **Express + Socket.IO** server for local dev and simple hosting
@@ -328,7 +328,7 @@ keepr. new/
 │       ├── MouseAurora.tsx       # Cursor-tracking aurora glow (touch-aware)
 │       └── AnimatedSVG.tsx       # Minimal animated Lucide icon illustrations
 │
-└── keepr-ephemeral-chat-backend/      # AWS Serverless Framework stack
+└── aws-backend/      # AWS Serverless Framework stack
     ├── serverless.yml                 # IaC: Lambdas, S3, DynamoDB, API GW, IAM, cron
     ├── handler.js                     # WebSocket chat: $connect/$disconnect/sendMessage,
     │                                  #   DynamoDB connection tracking, ciphertext fan-out
@@ -359,7 +359,7 @@ cd keepr
 npm install
 
 # Backend (serverless) dependencies
-cd keepr-ephemeral-chat-backend
+cd aws-backend
 npm install
 cd ..
 ```
@@ -422,7 +422,7 @@ EMAIL_APP_PASSWORD=your_gmail_app_password
 
 ### Backend (AWS Serverless)
 ```bash
-cd keepr-ephemeral-chat-backend
+cd aws-backend
 npx serverless deploy          # provisions Lambda, S3, DynamoDB, API GW, cron, IAM
 ```
 After deploying, copy the generated WebSocket + REST endpoints into your frontend env
