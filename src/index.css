@@ -32,6 +32,7 @@
   }
 
   @supports (overflow: clip) {
+
     html,
     body,
     #root {
@@ -39,12 +40,18 @@
     }
   }
 
-  h1, h2, h3, h4, h5, h6 {
+  h1,
+  h2,
+  h3,
+  h4,
+  h5,
+  h6 {
     @apply text-white font-medium tracking-tight;
   }
 
   /* Media never forces the layout wider than the screen. */
-  img, video {
+  img,
+  video {
     max-width: 100%;
     height: auto;
   }
@@ -56,6 +63,7 @@
    mobile GPU. backdrop-blur and filter:blur are the #1 cause of jank on
    Android/iOS mid-range phones. We downgrade them significantly. */
 @media (pointer: coarse) {
+
   /* Kill backdrop-blur completely — replace with opaque bg so it still looks dark */
   .backdrop-blur-3xl,
   .backdrop-blur-2xl,
@@ -107,6 +115,7 @@
 
 /* Reduce motion for users/devices that request it */
 @media (prefers-reduced-motion: reduce) {
+
   *,
   ::before,
   ::after {
@@ -195,13 +204,23 @@
 
 /* SVG animation keyframes used by AnimatedSVG illustrations */
 @keyframes svg-spin {
-  from { transform: rotate(0deg); }
-  to { transform: rotate(360deg); }
+  from {
+    transform: rotate(0deg);
+  }
+
+  to {
+    transform: rotate(360deg);
+  }
 }
 
 @keyframes svg-spin-rev {
-  from { transform: rotate(360deg); }
-  to { transform: rotate(0deg); }
+  from {
+    transform: rotate(360deg);
+  }
+
+  to {
+    transform: rotate(0deg);
+  }
 }
 
 /* ── Clerk Modal Z-Index Fix ───────────────────────────────────────────────── */
@@ -224,8 +243,8 @@
 .cl-checkout,
 .cl-dialog,
 .cl-modal-container,
-[role="alertdialog"] > *,
-[role="dialog"] > * {
+[role="alertdialog"]>*,
+[role="dialog"]>* {
   z-index: 71 !important;
 }
 
