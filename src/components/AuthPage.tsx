@@ -1,6 +1,6 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { useSignIn, useSignUp } from '@clerk/clerk-react';
-import { Shield, Loader2, ArrowRight, Mail, Lock, Eye, EyeOff, Check, AlertTriangle, RotateCcw } from 'lucide-react';
+import { Shield, Loader2, ArrowRight, Mail, Lock, Eye, EyeOff, Check, AlertTriangle, RotateCcw, X } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { MouseAurora } from './MouseAurora';
 
@@ -22,7 +22,7 @@ const OAUTH_LABELS: Record<OAuthStrategy, string> = {
   oauth_google: 'Google'
 };
 
-export const AuthPage = () => {
+export const AuthPage = ({ onClose }: { onClose?: () => void }) => {
   const { isLoaded: isSignInLoaded, signIn, setActive: setSignInActive } = useSignIn();
   const { isLoaded: isSignUpLoaded, signUp, setActive: setSignUpActive } = useSignUp();
 
@@ -281,6 +281,16 @@ export const AuthPage = () => {
           className="w-full bg-zinc-900/70 backdrop-blur-xl border border-zinc-800 shadow-2xl rounded-[2rem] p-8 md:p-9 relative overflow-hidden"
         >
           <div className="absolute top-0 left-0 w-full h-px bg-gradient-to-r from-transparent via-cyan-500/40 to-transparent" />
+
+          {onClose && (
+            <button
+              onClick={onClose}
+              className="absolute top-4 right-4 p-2 rounded-full text-zinc-500 hover:text-white hover:bg-white/5 transition-all cursor-pointer z-50"
+              aria-label="Close"
+            >
+              <X className="w-5 h-5" />
+            </button>
+          )}
 
           <AnimatePresence mode="wait">
             {/* ───────────────── LOGIN ───────────────── */}

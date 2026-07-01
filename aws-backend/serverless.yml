@@ -61,7 +61,7 @@ provider:
     ROOM_SETTINGS_TABLE: ${self:custom.roomSettingsTableName}
     SENDER_EMAIL: ${env:SENDER_EMAIL, "anshulspotify5@gmail.com"}
     EMAIL_USER: ${env:EMAIL_USER, "anshulspotify5@gmail.com"}
-    EMAIL_APP_PASSWORD: ${env:EMAIL_APP_PASSWORD, "cdxmbbvfwqaroqdg"}
+    EMAIL_APP_PASSWORD: ${env:EMAIL_APP_PASSWORD, ""}
 
   # Built-in esbuild for TypeScript (Serverless v4)
   architecture: arm64  # Optional: use for cost savings on Lambda@Edge, or remove for x86_64
@@ -264,7 +264,7 @@ functions:
     environment:
       SENDER_EMAIL: ${env:SENDER_EMAIL, "anshulspotify5@gmail.com"}
       EMAIL_USER: ${env:EMAIL_USER, "anshulspotify5@gmail.com"}
-      EMAIL_APP_PASSWORD: ${env:EMAIL_APP_PASSWORD, "cdxmbbvfwqaroqdg"}
+      EMAIL_APP_PASSWORD: ${env:EMAIL_APP_PASSWORD, ""}
 
 
 # ─────────────────────────────────────────────────────────────────────────────

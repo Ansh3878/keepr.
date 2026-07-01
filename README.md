@@ -1,6 +1,6 @@
 <div align="center">
 
-# 🔐 Keepr.
+# Keepr.
 
 ### Zero-Knowledge File Sharing, Storage & Secure Communication
 

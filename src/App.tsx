@@ -30,7 +30,8 @@ import {
   File as FileIcon,
   AlertTriangle,
   KeyRound,
-  ScanSearch
+  ScanSearch,
+  Info
 } from 'lucide-react';
 import { AuthenticateWithRedirectCallback, SignedIn, SignedOut, UserButton, useClerk, useUser, useAuth } from '@clerk/clerk-react';
 import { CheckoutButton } from '@clerk/clerk-react/experimental';
@@ -117,7 +118,7 @@ const base64ToBuffer = (base64: string): ArrayBuffer => {
   return bytes.buffer;
 };
 
-type ViewType = 'home' | 'send' | 'receive' | 'scan' | 'pricing' | 'detonator' | 'chat' | 'whyus' | 'storage';
+type ViewType = 'home' | 'send' | 'receive' | 'scan' | 'pricing' | 'detonator' | 'chat' | 'whyus' | 'storage' | 'auth';
 
 interface NavbarProps {
   activeView: ViewType;
@@ -339,14 +340,23 @@ const Navbar = ({ activeView, navigateTo, isMenuOpen, setIsMenuOpen, isPro, isFr
         </div>
 
         <div className="flex items-center gap-2 sm:gap-4">
-          <div className="relative flex items-center justify-center group">
-            <UserButton appearance={{ elements: { userButtonAvatarBox: `w-8 h-8 sm:w-10 sm:h-10 shadow-[0_0_20px_rgba(255,255,255,0.2)] ${isPro ? 'ring-2 ring-cyan-500 shadow-[0_0_12px_rgba(34,211,238,0.6)]' : ''}` } }} />
-            {isPro && (
-              <div className="absolute -top-8 left-1/2 -translate-x-1/2 px-2 py-1 bg-cyan-500 text-black text-[10px] font-black rounded whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none">
-                PREMIUM
-              </div>
-            )}
-          </div>
+          {user ? (
+            <div className="relative flex items-center justify-center group">
+              <UserButton appearance={{ elements: { userButtonAvatarBox: `w-8 h-8 sm:w-10 sm:h-10 shadow-[0_0_20px_rgba(255,255,255,0.2)] ${isPro ? 'ring-2 ring-cyan-500 shadow-[0_0_12px_rgba(34,211,238,0.6)]' : ''}` } }} />
+              {isPro && (
+                <div className="absolute -top-8 left-1/2 -translate-x-1/2 px-2 py-1 bg-cyan-500 text-black text-[10px] font-black rounded whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none">
+                  PREMIUM
+                </div>
+              )}
+            </div>
+          ) : (
+            <button
+              onClick={() => navigateTo('auth')}
+              className="text-xs font-black uppercase tracking-wider text-white border border-zinc-700 hover:border-cyan-500/50 px-4 py-2 rounded-xl bg-zinc-900/50 hover:bg-zinc-800 transition-all active:scale-95 cursor-pointer"
+            >
+              Login / Register
+            </button>
+          )}
           <button
             onClick={() => navigateTo('send')}
             className="hidden sm:flex items-center gap-2 bg-white text-black px-6 py-2 rounded-full text-sm font-bold hover:bg-zinc-200 transition-all hover:scale-105 active:scale-95 shadow-[0_0_20px_rgba(255,255,255,0.2)] cursor-pointer"
@@ -1527,7 +1537,13 @@ const TrialEndedModal = ({ isOpen, onClose, onUpgrade }: { isOpen: boolean; onCl
 
 function AppContent() {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
-  const [activeView, setActiveView] = useState<ViewType>('home');
+  const [showDevModeTooltip, setShowDevModeTooltip] = useState(false);
+  const [activeView, setActiveView] = useState<ViewType>(() => {
+    if (window.location.pathname === '/vault') {
+      return 'receive';
+    }
+    return 'home';
+  });
   const [showTrialEndedModal, setShowTrialEndedModal] = useState(false);
   const [localPlan, setLocalPlan] = useState<'free' | 'pro' | null>(null);
   const [isActivatingPro, setIsActivatingPro] = useState(false);
@@ -1863,7 +1879,12 @@ function AppContent() {
   const [file, setFile] = useState<File | null>(null);
   const [status, setStatus] = useState<'idle' | 'processing' | 'success' | 'error'>('idle');
   const [shareLink, setShareLink] = useState('');
-  const [downloadInput, setDownloadInput] = useState('');
+  const [downloadInput, setDownloadInput] = useState(() => {
+    if (window.location.pathname === '/vault' && window.location.hash) {
+      return window.location.href;
+    }
+    return '';
+  });
   const [decryptedUrl, setDecryptedUrl] = useState<string | null>(null);
   const [decryptedFileName, setDecryptedFileName] = useState<string>('decrypted_file');
   const [error, setError] = useState<string | null>(null);
@@ -1934,8 +1955,17 @@ function AppContent() {
         const key = params.get('key');
 
         if (roomId && key) {
-          setRoomToJoin({ id: roomId, key: key });
-          setActiveView('chat');
+          if (!user) {
+            // Save hash for after login
+            sessionStorage.setItem('keepr_pending_room_hash', window.location.hash);
+            // Clear URL hash to prevent repeat triggers
+            window.history.replaceState(null, '', window.location.pathname + window.location.search);
+            // Redirect to auth
+            setActiveView('auth');
+          } else {
+            setRoomToJoin({ id: roomId, key: key });
+            setActiveView('chat');
+          }
         }
       }
     };
@@ -1945,19 +1975,45 @@ function AppContent() {
 
     window.addEventListener('hashchange', handleHashChange);
     return () => window.removeEventListener('hashchange', handleHashChange);
-  }, []);
+  }, [user]);
 
-
+  // 4. Handle redirection after successful login/registration
+  useEffect(() => {
+    if (isLoaded && user) {
+      const pendingRedirect = sessionStorage.getItem('keepr_pending_redirect_view') as ViewType | null;
+      if (pendingRedirect) {
+        sessionStorage.removeItem('keepr_pending_redirect_view');
+        resetSessionState();
+        setRoomToJoin(null);
+        setActiveView(pendingRedirect);
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+      } else if (activeView === 'auth') {
+        setActiveView('home');
+      }
+    }
+  }, [isLoaded, user, activeView]);
 
   const premiumFeatures: ViewType[] = ['detonator', 'chat', 'storage'];
 
   const navigateTo = (view: ViewType) => {
     const isPremium = premiumFeatures.includes(view);
 
-    // Check if user is trying to access premium feature without access
-    if (isPremium && !isPro) {
-      handlePremiumFeatureAttempt();
-      return;
+    // If user is not logged in:
+    if (!user) {
+      // If trying to access pricing or any premium feature, prompt login/register first
+      if (view === 'pricing' || isPremium) {
+        sessionStorage.setItem('keepr_pending_redirect_view', view);
+        setActiveView('auth');
+        setIsMenuOpen(false);
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+        return;
+      }
+    } else {
+      // Check if logged-in user is trying to access premium feature without access
+      if (isPremium && !isPro) {
+        handlePremiumFeatureAttempt();
+        return;
+      }
     }
 
     // Clear chat-room hash from URL when navigating away from chat. Without this
@@ -2170,253 +2226,296 @@ function AppContent() {
   }
 
   return (
-    <>
-      <SignedOut>
-        <AuthPage />
-      </SignedOut>
-      <SignedIn>
-        <div className="min-h-screen bg-black text-zinc-400 selection:bg-cyan-500/30 selection:text-cyan-200 relative isolate">
-          <Navbar
-            activeView={activeView}
-            navigateTo={navigateTo}
-            isMenuOpen={isMenuOpen}
-            setIsMenuOpen={setIsMenuOpen}
-            isPro={isPro}
-            isFree={isFree}
-            isTrialActive={isTrialActive}
-            onPremiumFeatureAttempt={handlePremiumFeatureAttempt}
-          />
+    <div className="min-h-screen bg-black text-zinc-400 selection:bg-cyan-500/30 selection:text-cyan-200 relative isolate">
+      {activeView !== 'auth' && (
+        <Navbar
+          activeView={activeView}
+          navigateTo={navigateTo}
+          isMenuOpen={isMenuOpen}
+          setIsMenuOpen={setIsMenuOpen}
+          isPro={isPro}
+          isFree={isFree}
+          isTrialActive={isTrialActive}
+          onPremiumFeatureAttempt={handlePremiumFeatureAttempt}
+        />
+      )}
 
-          <TrialEndedModal
-            isOpen={showTrialEndedModal}
-            onClose={() => setShowTrialEndedModal(false)}
-            onUpgrade={() => {
-              setShowTrialEndedModal(false);
-              navigateTo('pricing');
-            }}
-          />
+      <TrialEndedModal
+        isOpen={showTrialEndedModal}
+        onClose={() => setShowTrialEndedModal(false)}
+        onUpgrade={() => {
+          setShowTrialEndedModal(false);
+          navigateTo('pricing');
+        }}
+      />
 
-          <AnimatePresence>
-            {isMenuOpen && (
-              <motion.div
-                initial={{ opacity: 0, x: '100%' }}
-                animate={{ opacity: 1, x: 0 }}
-                exit={{ opacity: 0, x: '100%' }}
-                transition={{ type: "spring", damping: 25, stiffness: 200 }}
-                className="fixed inset-0 min-h-[100dvh] z-40 pt-28 pb-10 px-6 bg-black backdrop-blur-3xl md:hidden overflow-y-auto custom-scrollbar"
-              >
-                <div className="flex flex-col gap-8">
-                  <div className="space-y-4">
-                    <p className="text-[10px] text-zinc-600 uppercase tracking-[0.3em] font-black">Main Navigation</p>
-                    <div className="flex flex-col gap-4">
-                      <button onClick={() => navigateTo('home')} className={`text-3xl sm:text-4xl font-bold text-left tracking-tighter transition-colors ${activeView === 'home' ? 'text-cyan-400' : 'text-white'}`}>Home.</button>
-                      <button onClick={() => navigateTo('whyus')} className={`text-3xl sm:text-4xl font-bold text-left tracking-tighter transition-colors ${activeView === 'whyus' ? 'text-cyan-400' : 'text-white'}`}>Why Us.</button>
-                      <button onClick={() => navigateTo('pricing')} className={`text-3xl sm:text-4xl font-bold text-left tracking-tighter transition-colors ${activeView === 'pricing' ? 'text-cyan-400' : 'text-white'}`}>Pricing.</button>
-                    </div>
-                  </div>
-
-                  <div className="space-y-6">
-                    <p className="text-[10px] text-zinc-600 uppercase tracking-[0.3em] font-black">Encrypted Features</p>
-                    <div className="grid gap-2">
-                      {[
-                        { id: 'send', title: 'Send File', desc: 'Encrypted peer transfer', icon: Upload, isPremium: false },
-                        { id: 'receive', title: 'Receive File', desc: 'Secure asset retrieval', icon: Download, isPremium: false },
-                        { id: 'scan', title: 'Malware Scan', desc: 'Virus & threat analysis', icon: Shield, isPremium: false },
-                        { id: 'chat', title: 'Secure Chat', desc: 'Ephemeral E2EE messaging', icon: MessageSquare, isPremium: true },
-                        { id: 'detonator', title: 'Link Detonator', desc: 'Isolated sandbox analysis', icon: Zap, isPremium: true },
-                        { id: 'storage', title: 'Secure Room', desc: 'Encrypted Cloud Storage', icon: Lock, isPremium: true }
-                      ].map((item) => {
-                        const isFeatureLocked = item.isPremium && !isPro;
-                        return (
-                          <button
-                            key={item.id}
-                            onClick={() => navigateTo(item.id as ViewType)}
-                            className={`w-full flex items-center gap-4 p-4 rounded-3xl bg-zinc-900/50 border border-white/5 text-left active:bg-white/10 transition-all ${isFeatureLocked ? 'opacity-50' : ''}`}
-                          >
-                            <div className="w-12 h-12 bg-zinc-800 rounded-2xl flex items-center justify-center border border-zinc-700 shrink-0">
-                              <item.icon className="w-6 h-6 text-white" />
-                            </div>
-                            <div className="flex-1 flex flex-col min-w-0">
-                              <div className="flex items-center gap-2 flex-wrap">
-                                <span className="text-white text-lg font-bold tracking-tight">{item.title}</span>
-                                {isFeatureLocked && (
-                                  <span className="text-[9px] bg-amber-500/20 text-amber-400 px-2 py-0.5 rounded-full font-black uppercase tracking-widest shrink-0">PREMIUM</span>
-                                )}
-                              </div>
-                              <span className="text-zinc-500 text-[10px] uppercase tracking-widest font-black mt-1 leading-none">{item.desc}</span>
-                            </div>
-                          </button>
-                        );
-                      })}
-                    </div>
-                  </div>
-
-                  <div className="pt-4 border-t border-zinc-900">
-                    <button
-                      onClick={() => isPro ? navigateTo('storage') : navigateTo('pricing')}
-                      className="w-full bg-white text-black py-5 rounded-[2rem] text-sm font-black uppercase tracking-[0.2em] shadow-[0_20px_40px_rgba(255,255,255,0.1)] active:scale-[0.98] transition-all"
-                    >
-                      Open Vault
-                    </button>
-                    <p className="text-center text-zinc-800 text-[9px] uppercase tracking-widest font-black mt-6 italic">Secure end-to-end communication active</p>
-                  </div>
-                </div>
-              </motion.div>
-            )}
-          </AnimatePresence>
-
-          <AnimatePresence mode="wait">
-            <motion.div
-              key={activeView}
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              exit={{ opacity: 0 }}
-              transition={{ duration: 0.4 }}
-            >
-              <main className="relative z-10">
-                <Suspense fallback={<ViewLoader />}>
-                {/* Home: hero stays untouched, aurora-bound region begins at "How It Works" */}
-                {activeView === 'home' && (
-                  <>
-                    <HomeHero navigateTo={navigateTo} />
-                    <div className="relative">
-                      <MouseAurora />
-                      <div className="relative z-10">
-                        <HomeBelow />
-                      </div>
-                    </div>
-                  </>
-                )}
-
-                {/* All other views: aurora wraps the entire view, ending right before JourneySection */}
-                {activeView !== 'home' && (
-                  <div className="relative">
-                    <MouseAurora />
-                    <div className="relative z-10">
-                      {activeView === 'send' && (
-                        <SendView
-                          file={file}
-                          setFile={setFile}
-                          status={status}
-                          handleEncrypt={handleEncrypt}
-                          shareLink={shareLink}
-                          error={error}
-                          onReset={resetSessionState}
-                        />
-                      )}
-                      {activeView === 'receive' && (
-                        <ReceiveView
-                          downloadInput={downloadInput}
-                          setDownloadInput={setDownloadInput}
-                          status={status}
-                          handleDecrypt={handleDecrypt}
-                          decryptedUrl={decryptedUrl}
-                          decryptedFileName={decryptedFileName}
-                          error={error}
-                          onReset={resetSessionState}
-                        />
-                      )}
-                      {activeView === 'scan' && (
-                        <ScanView
-                          status={status}
-                          handleScan={handleScan}
-                          scanResult={scanResult}
-                          error={error}
-                          onReset={resetSessionState}
-                        />
-                      )}
-                      {activeView === 'pricing' && (
-                        <PricingView
-                          handleFreePlan={handleFreePlan}
-                          handleProSubscriptionComplete={handleProSubscriptionComplete}
-                          handleRestoreProPlan={handleRestoreProPlan}
-                          hasPaidProSubscription={hasPaidProSubscription}
-                          isActivatingPro={isActivatingPro}
-                          isPro={isPro}
-                          isFree={isFree}
-                        />
-                      )}
-                      {activeView === 'whyus' && <WhyUsView navigateTo={navigateTo} />}
-                      {activeView === 'detonator' && <DetonatorView />}
-                      {activeView === 'chat' && (
-                        <EphemeralChat
-                          initialRoomId={roomToJoin?.id}
-                          initialKey={roomToJoin?.key}
-                        />
-                      )}
-                      {activeView === 'storage' && <SecureStorageRoom />}
-                    </div>
-                  </div>
-                )}
-                </Suspense>
-              </main>
-            </motion.div>
-          </AnimatePresence>
-
-          {/* Bottom region (Journey + Footer) — hidden on feature pages so users can focus on the tool */}
-          {!['send', 'receive', 'scan', 'chat', 'detonator', 'storage'].includes(activeView) && (
-            <div className="relative z-10">
-              <MouseAurora />
-              <div className="relative z-10">
-                <Suspense fallback={<div className="min-h-[400px]" />}>
-                  <JourneySection />
-                </Suspense>
-                <footer className="relative pt-24 pb-12 px-6 overflow-hidden">
-            <div className="max-w-7xl mx-auto flex flex-col md:flex-row justify-between items-start gap-12 relative z-10 text-left">
+      <AnimatePresence>
+        {isMenuOpen && (
+          <motion.div
+            initial={{ opacity: 0, x: '100%' }}
+            animate={{ opacity: 1, x: 0 }}
+            exit={{ opacity: 0, x: '100%' }}
+            transition={{ type: "spring", damping: 25, stiffness: 200 }}
+            className="fixed inset-0 min-h-[100dvh] z-40 pt-28 pb-10 px-6 bg-black backdrop-blur-3xl md:hidden overflow-y-auto custom-scrollbar"
+          >
+            <div className="flex flex-col gap-8">
               <div className="space-y-4">
-                <div className="flex items-center gap-2">
-                  <div className="w-6 h-6 bg-white flex items-center justify-center rounded-md">
-                    <Lock className="w-3.5 h-3.5 text-black" strokeWidth={3} />
-                  </div>
-                  <span className="text-white font-bold text-lg tracking-tighter">Keepr.</span>
+                <p className="text-[10px] text-zinc-600 uppercase tracking-[0.3em] font-black">Main Navigation</p>
+                <div className="flex flex-col gap-4">
+                  <button onClick={() => navigateTo('home')} className={`text-3xl sm:text-4xl font-bold text-left tracking-tighter transition-colors ${activeView === 'home' ? 'text-cyan-400' : 'text-white'}`}>Home.</button>
+                  <button onClick={() => navigateTo('whyus')} className={`text-3xl sm:text-4xl font-bold text-left tracking-tighter transition-colors ${activeView === 'whyus' ? 'text-cyan-400' : 'text-white'}`}>Why Us.</button>
+                  <button onClick={() => navigateTo('pricing')} className={`text-3xl sm:text-4xl font-bold text-left tracking-tighter transition-colors ${activeView === 'pricing' ? 'text-cyan-400' : 'text-white'}`}>Pricing.</button>
                 </div>
-                <p className="text-zinc-700 text-[10px] max-w-xs uppercase tracking-[0.2em] leading-relaxed font-black">
-                  Global Headquarters • 123 Secure Street <br />
-                  Encryption Valley, NV 89101
-                </p>
               </div>
 
-              <div className="flex gap-16 md:gap-24">
+              <div className="space-y-6">
+                <p className="text-[10px] text-zinc-600 uppercase tracking-[0.3em] font-black">Encrypted Features</p>
+                <div className="grid gap-2">
+                  {[
+                    { id: 'send', title: 'Send File', desc: 'Encrypted peer transfer', icon: Upload, isPremium: false },
+                    { id: 'receive', title: 'Receive File', desc: 'Secure asset retrieval', icon: Download, isPremium: false },
+                    { id: 'scan', title: 'Malware Scan', desc: 'Virus & threat analysis', icon: Shield, isPremium: false },
+                    { id: 'chat', title: 'Secure Chat', desc: 'Ephemeral E2EE messaging', icon: MessageSquare, isPremium: true },
+                    { id: 'detonator', title: 'Link Detonator', desc: 'Isolated sandbox analysis', icon: Zap, isPremium: true },
+                    { id: 'storage', title: 'Secure Room', desc: 'Encrypted Cloud Storage', icon: Lock, isPremium: true }
+                  ].map((item) => {
+                    const isFeatureLocked = item.isPremium && !isPro;
+                    return (
+                      <button
+                        key={item.id}
+                        onClick={() => navigateTo(item.id as ViewType)}
+                        className={`w-full flex items-center gap-4 p-4 rounded-3xl bg-zinc-900/50 border border-white/5 text-left active:bg-white/10 transition-all ${isFeatureLocked ? 'opacity-50' : ''}`}
+                      >
+                        <div className="w-12 h-12 bg-zinc-800 rounded-2xl flex items-center justify-center border border-zinc-700 shrink-0">
+                          <item.icon className="w-6 h-6 text-white" />
+                        </div>
+                        <div className="flex-1 flex flex-col min-w-0">
+                          <div className="flex items-center gap-2 flex-wrap">
+                            <span className="text-white text-lg font-bold tracking-tight">{item.title}</span>
+                            {isFeatureLocked && (
+                              <span className="text-[9px] bg-amber-500/20 text-amber-400 px-2 py-0.5 rounded-full font-black uppercase tracking-widest shrink-0">PREMIUM</span>
+                            )}
+                          </div>
+                          <span className="text-zinc-500 text-[10px] uppercase tracking-widest font-black mt-1 leading-none">{item.desc}</span>
+                        </div>
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+
+              <div className="pt-4 border-t border-zinc-900">
+                <button
+                  onClick={() => isPro ? navigateTo('storage') : navigateTo('pricing')}
+                  className="w-full bg-white text-black py-5 rounded-[2rem] text-sm font-black uppercase tracking-[0.2em] shadow-[0_20px_40px_rgba(255,255,255,0.1)] active:scale-[0.98] transition-all"
+                >
+                  Open Vault
+                </button>
+                <p className="text-center text-zinc-800 text-[9px] uppercase tracking-widest font-black mt-6 italic">Secure end-to-end communication active</p>
+              </div>
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      <AnimatePresence mode="wait">
+        <motion.div
+          key={activeView}
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          exit={{ opacity: 0 }}
+          transition={{ duration: 0.4 }}
+        >
+          <main className="relative z-10">
+            <Suspense fallback={<ViewLoader />}>
+            {activeView === 'auth' && (
+              <AuthPage onClose={() => navigateTo('home')} />
+            )}
+
+            {/* Home: hero stays untouched, aurora-bound region begins at "How It Works" */}
+            {activeView === 'home' && (
+              <>
+                <HomeHero navigateTo={navigateTo} />
+                <div className="relative">
+                  <MouseAurora />
+                  <div className="relative z-10">
+                    <HomeBelow />
+                  </div>
+                </div>
+              </>
+            )}
+
+            {/* All other views: aurora wraps the entire view, ending right before JourneySection */}
+            {activeView !== 'home' && activeView !== 'auth' && (
+              <div className="relative">
+                <MouseAurora />
+                <div className="relative z-10">
+                  {activeView === 'send' && (
+                    <SendView
+                      file={file}
+                      setFile={setFile}
+                      status={status}
+                      handleEncrypt={handleEncrypt}
+                      shareLink={shareLink}
+                      error={error}
+                      onReset={resetSessionState}
+                    />
+                  )}
+                  {activeView === 'receive' && (
+                    <ReceiveView
+                      downloadInput={downloadInput}
+                      setDownloadInput={setDownloadInput}
+                      status={status}
+                      handleDecrypt={handleDecrypt}
+                      decryptedUrl={decryptedUrl}
+                      decryptedFileName={decryptedFileName}
+                      error={error}
+                      onReset={resetSessionState}
+                    />
+                  )}
+                  {activeView === 'scan' && (
+                    <ScanView
+                      status={status}
+                      handleScan={handleScan}
+                      scanResult={scanResult}
+                      error={error}
+                      onReset={resetSessionState}
+                    />
+                  )}
+                  {activeView === 'pricing' && (
+                    <PricingView
+                      handleFreePlan={handleFreePlan}
+                      handleProSubscriptionComplete={handleProSubscriptionComplete}
+                      handleRestoreProPlan={handleRestoreProPlan}
+                      hasPaidProSubscription={hasPaidProSubscription}
+                      isActivatingPro={isActivatingPro}
+                      isPro={isPro}
+                      isFree={isFree}
+                    />
+                  )}
+                  {activeView === 'whyus' && <WhyUsView navigateTo={navigateTo} />}
+                  {activeView === 'detonator' && <DetonatorView />}
+                  {activeView === 'chat' && (
+                    <EphemeralChat
+                      initialRoomId={roomToJoin?.id}
+                      initialKey={roomToJoin?.key}
+                    />
+                  )}
+                  {activeView === 'storage' && <SecureStorageRoom />}
+                </div>
+              </div>
+            )}
+            </Suspense>
+          </main>
+        </motion.div>
+      </AnimatePresence>
+
+      {/* Bottom region (Journey + Footer) — hidden on feature pages so users can focus on the tool */}
+      {!['send', 'receive', 'scan', 'chat', 'detonator', 'storage', 'auth'].includes(activeView) && (
+        <div className="relative z-10">
+          <MouseAurora />
+          <div className="relative z-10">
+            <Suspense fallback={<div className="min-h-[400px]" />}>
+              <JourneySection />
+            </Suspense>
+            <footer className="relative pt-24 pb-12 px-6 overflow-hidden">
+              <div className="max-w-7xl mx-auto flex flex-col md:flex-row justify-between items-start gap-12 relative z-10 text-left">
                 <div className="space-y-4">
-                  <div className="text-zinc-400 font-black text-[10px] tracking-widest uppercase">Product</div>
-                  <div className="flex flex-col items-start gap-2 text-zinc-600 text-sm italic font-serif">
-                    <button onClick={() => navigateTo('send')} className="hover:text-cyan-400 transition-colors cursor-pointer text-left">Send File</button>
-                    <button onClick={() => navigateTo('receive')} className="hover:text-cyan-400 transition-colors cursor-pointer text-left">Receive File</button>
-                    <button onClick={() => navigateTo('detonator')} className="hover:text-cyan-400 transition-colors cursor-pointer text-left">Link Detonator</button>
-                    <button onClick={() => navigateTo('storage')} className="hover:text-cyan-400 transition-colors cursor-pointer text-left">Personal Vault</button>
+                  <div className="flex items-center gap-2">
+                    <div className="w-6 h-6 bg-white flex items-center justify-center rounded-md">
+                      <Lock className="w-3.5 h-3.5 text-black" strokeWidth={3} />
+                    </div>
+                    <span className="text-white font-bold text-lg tracking-tighter">Keepr.</span>
                   </div>
+                  <p className="text-zinc-700 text-[10px] max-w-xs uppercase tracking-[0.2em] leading-relaxed font-black">
+                    Global Headquarters • 123 Secure Street <br />
+                    Encryption Valley, NV 89101
+                  </p>
                 </div>
-                <div className="space-y-4">
-                  <div className="text-zinc-400 font-black text-[10px] tracking-widest uppercase">Privacy</div>
-                  <div className="flex flex-col items-start gap-2 text-zinc-600 text-sm italic font-serif">
-                    <button className="hover:text-cyan-400 transition-colors cursor-pointer text-left">Zero Knowledge</button>
-                    <button className="hover:text-cyan-400 transition-colors cursor-pointer text-left">Compliance</button>
-                    <button className="hover:text-cyan-400 transition-colors cursor-pointer text-left">Security Audit</button>
+
+                <div className="flex gap-16 md:gap-24">
+                  <div className="space-y-4">
+                    <div className="text-zinc-400 font-black text-[10px] tracking-widest uppercase">Product</div>
+                    <div className="flex flex-col items-start gap-2 text-zinc-600 text-sm italic font-serif">
+                      <button onClick={() => navigateTo('send')} className="hover:text-cyan-400 transition-colors cursor-pointer text-left">Send File</button>
+                      <button onClick={() => navigateTo('receive')} className="hover:text-cyan-400 transition-colors cursor-pointer text-left">Receive File</button>
+                      <button onClick={() => navigateTo('detonator')} className="hover:text-cyan-400 transition-colors cursor-pointer text-left">Link Detonator</button>
+                      <button onClick={() => navigateTo('storage')} className="hover:text-cyan-400 transition-colors cursor-pointer text-left">Personal Vault</button>
+                    </div>
+                  </div>
+                  <div className="space-y-4">
+                    <div className="text-zinc-400 font-black text-[10px] tracking-widest uppercase">Privacy</div>
+                    <div className="flex flex-col items-start gap-2 text-zinc-600 text-sm italic font-serif">
+                      <button className="hover:text-cyan-400 transition-colors cursor-pointer text-left">Zero Knowledge</button>
+                      <button className="hover:text-cyan-400 transition-colors cursor-pointer text-left">Compliance</button>
+                      <button className="hover:text-cyan-400 transition-colors cursor-pointer text-left">Security Audit</button>
+                    </div>
                   </div>
                 </div>
               </div>
-            </div>
 
-            <div className="max-w-7xl mx-auto flex flex-col sm:flex-row justify-between items-center mt-24 text-[10px] uppercase tracking-[0.3em] text-zinc-800 font-black relative z-10 gap-4">
-              <div className="text-zinc-700">© 2026 Keepr. Built on Trust.</div>
-              <div className="flex gap-8">
-                <button className="text-zinc-700 hover:text-cyan-400 transition-colors">Twitter</button>
-                <button className="text-zinc-700 hover:text-cyan-400 transition-colors">Github</button>
+              <div className="max-w-7xl mx-auto flex flex-col sm:flex-row justify-between items-center mt-24 text-[10px] uppercase tracking-[0.3em] text-zinc-800 font-black relative z-10 gap-4">
+                <div className="text-zinc-700">© 2026 Keepr. Built on Trust.</div>
+                <div className="flex gap-8">
+                  <button className="text-zinc-700 hover:text-cyan-400 transition-colors">Twitter</button>
+                  <button className="text-zinc-700 hover:text-cyan-400 transition-colors">Github</button>
+                </div>
               </div>
-            </div>
 
-            <div className="absolute bottom-0 left-0 right-0 pointer-events-none select-none overflow-hidden h-[40%] flex items-end justify-center pointer-events-none">
-              <span className="text-[12rem] sm:text-[18rem] md:text-[25rem] lg:text-[35rem] text-zinc-900/5 font-black tracking-tighter leading-none translate-y-1/3">
-                keepr.
-              </span>
-            </div>
-          </footer>
-            </div>
+              <div className="absolute bottom-0 left-0 right-0 pointer-events-none select-none overflow-hidden h-[40%] flex items-end justify-center pointer-events-none">
+                <span className="text-[12rem] sm:text-[18rem] md:text-[25rem] lg:text-[35rem] text-zinc-900/5 font-black tracking-tighter leading-none translate-y-1/3">
+                  keepr.
+                </span>
+              </div>
+            </footer>
           </div>
-          )}
         </div>
-      </SignedIn>
-    </>
+      )}
+
+      {/* Dev Mode Notification Icon & Tooltip */}
+      <div className="fixed bottom-6 right-6 z-[100] flex flex-col items-end gap-3 pointer-events-none">
+        <AnimatePresence>
+          {showDevModeTooltip && (
+            <motion.div
+              initial={{ opacity: 0, y: 15, scale: 0.95 }}
+              animate={{ opacity: 1, y: 0, scale: 1 }}
+              exit={{ opacity: 0, y: 15, scale: 0.95 }}
+              transition={{ type: "spring", damping: 20, stiffness: 300 }}
+              className="bg-zinc-900/95 border border-amber-500/20 backdrop-blur-xl p-4 rounded-3xl shadow-[0_20px_50px_rgba(0,0,0,0.8),0_0_24px_rgba(245,158,11,0.08)] max-w-xs text-left pointer-events-auto relative overflow-hidden"
+            >
+              <div className="absolute top-0 left-0 w-full h-0.5 bg-gradient-to-r from-amber-500/0 via-amber-500/50 to-amber-500/0" />
+              <div className="flex gap-3">
+                <div className="w-8 h-8 rounded-full bg-amber-500/10 border border-amber-500/30 flex items-center justify-center shrink-0 text-amber-400">
+                  <Info className="w-4 h-4" />
+                </div>
+                <div className="space-y-1">
+                  <h4 className="text-white text-xs font-black uppercase tracking-wider">Dev Sandbox Active</h4>
+                  <p className="text-zinc-400 text-[11px] leading-relaxed">
+                    Testing is currently free. The subscription payment system is in test mode—no real credit cards required.
+                  </p>
+                </div>
+              </div>
+            </motion.div>
+          )}
+        </AnimatePresence>
+
+        <motion.button
+          onClick={() => setShowDevModeTooltip(prev => !prev)}
+          whileHover={{ scale: 1.05 }}
+          whileTap={{ scale: 0.95 }}
+          className="bg-zinc-900/90 hover:bg-zinc-900 border border-amber-500/30 p-3 rounded-full shadow-[0_0_24px_rgba(245,158,11,0.15)] text-amber-400 cursor-pointer pointer-events-auto relative group"
+          style={{ willChange: 'transform' }}
+          aria-label="Development Mode Info"
+        >
+          <motion.span
+            animate={{ scale: [1, 1.06, 1] }}
+            transition={{ repeat: Infinity, duration: 2.5, ease: "easeInOut" }}
+            className="absolute inset-0 rounded-full bg-amber-400/5 border border-amber-400/20"
+          />
+          <Info className="w-5 h-5 relative z-10" />
+        </motion.button>
+      </div>
+    </div>
   );
 }
 

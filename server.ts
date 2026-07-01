@@ -176,89 +176,82 @@ async function startServer() {
   // FEATURE 2: VIRUSTOTAL SCANNER
   // ==========================================
 
-  const pollAnalysis = async (analysisId: string, apiKey: string) => {
-    for (let i = 0; i < 20; i++) {
-      const res = await fetch(`https://www.virustotal.com/api/v3/analyses/${analysisId}`, {
+  async function pollAnalysis(id: string, apiKey: string) {
+    const maxRetries = 20; // 1 min max (3s interval)
+    for (let i = 0; i < maxRetries; i++) {
+      await new Promise(resolve => setTimeout(resolve, 3000));
+      const res = await fetch(`https://www.virustotal.com/api/v3/analyses/${id}`, {
         headers: { 'x-apikey': apiKey }
       });
-      if (!res.ok) throw new Error('Failed to get analysis');
+      if (!res.ok) throw new Error(`VT poll error: ${res.statusText}`);
       const data = await res.json();
-      if (data.data.attributes.status === 'completed') {
+      if (data.data?.attributes?.status === 'completed') {
         return data;
       }
-      await new Promise(resolve => setTimeout(resolve, 3000));
     }
-    const res = await fetch(`https://www.virustotal.com/api/v3/analyses/${analysisId}`, {
-      headers: { 'x-apikey': apiKey }
-    });
-    return await res.json();
-  };
+    throw new Error("VirusTotal analysis timed out. The file might still be processing on their end.");
+  }
 
   app.post('/api/scan', upload.single('file'), async (req, res) => {
     try {
-      if (!req.file) return res.status(400).json({ error: 'No file provided' });
-      const vtApiKey = process.env.VIRUSTOTAL_API_KEY;
-      if (!vtApiKey) return res.status(500).json({ error: 'VirusTotal API key missing' });
+      const apiKey = process.env.VIRUSTOTAL_API_KEY;
+      if (!apiKey) return res.status(500).json({ error: "VIRUSTOTAL_API_KEY not configured." });
 
-      const blob = new Blob([new Uint8Array(req.file.buffer)], { type: req.file.mimetype || 'application/octet-stream' });
+      if (!req.file) return res.status(400).json({ error: "No file uploaded." });
+
+      const fileBlob = new Blob([new Uint8Array(req.file.buffer)], { type: req.file.mimetype || 'application/octet-stream' });
       const formData = new FormData();
-      formData.append('file', blob, req.file.originalname || 'upload.bin');
+      formData.append('file', fileBlob, req.file.originalname || 'upload.bin');
 
-      const scanRes = await fetch('https://www.virustotal.com/api/v3/files', {
+      const uploadRes = await fetch('https://www.virustotal.com/api/v3/files', {
         method: 'POST',
-        headers: { 'x-apikey': vtApiKey },
+        headers: { 'x-apikey': apiKey },
         body: formData as any
       });
 
-      if (!scanRes.ok) {
-        const text = await scanRes.text();
-        throw new Error(`VT API error: ${text}`);
+      const uploadData = await uploadRes.json();
+      if (!uploadRes.ok) {
+        throw new Error(uploadData.error?.message || `Failed to upload file to VirusTotal (HTTP ${uploadRes.status})`);
       }
 
-      const data = await scanRes.json();
-      const analysisId = data.data.id;
-
-      const result = await pollAnalysis(analysisId, vtApiKey);
-      res.json(result);
-    } catch (error: any) {
-      console.error('File scan error:', error);
-      res.status(500).json({ error: 'Failed to scan file: ' + (error.message || 'Unknown error') });
+      const finalResult = await pollAnalysis(uploadData.data.id, apiKey);
+      res.json(finalResult);
+    } catch (err: any) {
+      console.error('Scan File Error:', err);
+      res.status(500).json({ error: err.message || 'Unknown error during scan' });
     }
   });
 
   app.post('/api/scan-url', async (req, res) => {
     try {
-      const { url } = req.body;
-      if (!url) return res.status(400).json({ error: 'No URL provided' });
+      const apiKey = process.env.VIRUSTOTAL_API_KEY;
+      if (!apiKey) return res.status(500).json({ error: "VIRUSTOTAL_API_KEY not configured." });
 
-      const vtApiKey = process.env.VIRUSTOTAL_API_KEY;
-      if (!vtApiKey) return res.status(500).json({ error: 'VirusTotal API key missing' });
+      const { url } = req.body;
+      if (!url) return res.status(400).json({ error: "No URL provided." });
 
       const formData = new URLSearchParams();
       formData.append('url', url);
 
-      const scanRes = await fetch('https://www.virustotal.com/api/v3/urls', {
+      const uploadRes = await fetch('https://www.virustotal.com/api/v3/urls', {
         method: 'POST',
         headers: {
-          'x-apikey': vtApiKey,
+          'x-apikey': apiKey,
           'Content-Type': 'application/x-www-form-urlencoded'
         },
-        body: formData.toString()
+        body: formData
       });
 
-      if (!scanRes.ok) {
-        const text = await scanRes.text();
-        throw new Error(`VT API error: ${text}`);
+      const uploadData = await uploadRes.json();
+      if (!uploadRes.ok) {
+        throw new Error(uploadData.error?.message || `Failed to submit URL to VirusTotal (HTTP ${uploadRes.status})`);
       }
 
-      const data = await scanRes.json();
-      const analysisId = data.data.id;
-      const result = await pollAnalysis(analysisId, vtApiKey);
-      res.json(result);
-
-    } catch (error: any) {
-      console.error('URL scan error:', error);
-      res.status(500).json({ error: 'Failed to scan URL: ' + (error.message || 'Unknown error') });
+      const finalResult = await pollAnalysis(uploadData.data.id, apiKey);
+      res.json(finalResult);
+    } catch (err: any) {
+      console.error('Scan URL Error:', err);
+      res.status(500).json({ error: err.message || 'Unknown error during scan' });
     }
   });
 
@@ -447,83 +440,6 @@ async function startServer() {
     });
   });
 
-
-  // FEATURE 3: VIRUSTOTAL SCANNER
-
-
-  async function pollVtAnalysis(id: string, apiKey: string) {
-    const maxRetries = 20; // 1 min max (3s interval)
-    for (let i = 0; i < maxRetries; i++) {
-      await new Promise(resolve => setTimeout(resolve, 3000));
-      const res = await fetch(`https://www.virustotal.com/api/v3/analyses/${id}`, {
-        headers: { 'x-apikey': apiKey }
-      });
-      const data = await res.json();
-      if (data.data?.attributes?.status === 'completed') {
-        return data;
-      }
-    }
-    throw new Error("VirusTotal analysis timed out. The file might still be processing on their end.");
-  }
-
-  app.post('/api/scan', upload.single('file'), async (req, res) => {
-    try {
-      const apiKey = process.env.VIRUSTOTAL_API_KEY;
-      if (!apiKey) throw new Error("VIRUSTOTAL_API_KEY not configured.");
-
-      if (!req.file) throw new Error("No file uploaded.");
-
-      const fileBlob = new Blob([new Uint8Array(req.file.buffer)], { type: req.file.mimetype });
-      const formData = new FormData();
-      formData.append('file', fileBlob, req.file.originalname);
-
-      const uploadRes = await fetch('https://www.virustotal.com/api/v3/files', {
-        method: 'POST',
-        headers: { 'x-apikey': apiKey },
-        body: formData
-      });
-
-      const uploadData = await uploadRes.json();
-      if (!uploadRes.ok) throw new Error(uploadData.error?.message || "Failed to upload file to VirusTotal");
-
-      const finalResult = await pollVtAnalysis(uploadData.data.id, apiKey);
-      res.json(finalResult);
-    } catch (err: any) {
-      console.error('Scan File Error:', err);
-      res.status(500).json({ error: err.message });
-    }
-  });
-
-  app.post('/api/scan-url', async (req, res) => {
-    try {
-      const apiKey = process.env.VIRUSTOTAL_API_KEY;
-      if (!apiKey) throw new Error("VIRUSTOTAL_API_KEY not configured.");
-
-      const { url } = req.body;
-      if (!url) throw new Error("No URL provided.");
-
-      const formData = new URLSearchParams();
-      formData.append('url', url);
-
-      const uploadRes = await fetch('https://www.virustotal.com/api/v3/urls', {
-        method: 'POST',
-        headers: {
-          'x-apikey': apiKey,
-          'Content-Type': 'application/x-www-form-urlencoded'
-        },
-        body: formData
-      });
-
-      const uploadData = await uploadRes.json();
-      if (!uploadRes.ok) throw new Error(uploadData.error?.message || "Failed to submit URL to VirusTotal");
-
-      const finalResult = await pollVtAnalysis(uploadData.data.id, apiKey);
-      res.json(finalResult);
-    } catch (err: any) {
-      console.error('Scan URL Error:', err);
-      res.status(500).json({ error: err.message });
-    }
-  });
 
   // ==========================================
   // STATIC FRONTEND SERVING
