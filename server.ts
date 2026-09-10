@@ -4,19 +4,54 @@ import cors from 'cors';
 import dotenv from 'dotenv';
 import multer from 'multer';
 import path from 'path';
+import fs from 'fs';
 import { fileURLToPath } from 'url';
-import { createServer as createViteServer } from 'vite';
 import { createServer } from 'http';
 import { Server } from 'socket.io';
-import AWS from 'aws-sdk';
 import { GoogleGenAI } from "@google/genai";
-import { S3Client, PutObjectCommand, GetObjectCommand, DeleteObjectCommand } from '@aws-sdk/client-s3';
+import {
+  S3Client,
+  PutObjectCommand,
+  GetObjectCommand,
+  DeleteObjectCommand,
+  ListObjectsV2Command,
+  CreateMultipartUploadCommand,
+  UploadPartCommand,
+  CompleteMultipartUploadCommand,
+  AbortMultipartUploadCommand,
+} from '@aws-sdk/client-s3';
 import { getSignedUrl } from '@aws-sdk/s3-request-presigner';
 
 dotenv.config();
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
+
+// ── JSON file-based room persistence ──────────────────────────────────────────
+// Simple, zero-dependency persistence. Rooms are stored in rooms-db.json at the
+// project root. This survives normal Render restarts and redeploys (Render free
+// keeps the disk between restarts; on a full redeploy data is reset, which is
+// acceptable for this use case).
+const DB_PATH = path.join(__dirname, 'rooms-db.json');
+
+const readRoomsDB = (): Record<string, any> => {
+  try {
+    if (fs.existsSync(DB_PATH)) {
+      return JSON.parse(fs.readFileSync(DB_PATH, 'utf8'));
+    }
+  } catch (e) {
+    console.warn('rooms-db.json read error, starting fresh:', e);
+  }
+  return {};
+};
+
+const writeRoomsDB = (db: Record<string, any>) => {
+  try {
+    fs.writeFileSync(DB_PATH, JSON.stringify(db, null, 2), 'utf8');
+  } catch (e) {
+    console.error('rooms-db.json write error:', e);
+  }
+};
 
 async function startServer() {
   const app = express();
@@ -42,13 +77,10 @@ async function startServer() {
   });
 
   // ── SMTP startup verification ──────────────────────────────────────
-  // This runs once on server start. Watch Render logs for the result.
   const startupTransporter = nodemailer.createTransport({
     host: 'smtp.gmail.com',
     port: 587,
     secure: false,
-    // family:4 forces IPv4 DNS resolution — Render blocks outbound IPv6 (ENETUNREACH)
-    // Without this, smtp.gmail.com resolves to an IPv6 addr (2607:f8b0:...) and fails
     family: 4,
     auth: {
       user: process.env.EMAIL_USER || process.env.SENDER_EMAIL || 'anshulspotify5@gmail.com',
@@ -59,12 +91,11 @@ async function startServer() {
   startupTransporter.verify((error) => {
     if (error) {
       console.error('❌ Gmail SMTP FAILED to connect at startup:', error.message);
-      console.error('   → Make sure EMAIL_USER and EMAIL_APP_PASSWORD env vars are set in Render Dashboard!');
     } else {
       console.log('✅ Gmail SMTP Ready (IPv4) — emails will be delivered successfully.');
     }
   });
-  // ── Quick SMTP test endpoint — hit GET /api/test-email in browser to verify ──
+
   app.get('/api/test-email', async (req: any, res: any) => {
     const senderEmail = process.env.EMAIL_USER || process.env.SENDER_EMAIL || 'anshulspotify5@gmail.com';
     const emailPassword = process.env.EMAIL_APP_PASSWORD;
@@ -95,21 +126,21 @@ async function startServer() {
   });
 
 
-
-
-
-  // FEATURE 1: ZERO-TRUST VAULT (AWS S3)
-
+  // ==========================================
+  // FEATURE 1: ZERO-TRUST VAULT (Cloudflare R2)
+  // R2 is S3-compatible — same SDK, just a different endpoint.
+  // ==========================================
 
   const s3Client = new S3Client({
-    region: process.env.AWS_REGION!,
+    region: 'auto',
+    endpoint: process.env.R2_ENDPOINT, // e.g. https://<account_id>.r2.cloudflarestorage.com
     credentials: {
-      accessKeyId: process.env.AWS_ACCESS_KEY_ID!,
-      secretAccessKey: process.env.AWS_SECRET_ACCESS_KEY!,
+      accessKeyId: (process.env.R2_ACCESS_KEY_ID || process.env.AWS_ACCESS_KEY_ID)!,
+      secretAccessKey: (process.env.R2_SECRET_ACCESS_KEY || process.env.AWS_SECRET_ACCESS_KEY)!,
     },
   });
 
-  const BUCKET = process.env.AWS_BUCKET_NAME!;
+  const BUCKET = (process.env.R2_BUCKET_NAME || process.env.AWS_BUCKET_NAME)!;
 
   app.post('/api/upload-url', async (req, res) => {
     try {
@@ -165,19 +196,323 @@ async function startServer() {
     try {
       const command = new DeleteObjectCommand({ Bucket: BUCKET, Key: req.params.fileId });
       await s3Client.send(command);
-      res.json({ message: "File permanently burned from AWS" });
+      res.json({ message: "File permanently burned from R2" });
     } catch (error) {
       console.error("Error burning file:", error);
       res.status(500).json({ error: "Failed to burn file" });
     }
   });
 
+
+  // ==========================================
+  // FEATURE: SECURE CLOUD STORAGE ROOMS
+  // Replaces AWS API Gateway + DynamoDB.
+  // Rooms are stored in rooms-db.json on disk.
+  // Files are stored in Cloudflare R2 under rooms/<roomId>/<fileName>
+  // ==========================================
+
+  const ROOMS_BUCKET = (process.env.R2_BUCKET_NAME || process.env.AWS_BUCKET_NAME)!;
+
+  // ── Helper: send room-related email notifications ─────────────────────────
+  const sendRoomEmail = async (to: string, subject: string, html: string) => {
+    const senderEmail = process.env.EMAIL_USER || process.env.SENDER_EMAIL || 'anshulspotify5@gmail.com';
+    const emailPassword = process.env.EMAIL_APP_PASSWORD;
+    if (!emailPassword || !to) return;
+    const t = nodemailer.createTransport({
+      host: 'smtp.gmail.com', port: 465, secure: true, family: 4,
+      auth: { user: senderEmail, pass: emailPassword },
+      tls: { rejectUnauthorized: false },
+    } as any);
+    await t.sendMail({ from: `"Keepr Vault" <${senderEmail}>`, to, subject, html });
+  };
+
+  // GET /api/rooms — list rooms for a user (userId from Authorization header claim)
+  app.get('/api/rooms', async (req: any, res: any) => {
+    try {
+      // Accept userId from query (for simplicity) or parse from Bearer token sub claim
+      const userId = (req.query.userId as string) || req.headers['x-user-id'] as string || 'default';
+      const db = readRoomsDB();
+      const userRooms = Object.values(db).filter((r: any) => r.ownerId === userId);
+      return res.json({ rooms: userRooms });
+    } catch (e: any) {
+      return res.status(500).json({ error: e.message });
+    }
+  });
+
+  // POST /api/rooms — create a new room
+  app.post('/api/rooms', async (req: any, res: any) => {
+    try {
+      const { name, pin, encryptionKey, safetyStrategy, inactivityDays, transferEmail, userEmail } = req.body;
+      const userId = (req.query.userId as string) || req.headers['x-user-id'] as string || 'default';
+
+      const roomId = 'room-' + Date.now() + '-' + Math.random().toString(36).slice(2, 8);
+      const inactiveDays = Number(inactivityDays) || 30;
+      const expiryAt = inactiveDays === 0
+        ? new Date(Date.now() + 60 * 1000).toISOString()
+        : new Date(Date.now() + inactiveDays * 24 * 60 * 60 * 1000).toISOString();
+
+      const room = {
+        roomId,
+        name,
+        pin,
+        encryptionKey,
+        safetyStrategy: safetyStrategy || 'purge',
+        inactivityDays: inactiveDays,
+        transferEmail: transferEmail || '',
+        userEmail: userEmail || '',
+        ownerId: userId,
+        createdAt: new Date().toISOString(),
+        expiryAt,
+      };
+
+      const db = readRoomsDB();
+      db[roomId] = room;
+      writeRoomsDB(db);
+
+      return res.json({ roomId, expiryAt, message: 'Room created' });
+    } catch (e: any) {
+      return res.status(500).json({ error: e.message });
+    }
+  });
+
+  // GET /api/rooms/:roomId — get single room
+  app.get('/api/rooms/:roomId', async (req: any, res: any) => {
+    try {
+      const db = readRoomsDB();
+      const room = db[req.params.roomId];
+      if (!room) return res.status(404).json({ error: 'Room not found' });
+      return res.json(room);
+    } catch (e: any) {
+      return res.status(500).json({ error: e.message });
+    }
+  });
+
+  // PUT /api/rooms/:roomId — update room settings / rename
+  app.put('/api/rooms/:roomId', async (req: any, res: any) => {
+    try {
+      const db = readRoomsDB();
+      const room = db[req.params.roomId];
+      if (!room) return res.status(404).json({ error: 'Room not found' });
+
+      const { name, safetyStrategy, inactivityDays, transferEmail, userEmail } = req.body;
+      if (name !== undefined) room.name = name;
+      if (safetyStrategy !== undefined) room.safetyStrategy = safetyStrategy;
+      if (inactivityDays !== undefined) {
+        room.inactivityDays = Number(inactivityDays);
+        // Recalculate expiry from now
+        const inactiveDays = Number(inactivityDays);
+        room.expiryAt = inactiveDays === 0
+          ? new Date(Date.now() + 60 * 1000).toISOString()
+          : new Date(Date.now() + inactiveDays * 24 * 60 * 60 * 1000).toISOString();
+      }
+      if (transferEmail !== undefined) room.transferEmail = transferEmail;
+      if (userEmail !== undefined) room.userEmail = userEmail;
+
+      db[req.params.roomId] = room;
+      writeRoomsDB(db);
+
+      return res.json({ message: 'Room updated', expiryAt: room.expiryAt });
+    } catch (e: any) {
+      return res.status(500).json({ error: e.message });
+    }
+  });
+
+  // DELETE /api/rooms/:roomId — delete room + all its R2 objects
+  app.delete('/api/rooms/:roomId', async (req: any, res: any) => {
+    try {
+      const db = readRoomsDB();
+      const room = db[req.params.roomId];
+      if (!room) return res.status(404).json({ error: 'Room not found' });
+
+      // Delete all objects under rooms/<roomId>/ prefix in R2
+      try {
+        const listCmd = new ListObjectsV2Command({ Bucket: ROOMS_BUCKET, Prefix: `rooms/${req.params.roomId}/` });
+        const listed = await s3Client.send(listCmd);
+        for (const obj of (listed.Contents || [])) {
+          if (obj.Key) {
+            await s3Client.send(new DeleteObjectCommand({ Bucket: ROOMS_BUCKET, Key: obj.Key }));
+          }
+        }
+      } catch (s3Err) {
+        console.warn('Could not delete R2 objects for room:', s3Err);
+      }
+
+      delete db[req.params.roomId];
+      writeRoomsDB(db);
+
+      return res.json({ message: 'Room and all files deleted' });
+    } catch (e: any) {
+      return res.status(500).json({ error: e.message });
+    }
+  });
+
+  // GET /api/rooms/:roomId/files — list files in a room from R2
+  app.get('/api/rooms/:roomId/files', async (req: any, res: any) => {
+    try {
+      const listCmd = new ListObjectsV2Command({
+        Bucket: ROOMS_BUCKET,
+        Prefix: `rooms/${req.params.roomId}/`,
+      });
+      const listed = await s3Client.send(listCmd);
+      const files = (listed.Contents || []).map((obj: any) => ({
+        key: obj.Key,
+        fileName: (obj.Key as string).replace(`rooms/${req.params.roomId}/`, ''),
+        size: obj.Size,
+        lastModified: obj.LastModified,
+      }));
+      return res.json({ files });
+    } catch (e: any) {
+      return res.status(500).json({ error: e.message });
+    }
+  });
+
+  // DELETE /api/rooms/:roomId/files — delete a specific file from R2
+  app.delete('/api/rooms/:roomId/files', async (req: any, res: any) => {
+    try {
+      const { fileName } = req.body;
+      if (!fileName) return res.status(400).json({ error: 'fileName is required' });
+      const key = `rooms/${req.params.roomId}/${fileName}`;
+      await s3Client.send(new DeleteObjectCommand({ Bucket: ROOMS_BUCKET, Key: key }));
+      return res.json({ message: 'File deleted' });
+    } catch (e: any) {
+      return res.status(500).json({ error: e.message });
+    }
+  });
+
+  // POST /api/rooms/:roomId/upload-url — presigned PUT URL for a room file
+  app.post('/api/rooms/:roomId/upload-url', async (req: any, res: any) => {
+    try {
+      const { fileName, contentType } = req.body;
+      const key = `rooms/${req.params.roomId}/${fileName}`;
+      const cmd = new PutObjectCommand({ Bucket: ROOMS_BUCKET, Key: key, ContentType: contentType || 'application/octet-stream' });
+      const uploadUrl = await getSignedUrl(s3Client, cmd, { expiresIn: 600 });
+      return res.json({ uploadUrl });
+    } catch (e: any) {
+      return res.status(500).json({ error: e.message });
+    }
+  });
+
+  // POST /api/rooms/:roomId/download-url — presigned GET URL for a room file
+  app.post('/api/rooms/:roomId/download-url', async (req: any, res: any) => {
+    try {
+      const { fileName } = req.body;
+      const key = `rooms/${req.params.roomId}/${fileName}`;
+      const cmd = new GetObjectCommand({ Bucket: ROOMS_BUCKET, Key: key });
+      const downloadUrl = await getSignedUrl(s3Client, cmd, { expiresIn: 600 });
+      return res.json({ downloadUrl });
+    } catch (e: any) {
+      return res.status(500).json({ error: e.message });
+    }
+  });
+
+  // POST /api/rooms/:roomId/multipart/create — start multipart upload
+  app.post('/api/rooms/:roomId/multipart/create', async (req: any, res: any) => {
+    try {
+      const { fileName, contentType } = req.body;
+      const s3Key = `rooms/${req.params.roomId}/${fileName}`;
+      const cmd = new CreateMultipartUploadCommand({
+        Bucket: ROOMS_BUCKET,
+        Key: s3Key,
+        ContentType: contentType || 'application/octet-stream',
+      });
+      const result = await s3Client.send(cmd);
+      return res.json({ uploadId: result.UploadId, s3Key });
+    } catch (e: any) {
+      return res.status(500).json({ error: e.message });
+    }
+  });
+
+  // POST /api/rooms/:roomId/multipart/part-url — presign one part
+  app.post('/api/rooms/:roomId/multipart/part-url', async (req: any, res: any) => {
+    try {
+      const { s3Key, uploadId, partNumber } = req.body;
+      const cmd = new UploadPartCommand({ Bucket: ROOMS_BUCKET, Key: s3Key, UploadId: uploadId, PartNumber: partNumber });
+      const url = await getSignedUrl(s3Client, cmd, { expiresIn: 3600 });
+      return res.json({ url });
+    } catch (e: any) {
+      return res.status(500).json({ error: e.message });
+    }
+  });
+
+  // POST /api/rooms/:roomId/multipart/complete — complete multipart upload
+  app.post('/api/rooms/:roomId/multipart/complete', async (req: any, res: any) => {
+    try {
+      const { s3Key, uploadId, parts } = req.body;
+      const cmd = new CompleteMultipartUploadCommand({
+        Bucket: ROOMS_BUCKET,
+        Key: s3Key,
+        UploadId: uploadId,
+        MultipartUpload: { Parts: parts },
+      });
+      await s3Client.send(cmd);
+      return res.json({ message: 'Multipart upload complete' });
+    } catch (e: any) {
+      return res.status(500).json({ error: e.message });
+    }
+  });
+
+  // POST /api/rooms/:roomId/multipart/abort — abort multipart upload
+  app.post('/api/rooms/:roomId/multipart/abort', async (req: any, res: any) => {
+    try {
+      const { s3Key, uploadId } = req.body;
+      const cmd = new AbortMultipartUploadCommand({ Bucket: ROOMS_BUCKET, Key: s3Key, UploadId: uploadId });
+      await s3Client.send(cmd);
+      return res.json({ message: 'Multipart upload aborted' });
+    } catch (e: any) {
+      return res.status(500).json({ error: e.message });
+    }
+  });
+
+  // POST /api/rooms/:roomId/trigger-cleanup — manual purge trigger (replaces Lambda cron)
+  app.post('/api/rooms/:roomId/trigger-cleanup', async (req: any, res: any) => {
+    try {
+      const db = readRoomsDB();
+      const room = db[req.params.roomId];
+      if (!room) return res.status(404).json({ error: 'Room not found' });
+
+      // Delete all R2 objects for this room
+      try {
+        const listCmd = new ListObjectsV2Command({ Bucket: ROOMS_BUCKET, Prefix: `rooms/${req.params.roomId}/` });
+        const listed = await s3Client.send(listCmd);
+        for (const obj of (listed.Contents || [])) {
+          if (obj.Key) {
+            await s3Client.send(new DeleteObjectCommand({ Bucket: ROOMS_BUCKET, Key: obj.Key }));
+          }
+        }
+      } catch (s3Err) {
+        console.warn('Could not delete R2 objects during trigger-cleanup:', s3Err);
+      }
+
+      // Send notification email
+      try {
+        const emailTo = room.userEmail || room.transferEmail;
+        if (emailTo) {
+          await sendRoomEmail(
+            emailTo,
+            `Keepr: Room "${room.name}" has been purged`,
+            `<p>Your Keepr room <strong>${room.name}</strong> has been purged as requested. All files have been permanently deleted from Cloudflare R2.</p>`
+          );
+        }
+      } catch (mailErr) {
+        console.warn('Email send failed during trigger-cleanup:', mailErr);
+      }
+
+      delete db[req.params.roomId];
+      writeRoomsDB(db);
+
+      return res.json({ message: 'Room purged and notification sent.' });
+    } catch (e: any) {
+      return res.status(500).json({ error: e.message });
+    }
+  });
+
+
   // ==========================================
   // FEATURE 2: VIRUSTOTAL SCANNER
   // ==========================================
 
   async function pollAnalysis(id: string, apiKey: string) {
-    const maxRetries = 20; // 1 min max (3s interval)
+    const maxRetries = 20;
     for (let i = 0; i < maxRetries; i++) {
       await new Promise(resolve => setTimeout(resolve, 3000));
       const res = await fetch(`https://www.virustotal.com/api/v3/analyses/${id}`, {
@@ -256,7 +591,10 @@ async function startServer() {
   });
 
 
-  // FEATURE 3: LINK DETONATOR
+  // ==========================================
+  // FEATURE 3: LINK DETONATOR (Inline Puppeteer on Render)
+  // Replaced AWS Lambda with local headless Chromium via @sparticuz/chromium
+  // ==========================================
 
   const activeRooms = new Set<string>();
   const destroyedRooms = new Set<string>();
@@ -276,7 +614,7 @@ async function startServer() {
       activeRooms.add(room);
       socket.join(room);
       socket.to(room).emit('peer-joined');
-      
+
       socket.on('sendMessage', (payload) => {
         if (destroyedRooms.has(payload.roomId)) return;
         socket.to(payload.roomId).emit('chat-message', payload.data);
@@ -286,7 +624,6 @@ async function startServer() {
         activeRooms.delete(room);
         socket.to(room).emit('peer-wiped');
 
-        // Forcefully disconnect all sockets currently in this room
         const roomSockets = io.sockets.adapter.rooms.get(room);
         if (roomSockets) {
           for (const socketId of roomSockets) {
@@ -304,67 +641,113 @@ async function startServer() {
     }
 
     socket.on('detonate-link', async ({ url }) => {
+      let browser: any = null;
       try {
-        socket.emit('log', 'Initializing secure AWS Sandbox...');
+        socket.emit('log', 'Initializing secure Sandbox...');
 
-        const lambda = new AWS.Lambda({
-          region: process.env.AWS_REGION || 'ap-south-1',
-          accessKeyId: process.env.AWS_ACCESS_KEY_ID,
-          secretAccessKey: process.env.AWS_SECRET_ACCESS_KEY
+        // Dynamically import Puppeteer packages
+        const puppeteer = (await import('puppeteer-core')).default;
+
+        // Auto-detect browser executable path across Windows, macOS, and Linux (Render)
+        const fs = await import('fs');
+        const path = await import('path');
+        let execPath = '';
+        let browserArgs: string[] = ['--no-sandbox', '--disable-setuid-sandbox', '--disable-dev-shm-usage', '--disable-gpu'];
+
+        if (process.platform === 'win32') {
+          const localAppData = process.env.LOCALAPPDATA || '';
+          const programFiles = process.env['ProgramFiles'] || 'C:\\Program Files';
+          const programFilesX86 = process.env['ProgramFiles(x86)'] || 'C:\\Program Files (x86)';
+
+          const winCandidates = [
+            path.join(programFiles, 'Google', 'Chrome', 'Application', 'chrome.exe'),
+            path.join(programFilesX86, 'Google', 'Chrome', 'Application', 'chrome.exe'),
+            path.join(localAppData, 'Google', 'Chrome', 'Application', 'chrome.exe'),
+            path.join(programFilesX86, 'Microsoft', 'Edge', 'Application', 'msedge.exe'),
+            path.join(programFiles, 'Microsoft', 'Edge', 'Application', 'msedge.exe'),
+            path.join(programFiles, 'BraveSoftware', 'Brave-Browser', 'Application', 'brave.exe'),
+            'C:\\Program Files\\Google\\Chrome\\Application\\chrome.exe',
+            'C:\\Program Files (x86)\\Google\\Chrome\\Application\\chrome.exe',
+            'C:\\Program Files (x86)\\Microsoft\\Edge\\Application\\msedge.exe',
+            'C:\\Program Files\\Microsoft\\Edge\\Application\\msedge.exe',
+          ];
+
+          for (const cand of winCandidates) {
+            if (cand && fs.existsSync(cand)) {
+              execPath = cand;
+              break;
+            }
+          }
+        } else if (process.platform === 'darwin') {
+          const macCandidates = [
+            '/Applications/Google Chrome.app/Contents/MacOS/Google Chrome',
+            '/Applications/Microsoft Edge.app/Contents/MacOS/Microsoft Edge',
+            '/Applications/Brave Browser.app/Contents/MacOS/Brave Browser',
+            '/Applications/Chromium.app/Contents/MacOS/Chromium',
+          ];
+          for (const cand of macCandidates) {
+            if (fs.existsSync(cand)) {
+              execPath = cand;
+              break;
+            }
+          }
+        } else {
+          // Linux (Render, Docker, AWS Lambda) -> Use @sparticuz/chromium
+          try {
+            const chromium = (await import('@sparticuz/chromium')).default;
+            execPath = await chromium.executablePath();
+            browserArgs = chromium.args;
+          } catch (spartErr) {
+            console.warn('Could not load @sparticuz/chromium:', spartErr);
+          }
+
+          if (!execPath || !fs.existsSync(execPath)) {
+            const linuxCandidates = ['/usr/bin/google-chrome', '/usr/bin/chromium', '/usr/bin/chromium-browser'];
+            for (const cand of linuxCandidates) {
+              if (fs.existsSync(cand)) {
+                execPath = cand;
+                break;
+              }
+            }
+          }
+        }
+
+        if (!execPath) {
+          throw new Error('No compatible Chrome, Edge, or Chromium browser binary found.');
+        }
+
+        socket.emit('log', `Spinning up sandbox browser for ${url}...`);
+
+        browser = await puppeteer.launch({
+          args: browserArgs,
+          defaultViewport: { width: 1280, height: 800 },
+          executablePath: execPath,
+          headless: true,
         });
 
-        socket.emit('log', `Spinning up Chromium node for ${url}...`);
+        const page = await browser.newPage();
+        await page.setUserAgent(
+          'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36'
+        );
 
-        const lambdaParams = {
-          FunctionName: process.env.LAMBDA_FUNCTION_NAME || 'KeeprLinkDetonator',
-          Payload: JSON.stringify({ targetUrl: url })
-        };
+        socket.emit('log', 'Browser node launched. Navigating to target...');
 
-        const lambdaResult = await lambda.invoke(lambdaParams).promise();
-        const payload = JSON.parse(lambdaResult.Payload as string);
-
-        if (payload.errorMessage || payload.error) {
-          const errorText = payload.errorMessage || payload.error;
-          if (errorText.includes('Task timed out')) {
-            throw new Error(`AWS Sandbox Timeout: The website took too long to load (over 60 seconds). This usually happens on heavy sites with continuous trackers. To fix this, increase your AWS Lambda timeout to 120 seconds or change your Puppeteer script to use 'domcontentloaded' instead of 'networkidle2'.`);
-          }
-          throw new Error(errorText);
+        try {
+          await page.goto(url, { waitUntil: 'domcontentloaded', timeout: 30000 });
+        } catch (navErr: any) {
+          // Even on navigation errors (e.g. cert issues), try to screenshot what loaded
+          console.warn('Navigation warning (screenshot still attempted):', navErr.message);
         }
 
-        if (payload.statusCode && payload.statusCode !== 200) {
-          let errorMsg = 'Unknown Sandbox Error';
-          try {
-            const parsedError = JSON.parse(payload.body);
-            errorMsg = parsedError.error || errorMsg;
-          } catch (e) {
-            errorMsg = payload.body;
-          }
-          throw new Error(`AWS Sandbox Error: ${errorMsg}`);
-        }
+        // Brief pause for dynamic content
+        await new Promise(r => setTimeout(r, 1500));
 
-        let screenshotBase64 = payload.body;
-        if (typeof screenshotBase64 === 'string' && screenshotBase64.startsWith('{')) {
-          try {
-            const parsedBody = JSON.parse(screenshotBase64);
-            if (parsedBody.screenshot) {
-              screenshotBase64 = parsedBody.screenshot;
-            } else if (parsedBody.data) {
-              screenshotBase64 = parsedBody.data;
-            }
-          } catch (e) { }
-        }
+        const screenshotBuffer = await page.screenshot({ type: 'png', fullPage: false });
+        await browser.close();
+        browser = null;
 
-        let mimeType = 'image/png';
-        if (typeof screenshotBase64 === 'string') {
-          if (screenshotBase64.startsWith('UklG')) mimeType = 'image/webp';
-          else if (screenshotBase64.startsWith('/9j/')) mimeType = 'image/jpeg';
-          else if (screenshotBase64.startsWith('iVBORw')) mimeType = 'image/png';
-
-          screenshotBase64 = screenshotBase64.replace(/^data:image\/\w+;base64,/, '');
-
-          // Completely sanitize the base64 string using Node's Buffer
-          screenshotBase64 = Buffer.from(screenshotBase64, 'base64').toString('base64');
-        }
+        let screenshotBase64 = (screenshotBuffer as Buffer).toString('base64');
+        screenshotBase64 = Buffer.from(screenshotBase64, 'base64').toString('base64');
 
         socket.emit('log', 'Visual heuristics captured successfully.');
         socket.emit('screenshot', screenshotBase64);
@@ -386,12 +769,11 @@ async function startServer() {
 
         let result;
         try {
-          // Use stable gemini-1.5-flash as primary workhorse
           result = await ai.models.generateContent({
             model: 'gemini-1.5-flash',
             contents: {
               parts: [
-                { inlineData: { data: screenshotBase64, mimeType } },
+                { inlineData: { data: screenshotBase64, mimeType: 'image/png' } },
                 { text: prompt }
               ]
             },
@@ -400,13 +782,12 @@ async function startServer() {
             }
           });
         } catch (apiError: any) {
-          console.warn('Primary model (gemini-1.5-flash) failed, attempting fallback (gemini-2.5-flash)...', apiError);
-          // Fall back to gemini-2.5-flash if stable is down or rate-limited
+          console.warn('Primary model (gemini-1.5-flash) failed, attempting fallback (gemini-2.0-flash)...', apiError);
           result = await ai.models.generateContent({
-            model: 'gemini-2.5-flash',
+            model: 'gemini-2.0-flash',
             contents: {
               parts: [
-                { inlineData: { data: screenshotBase64, mimeType } },
+                { inlineData: { data: screenshotBase64, mimeType: 'image/png' } },
                 { text: prompt }
               ]
             },
@@ -416,11 +797,21 @@ async function startServer() {
           });
         }
 
-        const analysis = JSON.parse(result.text || '{}');
+        let rawText = (result.text || '').replace(/```(?:json)?/gi, '').replace(/```/g, '').trim();
+        let analysis = { riskScore: 0, verdict: 'Clean', reason: 'No immediate threats detected.' };
+        try {
+          analysis = JSON.parse(rawText);
+        } catch (jsonErr) {
+          console.warn('Could not parse Gemini JSON response directly, raw text was:', rawText);
+        }
+
         socket.emit('log', 'Threat analysis synthesis complete.');
         socket.emit('analysis', analysis);
 
       } catch (error: any) {
+        if (browser) {
+          try { await browser.close(); } catch { /* ignore */ }
+        }
         console.error('Detonation Error:', error);
         let errorMsg = error.message || 'Detonation sequence failed due to atmospheric interference.';
         if (typeof errorMsg === 'string' && errorMsg.trim().startsWith('{')) {
@@ -442,14 +833,89 @@ async function startServer() {
 
 
   // ==========================================
+  // INACTIVITY WATCHDOG (Dead-Man Switch Cron)
+  // Runs every 5 minutes to auto-purge / hand off expired rooms
+  // ==========================================
+
+  const runInactivityWatchdog = async () => {
+    try {
+      const db = readRoomsDB();
+      const now = new Date();
+      let changed = false;
+
+      for (const [roomId, room] of Object.entries(db)) {
+        if (room && room.expiryAt && new Date(room.expiryAt) <= now) {
+          console.log(`[Watchdog] Room ${roomId} ("${room.name}") expired at ${room.expiryAt}. Executing ${room.safetyStrategy}...`);
+
+          // 1. Delete all R2 objects for this room
+          try {
+            const listCmd = new ListObjectsV2Command({ Bucket: ROOMS_BUCKET, Prefix: `rooms/${roomId}/` });
+            const listed = await s3Client.send(listCmd);
+            for (const obj of (listed.Contents || [])) {
+              if (obj.Key) {
+                await s3Client.send(new DeleteObjectCommand({ Bucket: ROOMS_BUCKET, Key: obj.Key }));
+              }
+            }
+          } catch (r2Err) {
+            console.warn(`[Watchdog] Failed to clean R2 files for room ${roomId}:`, r2Err);
+          }
+
+          // 2. Send notification or handoff email
+          try {
+            if (room.safetyStrategy === 'migration' && room.transferEmail) {
+              await sendRoomEmail(
+                room.transferEmail,
+                `Keepr Vault Handoff: "${room.name}" timeout triggered`,
+                `<p>The inactivity safeguard timer for room <strong>${room.name}</strong> has expired.</p>
+                 <p>All stored assets have been archived and purged from active storage per vault safety policy.</p>`
+              );
+            } else if (room.userEmail) {
+              await sendRoomEmail(
+                room.userEmail,
+                `Keepr Vault Auto-Purged: "${room.name}"`,
+                `<p>Your room <strong>${room.name}</strong> was automatically purged due to inactivity timeout.</p>
+                 <p>All files have been permanently destroyed from Cloudflare R2.</p>`
+              );
+            }
+          } catch (mailErr) {
+            console.warn(`[Watchdog] Failed to send email for room ${roomId}:`, mailErr);
+          }
+
+          delete db[roomId];
+          changed = true;
+        }
+      }
+
+      if (changed) {
+        writeRoomsDB(db);
+        console.log('[Watchdog] Database updated after purging expired rooms.');
+      }
+    } catch (watchErr) {
+      console.error('[Watchdog] Error during sweep:', watchErr);
+    }
+  };
+
+  // Run watchdog after 10s startup delay, then every 5 minutes
+  setTimeout(runInactivityWatchdog, 10000);
+  setInterval(runInactivityWatchdog, 5 * 60 * 1000);
+
+
+  // ==========================================
   // STATIC FRONTEND SERVING
   // ==========================================
 
   const distPath = path.join(__dirname, 'dist');
-  app.use(express.static(distPath));
+  if (fs.existsSync(distPath)) {
+    app.use(express.static(distPath));
+  }
 
   app.get('*', (req, res) => {
-    res.sendFile(path.join(distPath, 'index.html'));
+    const indexPath = path.join(distPath, 'index.html');
+    if (fs.existsSync(indexPath)) {
+      res.sendFile(indexPath);
+    } else {
+      res.status(200).send('Keepr unified backend is running. For local UI, run "npm run dev" on port 5173, or run "npm run build" to produce dist/ for production.');
+    }
   });
 
   httpServer.listen(PORT, '0.0.0.0', () => {

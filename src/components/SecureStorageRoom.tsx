@@ -141,8 +141,8 @@ const hashStringSHA256 = async (str: string): Promise<string> => {
   return hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
 };
 
-// AWS S3 free tier ceiling (5 GB) used as the global quota for the workspace
-const S3_FREE_TIER_BYTES = 5 * 1024 * 1024 * 1024;
+// Cloudflare R2 free tier ceiling (10 GB) used as the global quota for the workspace
+const S3_FREE_TIER_BYTES = 10 * 1024 * 1024 * 1024;
 
 // Format bytes into a clean human-readable string
 const formatBytes = (bytes: number): string => {
@@ -256,13 +256,14 @@ export function SecureStorageRoom() {
   const { getToken } = useAuth();
   const userName = user?.firstName || 'You';
 
-  const SECURE_ROOM_API_ENDPOINT = import.meta.env.VITE_SECURE_ROOM_API_ENDPOINT || '';
+  const rawEndpoint = (import.meta.env.VITE_API_BASE_URL || '/api').trim();
+  const SECURE_ROOM_API_ENDPOINT = rawEndpoint.endsWith('/') ? rawEndpoint.slice(0, -1) : rawEndpoint;
 
   // Multi-Room State Management
   const [rooms, setRooms] = useState<SecureRoom[]>([]);
   const [isLoadingRooms, setIsLoadingRooms] = useState(false);
 
-  // Fetch Rooms from AWS DynamoDB via REST API
+  // Fetch Rooms from Render backend REST API
   const fetchRoomsFromBackend = async () => {
     setIsLoadingRooms(true);
     const startTime = Date.now();
@@ -322,18 +323,11 @@ export function SecureStorageRoom() {
     }
   };
 
-  // Fetch files in a room from S3 via AWS REST API
+  // Fetch files in a room from Render backend REST API
   const fetchRoomFiles = async (roomId: string): Promise<S3File[]> => {
-    let apiEndpoint = SECURE_ROOM_API_ENDPOINT;
-    if (!apiEndpoint || apiEndpoint.includes('REPLACE_WITH_YOUR_API_ID')) {
-      const wsUrl = import.meta.env.VITE_WEBSOCKET_URL || '';
-      const match = wsUrl.match(/wss:\/\/([^.]+)\.execute-api/);
-      if (match && match[1]) {
-        apiEndpoint = `https://${match[1]}.execute-api.ap-south-1.amazonaws.com/dev`;
-      }
-    }
-    if (!apiEndpoint || apiEndpoint.includes('REPLACE_WITH_YOUR_API_ID')) {
-      console.warn("REST API endpoint not configured yet. Fallback to mock files.");
+    const apiEndpoint = SECURE_ROOM_API_ENDPOINT;
+    if (!apiEndpoint) {
+      console.warn("VITE_API_BASE_URL not configured. Fallback to mock files.");
       return INITIAL_FILES;
     }
     try {
@@ -727,7 +721,7 @@ export function SecureStorageRoom() {
 
         setIsUnlocked(true);
         setPasskeyError('');
-        window.location.hash = enteredVaultKey;
+        window.history.replaceState(null, '', '#' + enteredVaultKey);
         setMatchedUrlRoomId(selectedRoomToUnlock.id);
         setFeedbackMsg('This room\u2019s inactivity timer has expired.');
         setTimeout(() => setFeedbackMsg(''), 4000);
@@ -745,7 +739,7 @@ export function SecureStorageRoom() {
       // Set state to unlocked and embed key
       setIsUnlocked(true);
       setPasskeyError('');
-      window.location.hash = enteredVaultKey;
+      window.history.replaceState(null, '', '#' + enteredVaultKey);
       setMatchedUrlRoomId(selectedRoomToUnlock.id);
       handleUpdateActivity();
       setFeedbackMsg(`Vault unlocked.`);
@@ -764,7 +758,7 @@ export function SecureStorageRoom() {
     setEnteredVaultKey('');
     setPasskeyError('');
     setVaultKey('');
-    window.location.hash = ''; // clear key parameter
+    window.history.replaceState(null, '', window.location.pathname + window.location.search); // clear key parameter
     setMatchedUrlRoomId(null);
     setFeedbackMsg('Vault closed. Local keys cleared.');
     setTimeout(() => setFeedbackMsg(''), 2500);
@@ -788,20 +782,13 @@ export function SecureStorageRoom() {
     const roomKey = newRoomKey || generateNewKey();
     const roomKeyHash = await hashStringSHA256(roomKey);
     
-    let apiEndpoint = SECURE_ROOM_API_ENDPOINT;
-    if (!apiEndpoint || apiEndpoint.includes('REPLACE_WITH_YOUR_API_ID')) {
-      const wsUrl = import.meta.env.VITE_WEBSOCKET_URL || '';
-      const match = wsUrl.match(/wss:\/\/([^.]+)\.execute-api/);
-      if (match && match[1]) {
-        apiEndpoint = `https://${match[1]}.execute-api.ap-south-1.amazonaws.com/dev`;
-      }
-    }
+    const apiEndpoint = SECURE_ROOM_API_ENDPOINT;
 
     let createdRoomId = 'room-' + Date.now();
     let createdExpiryAt: string | undefined;
     let hasBackendSuccess = false;
 
-    if (apiEndpoint && !apiEndpoint.includes('REPLACE_WITH_YOUR_API_ID')) {
+    if (apiEndpoint) {
       try {
         const token = await getToken();
         if (token) {
@@ -859,7 +846,7 @@ export function SecureStorageRoom() {
     }
 
     // Embed current key
-    window.location.hash = roomKey;
+    window.history.replaceState(null, '', '#' + roomKey);
     setMatchedUrlRoomId(newRoom.id);
 
     // Immediately Mount/Unlock this newly created Room
@@ -900,17 +887,10 @@ export function SecureStorageRoom() {
 
   const handleSaveRoomRename = async (roomId: string) => {
     if (editRoomNameInput.trim() !== '') {
-      let apiEndpoint = SECURE_ROOM_API_ENDPOINT;
-      if (!apiEndpoint || apiEndpoint.includes('REPLACE_WITH_YOUR_API_ID')) {
-        const wsUrl = import.meta.env.VITE_WEBSOCKET_URL || '';
-        const match = wsUrl.match(/wss:\/\/([^.]+)\.execute-api/);
-        if (match && match[1]) {
-          apiEndpoint = `https://${match[1]}.execute-api.ap-south-1.amazonaws.com/dev`;
-        }
-      }
+      const apiEndpoint = SECURE_ROOM_API_ENDPOINT;
 
       let hasBackendSuccess = false;
-      if (apiEndpoint && !apiEndpoint.includes('REPLACE_WITH_YOUR_API_ID')) {
+      if (apiEndpoint) {
         try {
           const token = await getToken();
           if (token) {
@@ -965,17 +945,10 @@ export function SecureStorageRoom() {
     // Correct PIN! Proceed to purge/delete room
     const roomId = roomToPurge.id;
 
-    let apiEndpoint = SECURE_ROOM_API_ENDPOINT;
-    if (!apiEndpoint || apiEndpoint.includes('REPLACE_WITH_YOUR_API_ID')) {
-      const wsUrl = import.meta.env.VITE_WEBSOCKET_URL || '';
-      const match = wsUrl.match(/wss:\/\/([^.]+)\.execute-api/);
-      if (match && match[1]) {
-        apiEndpoint = `https://${match[1]}.execute-api.ap-south-1.amazonaws.com/dev`;
-      }
-    }
+    const apiEndpoint = SECURE_ROOM_API_ENDPOINT;
 
     let hasBackendSuccess = false;
-    if (apiEndpoint && !apiEndpoint.includes('REPLACE_WITH_YOUR_API_ID')) {
+    if (apiEndpoint) {
       try {
         const token = await getToken();
         if (token) {
@@ -1010,17 +983,9 @@ export function SecureStorageRoom() {
     setTimeout(() => setFeedbackMsg(''), 3000);
   };
 
-  // Resolve the REST API endpoint (env var, else derive from the WS URL).
+  // Resolve the REST API endpoint (Render server URL from env var).
   const resolveApiEndpoint = (): string => {
-    let apiEndpoint = SECURE_ROOM_API_ENDPOINT;
-    if (!apiEndpoint || apiEndpoint.includes('REPLACE_WITH_YOUR_API_ID')) {
-      const wsUrl = import.meta.env.VITE_WEBSOCKET_URL || '';
-      const match = wsUrl.match(/wss:\/\/([^.]+)\.execute-api/);
-      if (match && match[1]) {
-        apiEndpoint = `https://${match[1]}.execute-api.ap-south-1.amazonaws.com/dev`;
-      }
-    }
-    return apiEndpoint;
+    return SECURE_ROOM_API_ENDPOINT;
   };
 
   // Memory-safe secure upload.
@@ -1047,11 +1012,11 @@ export function SecureStorageRoom() {
 
     const originalFile = fileList[0];
 
-    // Quota guard — the workspace is on the 5 GB free plan. Reject before we
+    // Quota guard — the workspace is on the R2 10 GB free plan. Reject before we
     // waste bandwidth encrypting/uploading something that can't fit.
     if (totalUsedBytes + originalFile.size > S3_FREE_TIER_BYTES) {
       setFeedbackMsg(
-        `Not enough space: ${formatBytes(originalFile.size)} file won't fit in the remaining ${formatBytes(Math.max(0, S3_FREE_TIER_BYTES - totalUsedBytes))} of your 5 GB plan.`
+        `Not enough space: ${formatBytes(originalFile.size)} file won't fit in the remaining ${formatBytes(Math.max(0, S3_FREE_TIER_BYTES - totalUsedBytes))} of your 10 GB plan.`
       );
       setTimeout(() => setFeedbackMsg(''), 5000);
       if (fileInputRef.current) fileInputRef.current.value = '';
@@ -1063,7 +1028,7 @@ export function SecureStorageRoom() {
     handleUpdateActivity();
 
     const apiEndpoint = resolveApiEndpoint();
-    const hasBackend = !!(apiEndpoint && !apiEndpoint.includes('REPLACE_WITH_YOUR_API_ID') && activeRoomId);
+    const hasBackend = !!(apiEndpoint && activeRoomId);
 
     // Offline / no-backend fallback: just register the file locally. We do NOT
     // read the file into memory here — that's what caused the crash.
@@ -1109,7 +1074,7 @@ export function SecureStorageRoom() {
 
       setIsUploading(false);
       setUploadProgress(0);
-      setFeedbackMsg('Encrypted and uploaded to S3.');
+      setFeedbackMsg('Encrypted and uploaded to R2.');
       setTimeout(() => setFeedbackMsg(''), 3500);
       if (fileInputRef.current) fileInputRef.current.value = '';
     } catch (err: any) {
@@ -1187,7 +1152,7 @@ export function SecureStorageRoom() {
       createData = await createRes.json();
     } catch {
       throw new Error(
-        `large-file uploads (${formatBytes(file.size)}) need the multipart backend deployed. Run "serverless deploy" in aws-backend.`
+        `large-file uploads (${formatBytes(file.size)}) require the multipart endpoints on the Render backend. Make sure your server.ts is deployed.`
       );
     }
     uploadId = createData.uploadId;
@@ -1348,7 +1313,7 @@ export function SecureStorageRoom() {
 
     try {
       let downloadUrl = '';
-      if (apiEndpoint && !apiEndpoint.includes('REPLACE_WITH_YOUR_API_ID') && activeRoomId) {
+      if (apiEndpoint && activeRoomId) {
         const token = await getToken();
         if (!token) throw new Error("Authentication failed");
 
@@ -1535,17 +1500,10 @@ export function SecureStorageRoom() {
 
   const handleDeleteAsset = async () => {
     if (selectedFile) {
-      let apiEndpoint = SECURE_ROOM_API_ENDPOINT;
-      if (!apiEndpoint || apiEndpoint.includes('REPLACE_WITH_YOUR_API_ID')) {
-        const wsUrl = import.meta.env.VITE_WEBSOCKET_URL || '';
-        const match = wsUrl.match(/wss:\/\/([^.]+)\.execute-api/);
-        if (match && match[1]) {
-          apiEndpoint = `https://${match[1]}.execute-api.ap-south-1.amazonaws.com/dev`;
-        }
-      }
+      const apiEndpoint = SECURE_ROOM_API_ENDPOINT;
 
       let hasBackendSuccess = false;
-      if (apiEndpoint && !apiEndpoint.includes('REPLACE_WITH_YOUR_API_ID') && activeRoomId) {
+      if (apiEndpoint && activeRoomId) {
         try {
           const token = await getToken();
           if (token) {
@@ -1573,7 +1531,7 @@ export function SecureStorageRoom() {
       if (hasBackendSuccess && activeRoomId) {
         const refreshedFiles = await fetchRoomFiles(activeRoomId);
         handleUpdateActiveRoomFiles(refreshedFiles);
-        setFeedbackMsg('File deleted from S3.');
+        setFeedbackMsg('File deleted from R2.');
       } else {
         const updatedFilesList = files.filter(f => f.id !== selectedFile.id);
         handleUpdateActiveRoomFiles(updatedFilesList);
@@ -1591,20 +1549,13 @@ export function SecureStorageRoom() {
     if (isSavingSettings) return;
     setIsSavingSettings(true);
 
-    let apiEndpoint = SECURE_ROOM_API_ENDPOINT;
-    if (!apiEndpoint || apiEndpoint.includes('REPLACE_WITH_YOUR_API_ID')) {
-      const wsUrl = import.meta.env.VITE_WEBSOCKET_URL || '';
-      const match = wsUrl.match(/wss:\/\/([^.]+)\.execute-api/);
-      if (match && match[1]) {
-        apiEndpoint = `https://${match[1]}.execute-api.ap-south-1.amazonaws.com/dev`;
-      }
-    }
+    const apiEndpoint = SECURE_ROOM_API_ENDPOINT;
 
     const safetyStrategy = autoDestructEnabled ? 'purge' : 'migration';
     let hasBackendSuccess = false;
 
     try {
-      if (apiEndpoint && !apiEndpoint.includes('REPLACE_WITH_YOUR_API_ID') && activeRoomId) {
+      if (apiEndpoint && activeRoomId) {
         const token = await getToken();
         if (token) {
           const updatePayload: Record<string, any> = {
@@ -1684,16 +1635,9 @@ export function SecureStorageRoom() {
   // Immediately trigger cleanup or migration on demand (no waiting for 5-min cron)
   const triggerNow = async () => {
     if (!activeRoomId) return;
-    let apiEndpoint = SECURE_ROOM_API_ENDPOINT;
-    if (!apiEndpoint || apiEndpoint.includes('REPLACE_WITH_YOUR_API_ID')) {
-      const wsUrl = import.meta.env.VITE_WEBSOCKET_URL || '';
-      const match = wsUrl.match(/wss:\/\/([^.]+)\.execute-api/);
-      if (match && match[1]) {
-        apiEndpoint = `https://${match[1]}.execute-api.ap-south-1.amazonaws.com/dev`;
-      }
-    }
-    if (!apiEndpoint || apiEndpoint.includes('REPLACE_WITH_YOUR_API_ID')) {
-      setFeedbackMsg('API endpoint not configured. Cannot trigger remotely.');
+    const apiEndpoint = SECURE_ROOM_API_ENDPOINT;
+    if (!apiEndpoint) {
+      setFeedbackMsg('VITE_API_BASE_URL not configured. Cannot trigger remotely.');
       setTimeout(() => setFeedbackMsg(''), 3000);
       return;
     }

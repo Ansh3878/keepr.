@@ -1542,8 +1542,18 @@ function AppContent() {
     if (window.location.pathname === '/vault') {
       return 'receive';
     }
+    const saved = sessionStorage.getItem('keepr_active_view') as ViewType | null;
+    if (saved && ['home', 'send', 'receive', 'detonator', 'chat', 'storage', 'pricing'].includes(saved)) {
+      return saved;
+    }
     return 'home';
   });
+
+  useEffect(() => {
+    if (activeView && activeView !== 'auth') {
+      sessionStorage.setItem('keepr_active_view', activeView);
+    }
+  }, [activeView]);
   const [showTrialEndedModal, setShowTrialEndedModal] = useState(false);
   const [localPlan, setLocalPlan] = useState<'free' | 'pro' | null>(null);
   const [isActivatingPro, setIsActivatingPro] = useState(false);
