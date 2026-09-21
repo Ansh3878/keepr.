@@ -5,6 +5,8 @@
   "type": "module",
   "scripts": {
     "dev": "vite",
+    "dev:server": "npx tsx server.ts",
+    "dev:full": "npx concurrently -k -n \"SERVER,VITE\" -c \"cyan,magenta\" \"npx tsx server.ts\" \"vite\"",
     "build": "tsc && vite build",
     "start": "npx tsx server.ts",
     "preview": "vite preview",

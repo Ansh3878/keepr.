@@ -246,7 +246,9 @@ async function startServer() {
       const userId = (req.query.userId as string) || req.headers['x-user-id'] as string || 'default';
 
       const roomId = 'room-' + Date.now() + '-' + Math.random().toString(36).slice(2, 8);
-      const inactiveDays = Number(inactivityDays) || 30;
+      const inactiveDays = inactivityDays !== undefined && inactivityDays !== null && !isNaN(Number(inactivityDays))
+        ? Number(inactivityDays)
+        : 30;
       const expiryAt = inactiveDays === 0
         ? new Date(Date.now() + 60 * 1000).toISOString()
         : new Date(Date.now() + inactiveDays * 24 * 60 * 60 * 1000).toISOString();
@@ -767,10 +769,10 @@ async function startServer() {
         "reason" (string). 
         BE EXTREMELY STRICT.`;
 
-        let result;
+        let result: any = null;
         try {
           result = await ai.models.generateContent({
-            model: 'gemini-1.5-flash',
+            model: 'gemini-2.5-flash',
             contents: {
               parts: [
                 { inlineData: { data: screenshotBase64, mimeType: 'image/png' } },
@@ -781,28 +783,40 @@ async function startServer() {
               responseMimeType: 'application/json'
             }
           });
-        } catch (apiError: any) {
-          console.warn('Primary model (gemini-1.5-flash) failed, attempting fallback (gemini-2.0-flash)...', apiError);
-          result = await ai.models.generateContent({
-            model: 'gemini-2.0-flash',
-            contents: {
-              parts: [
-                { inlineData: { data: screenshotBase64, mimeType: 'image/png' } },
-                { text: prompt }
-              ]
-            },
-            config: {
-              responseMimeType: 'application/json'
-            }
-          });
+        } catch (primaryErr: any) {
+          console.warn('[Detonator] Primary model (gemini-2.5-flash) failed:', primaryErr?.message || primaryErr);
+          try {
+            result = await ai.models.generateContent({
+              model: 'gemini-3.6-flash',
+              contents: {
+                parts: [
+                  { inlineData: { data: screenshotBase64, mimeType: 'image/png' } },
+                  { text: prompt }
+                ]
+              },
+              config: {
+                responseMimeType: 'application/json'
+              }
+            });
+          } catch (fallbackErr: any) {
+            console.warn('[Detonator] Fallback model (gemini-3.6-flash) also failed:', fallbackErr?.message || fallbackErr);
+            // Both models failed — continue with a safe default analysis
+          }
         }
 
-        let rawText = (result.text || '').replace(/```(?:json)?/gi, '').replace(/```/g, '').trim();
-        let analysis = { riskScore: 0, verdict: 'Clean', reason: 'No immediate threats detected.' };
-        try {
-          analysis = JSON.parse(rawText);
-        } catch (jsonErr) {
-          console.warn('Could not parse Gemini JSON response directly, raw text was:', rawText);
+        let analysis = { riskScore: 0, verdict: 'Analysis Unavailable', reason: 'AI vision analysis could not be completed for this URL. Manual review recommended.' };
+        const rawText = ((result?.text) || '').replace(/```(?:json)?/gi, '').replace(/```/g, '').trim();
+        if (rawText) {
+          try {
+            const parsed = JSON.parse(rawText);
+            if (parsed && typeof parsed.riskScore !== 'undefined') {
+              analysis = parsed;
+            }
+          } catch (jsonErr) {
+            console.warn('[Detonator] Could not parse Gemini JSON response, raw text was:', rawText);
+          }
+        } else {
+          console.warn('[Detonator] Gemini returned empty/blocked response — using fallback analysis defaults.');
         }
 
         socket.emit('log', 'Threat analysis synthesis complete.');

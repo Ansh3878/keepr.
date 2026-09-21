@@ -815,13 +815,32 @@ export function SecureStorageRoom() {
             createdExpiryAt = data.expiryAt;
             hasBackendSuccess = true;
           } else {
-            const errText = await response.text();
-            throw new Error(errText || response.statusText);
+            let errMsg = '';
+            try {
+              const errBody = await response.json();
+              errMsg = errBody.error || errBody.message || '';
+            } catch {
+              const errText = await response.text().catch(() => '');
+              if (errText && !errText.startsWith('<')) errMsg = errText;
+            }
+            if (!errMsg) {
+              if (response.status >= 500) {
+                errMsg = 'Backend server unreachable. Make sure the backend is running (npm run dev:full).';
+              } else {
+                errMsg = response.statusText || 'Server error';
+              }
+            }
+            throw new Error(errMsg);
           }
         }
       } catch (e: any) {
         console.error("Error creating room in backend:", e);
-        setWizardError(e.message || "Failed to create room on server.");
+        const msg = e.message || '';
+        // Friendly message for common cases
+        const friendlyMsg = msg.includes('Failed to fetch') || msg.includes('NetworkError') || msg.includes('ERR_CONNECTION_REFUSED') || msg.includes('Backend server unreachable') || msg === 'Internal Server Error'
+          ? 'Cannot reach backend server. Make sure to run "npm run dev:full" or "npm run dev:server".'
+          : msg || "Failed to create room on server.";
+        setWizardError(friendlyMsg);
         setIsCreatingRoom(false);
         return; // Abort creation!
       }
@@ -859,6 +878,7 @@ export function SecureStorageRoom() {
     setSafeTransferEnabled(newRoom.safetyStrategy === 'migration');
     setTransferEmail(newRoom.transferEmail);
     setInactivityDays(newRoomInactivityDays);
+    setActiveRoomExpiryAt(createdExpiryAt);
     setActiveRoomStrategy(newRoom.safetyStrategy);
     setIsUnlocked(true);
 
@@ -1903,7 +1923,7 @@ export function SecureStorageRoom() {
                     className="flex items-center px-4 py-2 bg-zinc-900/70 border border-zinc-800 hover:border-cyan-500/30 rounded-2xl space-x-3 text-zinc-300 text-xs font-bold cursor-pointer transition-all"
                   >
                     <Clock className="w-4 h-4 text-cyan-400" />
-                    <span>{inactivityDays}d inactivity lock</span>
+                    <span>{inactivityDays === 0 ? '1m test lock' : `${inactivityDays}d inactivity lock`}</span>
                   </div>
                   <button 
                     onClick={() => setShowSettings(true)}

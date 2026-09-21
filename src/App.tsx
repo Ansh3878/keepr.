@@ -2075,7 +2075,16 @@ function AppContent() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ fileId })
       });
-      if (!urlRes.ok) throw new Error(`Failed to get upload URL (${urlRes.status})`);
+      if (!urlRes.ok) {
+        let errDetail = '';
+        try {
+          const errJson = await urlRes.json();
+          errDetail = errJson.error || '';
+        } catch {
+          // ignore
+        }
+        throw new Error(errDetail || `Failed to get upload URL (${urlRes.status}). Check that backend server is running.`);
+      }
       const { uploadUrl } = await urlRes.json();
 
       // Step 4b: Upload encrypted blob DIRECTLY to S3 — bypasses server entirely
@@ -2135,7 +2144,16 @@ function AppContent() {
         body: JSON.stringify({ fileId })
       });
 
-      if (!ticketRes.ok) throw new Error('File not found or already burned.');
+      if (!ticketRes.ok) {
+        let errDetail = '';
+        try {
+          const errJson = await ticketRes.json();
+          errDetail = errJson.error || '';
+        } catch {
+          // ignore
+        }
+        throw new Error(errDetail || (ticketRes.status === 404 ? 'File not found or already burned.' : `Download failed (${ticketRes.status}). Check backend server.`));
+      }
       const { downloadUrl } = await ticketRes.json();
 
       // 2. Import Key
