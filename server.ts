@@ -694,22 +694,49 @@ async function startServer() {
             }
           }
         } else {
-          // Linux (Render, Docker, AWS Lambda) -> Use @sparticuz/chromium
-          try {
-            const chromium = (await import('@sparticuz/chromium')).default;
-            execPath = await chromium.executablePath();
-            browserArgs = chromium.args;
-          } catch (spartErr) {
-            console.warn('Could not load @sparticuz/chromium:', spartErr);
+          // Linux (Render, Docker) — resolution order:
+          // 1. PUPPETEER_EXECUTABLE_PATH env var (set by Dockerfile for system Chromium)
+          // 2. Common system install paths
+          // 3. @sparticuz/chromium (AWS Lambda / serverless — last resort, needs glibc)
+
+          // 1. Env-var override (fastest, most reliable)
+          const envExecPath = process.env.PUPPETEER_EXECUTABLE_PATH;
+          if (envExecPath && fs.existsSync(envExecPath)) {
+            execPath = envExecPath;
+            console.log('[Detonator] Using PUPPETEER_EXECUTABLE_PATH:', execPath);
           }
 
-          if (!execPath || !fs.existsSync(execPath)) {
-            const linuxCandidates = ['/usr/bin/google-chrome', '/usr/bin/chromium', '/usr/bin/chromium-browser'];
+          // 2. Common system paths
+          if (!execPath) {
+            const linuxCandidates = [
+              '/usr/bin/chromium',
+              '/usr/bin/chromium-browser',
+              '/usr/bin/google-chrome',
+              '/usr/bin/google-chrome-stable',
+            ];
             for (const cand of linuxCandidates) {
               if (fs.existsSync(cand)) {
                 execPath = cand;
+                console.log('[Detonator] Using system browser:', execPath);
                 break;
               }
+            }
+          }
+
+          // 3. @sparticuz/chromium (Lambda/serverless — only works with glibc)
+          if (!execPath) {
+            try {
+              const chromium = (await import('@sparticuz/chromium')).default;
+              const spartPath = await chromium.executablePath();
+              if (spartPath && fs.existsSync(spartPath)) {
+                execPath = spartPath;
+                browserArgs = chromium.args;
+                console.log('[Detonator] Using @sparticuz/chromium:', execPath);
+              } else {
+                console.warn('[Detonator] @sparticuz/chromium path not found:', spartPath);
+              }
+            } catch (spartErr) {
+              console.warn('[Detonator] Could not load @sparticuz/chromium:', spartErr);
             }
           }
         }
