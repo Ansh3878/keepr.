@@ -844,8 +844,7 @@ async function startServer() {
         await browser.close();
         browser = null;
 
-        let screenshotBase64 = (screenshotBuffer as Buffer).toString('base64');
-        screenshotBase64 = Buffer.from(screenshotBase64, 'base64').toString('base64');
+        const screenshotBase64 = Buffer.from(screenshotBuffer).toString('base64');
 
         socket.emit('log', 'Visual heuristics captured successfully.');
         socket.emit('screenshot', screenshotBase64);
@@ -868,7 +867,7 @@ async function startServer() {
         let result: any = null;
         try {
           result = await ai.models.generateContent({
-            model: 'gemini-2.5-flash',
+            model: 'gemini-2.0-flash',
             contents: {
               parts: [
                 { inlineData: { data: screenshotBase64, mimeType: 'image/png' } },
@@ -880,10 +879,10 @@ async function startServer() {
             }
           });
         } catch (primaryErr: any) {
-          console.warn('[Detonator] Primary model (gemini-2.5-flash) failed:', primaryErr?.message || primaryErr);
+          console.warn('[Detonator] Primary model (gemini-2.0-flash) failed:', primaryErr?.message || primaryErr);
           try {
             result = await ai.models.generateContent({
-              model: 'gemini-3.6-flash',
+              model: 'gemini-1.5-flash',
               contents: {
                 parts: [
                   { inlineData: { data: screenshotBase64, mimeType: 'image/png' } },
@@ -895,7 +894,7 @@ async function startServer() {
               }
             });
           } catch (fallbackErr: any) {
-            console.warn('[Detonator] Fallback model (gemini-3.6-flash) also failed:', fallbackErr?.message || fallbackErr);
+            console.warn('[Detonator] Fallback model (gemini-1.5-flash) also failed:', fallbackErr?.message || fallbackErr);
             // Both models failed — continue with a safe default analysis
           }
         }

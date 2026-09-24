@@ -279,7 +279,8 @@ export function SecureStorageRoom() {
       if (!token) return;
       const response = await fetch(`${SECURE_ROOM_API_ENDPOINT}/rooms`, {
         headers: {
-          'Authorization': `Bearer ${token}`
+          'Authorization': `Bearer ${token}`,
+          ...(user?.id ? { 'x-user-id': user.id } : {})
         }
       });
       if (response.ok) {
