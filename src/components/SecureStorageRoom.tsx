@@ -92,6 +92,7 @@ export interface SecureRoom {
   safetyStrategy: 'purge' | 'migration';
   inactivityDays: number;
   transferEmail: string;
+  userEmail?: string;
   files: S3File[];
   createdAt: string;
   /** ISO timestamp when the inactivity timer fires. Used to detect "time up". */
@@ -293,7 +294,8 @@ export function SecureStorageRoom() {
               encryptionKeyHash: r.encryptionKey || r.passkey || '',
               safetyStrategy: r.safetyStrategy,
               inactivityDays: r.inactivityDays,
-              transferEmail: r.transferEmail,
+              transferEmail: r.transferEmail || '',
+              userEmail: r.userEmail || '',
               files: existingRoom ? existingRoom.files : [],
               createdAt: r.createdAt ? (typeof r.createdAt === 'string' ? r.createdAt.substring(0, 10) : new Date(r.createdAt).toISOString().substring(0, 10)) : new Date().toISOString().substring(0, 10),
               expiryAt: r.expiryAt || undefined,
@@ -413,11 +415,20 @@ export function SecureStorageRoom() {
   const [newRoomPin, setNewRoomPin] = useState('');
   const [newRoomStrategy, setNewRoomStrategy] = useState<'purge' | 'migration'>('purge');
   const [newRoomTransferEmail, setNewRoomTransferEmail] = useState('');
+  const [newRoomNotificationEmail, setNewRoomNotificationEmail] = useState('');
   const [newRoomKey, setNewRoomKey] = useState('');
   const [newRoomInactivityDays, setNewRoomInactivityDays] = useState(30);
   const [wizardError, setWizardError] = useState('');
   const [isTriggeringNow, setIsTriggeringNow] = useState(false);
   const [wizardKeyCopied, setWizardKeyCopied] = useState(false);
+
+  // Sync Clerk email into creation wizard notification email if available
+  useEffect(() => {
+    const defaultEmail = user?.primaryEmailAddress?.emailAddress || user?.emailAddresses?.[0]?.emailAddress || '';
+    if (defaultEmail) {
+      setNewRoomNotificationEmail(prev => prev || defaultEmail);
+    }
+  }, [user]);
 
   // Editing names in room list
   const [editingRoomId, setEditingRoomId] = useState<string | null>(null);
@@ -457,6 +468,7 @@ export function SecureStorageRoom() {
   const [autoDestructEnabled, setAutoDestructEnabled] = useState(true);
   const [safeTransferEnabled, setSafeTransferEnabled] = useState(false);
   const [transferEmail, setTransferEmail] = useState('');
+  const [userNotificationEmail, setUserNotificationEmail] = useState('');
   const [feedbackMsg, setFeedbackMsg] = useState('');
   const [activeRoomStrategy, setActiveRoomStrategy] = useState<'purge' | 'migration' | 'handoff_unlocked'>('purge');
   const [activeRoomExpiryAt, setActiveRoomExpiryAt] = useState<string | undefined>(undefined);
@@ -634,6 +646,29 @@ export function SecureStorageRoom() {
     }
   }, [rooms]);
 
+  // Real-time expiry monitor: Triggers immediately when countdown reaches zero
+  useEffect(() => {
+    if (!activeRoomId || !activeRoomExpiryAt || !isUnlocked) return;
+
+    const checkActiveRoomExpiry = () => {
+      const expTime = new Date(activeRoomExpiryAt).getTime();
+      if (Number.isFinite(expTime) && Date.now() >= expTime) {
+        if (activeRoomStrategy === 'purge') {
+          setFeedbackMsg('Room countdown reached 0: Vault room has expired and is being destroyed.');
+          setTimeout(() => {
+            handleExitRoom();
+            fetchRoomsFromBackend();
+          }, 1500);
+        } else if (activeRoomStrategy === 'migration') {
+          setActiveRoomStrategy('handoff_unlocked');
+        }
+      }
+    };
+
+    const intervalId = setInterval(checkActiveRoomExpiry, 2000);
+    return () => clearInterval(intervalId);
+  }, [activeRoomId, activeRoomExpiryAt, isUnlocked, activeRoomStrategy]);
+
 
 
   // Update Activity Timestamp on any click action in the safe room
@@ -702,6 +737,7 @@ export function SecureStorageRoom() {
       setAutoDestructEnabled(selectedRoomToUnlock.safetyStrategy === 'purge');
       setSafeTransferEnabled(selectedRoomToUnlock.safetyStrategy === 'migration');
       setTransferEmail(selectedRoomToUnlock.transferEmail);
+      setUserNotificationEmail(selectedRoomToUnlock.userEmail || user?.primaryEmailAddress?.emailAddress || user?.emailAddresses?.[0]?.emailAddress || '');
       setInactivityDays(selectedRoomToUnlock.inactivityDays);
       setActiveRoomExpiryAt(selectedRoomToUnlock.expiryAt);
 
@@ -790,48 +826,62 @@ export function SecureStorageRoom() {
 
     if (apiEndpoint) {
       try {
-        const token = await getToken();
+        let token: string | null = null;
+        try {
+          token = await getToken();
+        } catch {
+          // Unauthenticated or offline fallback
+        }
+
+        const headers: Record<string, string> = {
+          'Content-Type': 'application/json'
+        };
         if (token) {
-          const response = await fetch(`${apiEndpoint}/rooms`, {
-            method: 'POST',
-            headers: {
-              'Content-Type': 'application/json',
-              'Authorization': `Bearer ${token}`
-            },
-            body: JSON.stringify({
-              name: newRoomName.trim(),
-              pin: newRoomPin,
-              encryptionKey: roomKeyHash,
-              rawVaultKey: newRoomStrategy === 'migration' ? roomKey : undefined,
-              safetyStrategy: newRoomStrategy,
-              inactivityDays: newRoomInactivityDays,
-              transferEmail: newRoomTransferEmail,
-              userEmail: user?.primaryEmailAddress?.emailAddress || '',
-            })
-          });
-          if (response.ok) {
-            const data = await response.json();
-            createdRoomId = data.roomId;
-            createdExpiryAt = data.expiryAt;
-            hasBackendSuccess = true;
-          } else {
-            let errMsg = '';
-            try {
-              const errBody = await response.json();
-              errMsg = errBody.error || errBody.message || '';
-            } catch {
-              const errText = await response.text().catch(() => '');
-              if (errText && !errText.startsWith('<')) errMsg = errText;
-            }
-            if (!errMsg) {
-              if (response.status >= 500) {
-                errMsg = 'Backend server unreachable. Make sure the backend is running (npm run dev:full).';
-              } else {
-                errMsg = response.statusText || 'Server error';
-              }
-            }
-            throw new Error(errMsg);
+          headers['Authorization'] = `Bearer ${token}`;
+        }
+        if (user?.id) {
+          headers['x-user-id'] = user.id;
+        }
+
+        const defaultEmail = user?.primaryEmailAddress?.emailAddress || user?.emailAddresses?.[0]?.emailAddress || '';
+        const effectiveEmail = (newRoomNotificationEmail || newRoomTransferEmail || defaultEmail || '').trim();
+
+        const response = await fetch(`${apiEndpoint}/rooms`, {
+          method: 'POST',
+          headers,
+          body: JSON.stringify({
+            name: newRoomName.trim(),
+            pin: newRoomPin,
+            encryptionKey: roomKeyHash,
+            rawVaultKey: newRoomStrategy === 'migration' ? roomKey : undefined,
+            safetyStrategy: newRoomStrategy,
+            inactivityDays: newRoomInactivityDays,
+            transferEmail: newRoomTransferEmail.trim(),
+            userEmail: effectiveEmail,
+          })
+        });
+        if (response.ok) {
+          const data = await response.json();
+          createdRoomId = data.roomId;
+          createdExpiryAt = data.expiryAt;
+          hasBackendSuccess = true;
+        } else {
+          let errMsg = '';
+          try {
+            const errBody = await response.json();
+            errMsg = errBody.error || errBody.message || '';
+          } catch {
+            const errText = await response.text().catch(() => '');
+            if (errText && !errText.startsWith('<')) errMsg = errText;
           }
+          if (!errMsg) {
+            if (response.status >= 500) {
+              errMsg = 'Backend server unreachable. Make sure the backend is running (npm run dev:full).';
+            } else {
+              errMsg = response.statusText || 'Server error';
+            }
+          }
+          throw new Error(errMsg);
         }
       } catch (e: any) {
         console.error("Error creating room in backend:", e);
@@ -846,6 +896,9 @@ export function SecureStorageRoom() {
       }
     }
 
+    const defaultEmail = user?.primaryEmailAddress?.emailAddress || user?.emailAddresses?.[0]?.emailAddress || '';
+    const effectiveEmail = (newRoomNotificationEmail || newRoomTransferEmail || defaultEmail || '').trim();
+
     const newRoom: SecureRoom = {
       id: createdRoomId,
       name: newRoomName.trim(),
@@ -853,7 +906,8 @@ export function SecureStorageRoom() {
       encryptionKeyHash: roomKeyHash,
       safetyStrategy: newRoomStrategy,
       inactivityDays: newRoomInactivityDays,
-      transferEmail: newRoomTransferEmail,
+      transferEmail: newRoomTransferEmail.trim(),
+      userEmail: effectiveEmail,
       files: [],
       createdAt: new Date().toISOString().substring(0, 10),
       expiryAt: createdExpiryAt,
@@ -877,6 +931,7 @@ export function SecureStorageRoom() {
     setAutoDestructEnabled(newRoom.safetyStrategy === 'purge');
     setSafeTransferEnabled(newRoom.safetyStrategy === 'migration');
     setTransferEmail(newRoom.transferEmail);
+    setUserNotificationEmail(effectiveEmail);
     setInactivityDays(newRoomInactivityDays);
     setActiveRoomExpiryAt(createdExpiryAt);
     setActiveRoomStrategy(newRoom.safetyStrategy);
@@ -888,6 +943,7 @@ export function SecureStorageRoom() {
     setNewRoomKey('');
     setNewRoomStrategy('purge');
     setNewRoomTransferEmail('');
+    setNewRoomNotificationEmail('');
     setNewRoomInactivityDays(30);
     setWizardStep(1);
     setShowCreateWizard(false);
@@ -1576,43 +1632,51 @@ export function SecureStorageRoom() {
 
     try {
       if (apiEndpoint && activeRoomId) {
-        const token = await getToken();
-        if (token) {
-          const updatePayload: Record<string, any> = {
-            inactivityDays: inactivityDays,
-            safetyStrategy: safetyStrategy,
-            transferEmail: transferEmail,
-            userEmail: user?.primaryEmailAddress?.emailAddress || '',
-          };
+        let token: string | null = null;
+        try {
+          token = await getToken();
+        } catch {}
 
-          // Add a 10-second timeout so the button never gets stuck if backend hangs
-          const controller = new AbortController();
-          const timeoutId = setTimeout(() => controller.abort(), 10000);
+        const headers: Record<string, string> = {
+          'Content-Type': 'application/json'
+        };
+        if (token) headers['Authorization'] = `Bearer ${token}`;
+        if (user?.id) headers['x-user-id'] = user.id;
 
-          try {
-            const response = await fetch(`${apiEndpoint}/rooms/${activeRoomId}`, {
-              method: 'PUT',
-              headers: {
-                'Content-Type': 'application/json',
-                'Authorization': `Bearer ${token}`
-              },
-              body: JSON.stringify(updatePayload),
-              signal: controller.signal,
-            });
-            clearTimeout(timeoutId);
+        const defaultEmail = user?.primaryEmailAddress?.emailAddress || user?.emailAddresses?.[0]?.emailAddress || '';
+        const effectiveUserEmail = (userNotificationEmail || defaultEmail || '').trim();
 
-            if (response.ok) {
-              hasBackendSuccess = true;
-            } else {
-              console.error("Failed to update room settings in backend:", response.statusText);
-            }
-          } catch (fetchErr: any) {
-            clearTimeout(timeoutId);
-            if (fetchErr.name === 'AbortError') {
-              console.error("Settings save timed out after 10 seconds.");
-            } else {
-              throw fetchErr;
-            }
+        const updatePayload: Record<string, any> = {
+          inactivityDays: inactivityDays,
+          safetyStrategy: safetyStrategy,
+          transferEmail: transferEmail.trim(),
+          userEmail: effectiveUserEmail,
+        };
+
+        // Add a 10-second timeout so the button never gets stuck if backend hangs
+        const controller = new AbortController();
+        const timeoutId = setTimeout(() => controller.abort(), 10000);
+
+        try {
+          const response = await fetch(`${apiEndpoint}/rooms/${activeRoomId}`, {
+            method: 'PUT',
+            headers,
+            body: JSON.stringify(updatePayload),
+            signal: controller.signal,
+          });
+          clearTimeout(timeoutId);
+
+          if (response.ok) {
+            hasBackendSuccess = true;
+          } else {
+            console.error("Failed to update room settings in backend:", response.statusText);
+          }
+        } catch (fetchErr: any) {
+          clearTimeout(timeoutId);
+          if (fetchErr.name === 'AbortError') {
+            console.error("Settings save timed out after 10 seconds.");
+          } else {
+            throw fetchErr;
           }
         }
       }
@@ -1625,11 +1689,14 @@ export function SecureStorageRoom() {
             ? new Date(Date.now() + 60 * 1000).toISOString()
             : new Date(Date.now() + inactivityDays * 24 * 60 * 60 * 1000).toISOString();
         setActiveRoomExpiryAt(newExpiryAt);
+        const defaultEmail = user?.primaryEmailAddress?.emailAddress || user?.emailAddresses?.[0]?.emailAddress || '';
+        const effectiveUserEmail = (userNotificationEmail || defaultEmail || '').trim();
         setRooms(prev => prev.map(r => r.id === activeRoomId ? {
           ...r,
           inactivityDays: inactivityDays,
           safetyStrategy: safetyStrategy,
-          transferEmail: transferEmail,
+          transferEmail: transferEmail.trim(),
+          userEmail: effectiveUserEmail,
           expiryAt: newExpiryAt,
         } : r));
       }
@@ -2317,6 +2384,25 @@ export function SecureStorageRoom() {
                         </p>
                       </button>
                     </div>
+
+                    {newRoomStrategy === 'purge' && (
+                      <div className="space-y-2.5 pt-1">
+                        <label className="text-[10px] text-zinc-400 font-mono uppercase tracking-wider font-bold block flex items-center justify-between">
+                          <span>Notification Email</span>
+                          <span className="text-[9px] text-red-400 font-normal">Destruction receipt</span>
+                        </label>
+                        <input
+                          type="email"
+                          value={newRoomNotificationEmail}
+                          onChange={(e) => setNewRoomNotificationEmail(e.target.value)}
+                          placeholder={user?.primaryEmailAddress?.emailAddress || "your@email.com"}
+                          className="w-full bg-zinc-900/50 border border-zinc-800 focus:border-red-500/50 focus:ring-1 focus:ring-red-500/20 rounded-xl px-4 py-3 text-sm text-white placeholder-zinc-600 transition-all outline-none"
+                        />
+                        <p className="text-[10px] text-zinc-500 leading-relaxed">
+                          We will dispatch an immediate email alert to this address as soon as this room reaches its countdown timeout and is wiped.
+                        </p>
+                      </div>
+                    )}
 
                     {newRoomStrategy === 'migration' && (
                       <div className="space-y-3 pt-1">
@@ -3046,7 +3132,7 @@ export function SecureStorageRoom() {
                       </div>
                     </div>
 
-                    {/* Backup Receiver Email Configuration Card */}
+                    {/* Backup Receiver Email Configuration Card (Email Handoff) */}
                     {safeTransferEnabled && (
                       <div className="space-y-3 p-4 rounded-xl bg-zinc-950/70 border border-zinc-800">
                         <label className="text-[9px] uppercase font-mono tracking-wider font-bold text-zinc-500 block">Recipient email</label>
@@ -3059,6 +3145,26 @@ export function SecureStorageRoom() {
                         />
                         <p className="text-[10px] text-zinc-500 leading-relaxed block mt-1">
                           When the timeout fires, this address gets a one-time link to download a ZIP backup of the room.
+                        </p>
+                      </div>
+                    )}
+
+                    {/* Purge Notification Email Configuration Card (Auto-Purge) */}
+                    {autoDestructEnabled && (
+                      <div className="space-y-3 p-4 rounded-xl bg-zinc-950/70 border border-zinc-800">
+                        <label className="text-[9px] uppercase font-mono tracking-wider font-bold text-zinc-500 block flex items-center justify-between">
+                          <span>Destruction receipt email</span>
+                          <span className="text-[9px] text-red-400 font-normal">Purge notification</span>
+                        </label>
+                        <input
+                          type="email"
+                          value={userNotificationEmail}
+                          onChange={(e) => setUserNotificationEmail(e.target.value)}
+                          placeholder={user?.primaryEmailAddress?.emailAddress || "your@email.com"}
+                          className="w-full bg-zinc-950 border border-zinc-800 focus:border-red-500/50 rounded-xl px-4 py-3 text-xs text-white placeholder:text-zinc-800 outline-none transition-colors"
+                        />
+                        <p className="text-[10px] text-zinc-500 leading-relaxed block mt-1">
+                          When the timeout fires, an email confirming complete shredding of all vault data will be sent to this address.
                         </p>
                       </div>
                     )}

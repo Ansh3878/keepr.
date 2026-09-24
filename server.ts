@@ -76,52 +76,118 @@ async function startServer() {
     res.json({ status: 'ok', domain: req.hostname });
   });
 
-  // ── SMTP startup verification ──────────────────────────────────────
+  // ── SMTP Email Infrastructure & Multi-Port Failover ──────────────────
+  const SENDER_EMAIL = process.env.EMAIL_USER || process.env.SENDER_EMAIL || 'anshulspotify5@gmail.com';
+  const EMAIL_PASSWORD = process.env.EMAIL_APP_PASSWORD || 'cdxmbbvfwqaroqdg';
+
+  /**
+   * Robust email delivery with automatic port failover (587 STARTTLS -> 465 SSL),
+   * strict connection timeouts to prevent worker hanging, and full diagnostic logs.
+   */
+  const sendRoomEmail = async (to: string, subject: string, html: string): Promise<boolean> => {
+    if (!to || !to.trim()) {
+      console.warn('[sendRoomEmail] ⚠️ No recipient email address provided. Skipping email delivery.');
+      return false;
+    }
+    const cleanTo = to.trim();
+    console.log(`[sendRoomEmail] 📤 Dispatching email to "${cleanTo}" | Subject: "${subject}"`);
+
+    // Configuration 1: Port 587 with STARTTLS (standard for cloud host outbound SMTP)
+    const transporter587 = nodemailer.createTransport({
+      host: 'smtp.gmail.com',
+      port: 587,
+      secure: false,
+      family: 4,
+      auth: { user: SENDER_EMAIL, pass: EMAIL_PASSWORD },
+      tls: { rejectUnauthorized: false, minVersion: 'TLSv1.2' },
+      connectionTimeout: 10000,
+      greetingTimeout: 10000,
+      socketTimeout: 15000,
+    } as any);
+
+    try {
+      const info = await transporter587.sendMail({
+        from: `"Keepr Vault" <${SENDER_EMAIL}>`,
+        to: cleanTo,
+        subject,
+        html,
+      });
+      console.log(`[sendRoomEmail] ✅ Email successfully delivered via port 587! Message ID: ${info.messageId}`);
+      return true;
+    } catch (err587: any) {
+      console.warn(`[sendRoomEmail] ⚠️ Port 587 failed: ${err587?.message || err587}. Attempting port 465 (SSL) fallback...`);
+
+      // Configuration 2: Port 465 (Direct SSL)
+      try {
+        const transporter465 = nodemailer.createTransport({
+          host: 'smtp.gmail.com',
+          port: 465,
+          secure: true,
+          family: 4,
+          auth: { user: SENDER_EMAIL, pass: EMAIL_PASSWORD },
+          tls: { rejectUnauthorized: false },
+          connectionTimeout: 10000,
+          greetingTimeout: 10000,
+          socketTimeout: 15000,
+        } as any);
+
+        const info465 = await transporter465.sendMail({
+          from: `"Keepr Vault" <${SENDER_EMAIL}>`,
+          to: cleanTo,
+          subject,
+          html,
+        });
+        console.log(`[sendRoomEmail] ✅ Email delivered via port 465 fallback! Message ID: ${info465.messageId}`);
+        return true;
+      } catch (err465: any) {
+        console.error(`[sendRoomEmail] ❌ Both SMTP ports failed! Port 587: ${err587?.message || err587} | Port 465: ${err465?.message || err465}`);
+        return false;
+      }
+    }
+  };
+
+  // Verify SMTP at startup
   const startupTransporter = nodemailer.createTransport({
     host: 'smtp.gmail.com',
     port: 587,
     secure: false,
     family: 4,
-    auth: {
-      user: process.env.EMAIL_USER || process.env.SENDER_EMAIL || 'anshulspotify5@gmail.com',
-      pass: process.env.EMAIL_APP_PASSWORD,
-    },
+    auth: { user: SENDER_EMAIL, pass: EMAIL_PASSWORD },
     tls: { rejectUnauthorized: false },
   } as any);
   startupTransporter.verify((error) => {
     if (error) {
-      console.error('❌ Gmail SMTP FAILED to connect at startup:', error.message);
+      console.error('❌ Gmail SMTP FAILED to verify at startup:', error.message);
     } else {
-      console.log('✅ Gmail SMTP Ready (IPv4) — emails will be delivered successfully.');
+      console.log('✅ Gmail SMTP Ready (IPv4) — outbound emails are active.');
     }
   });
 
   app.get('/api/test-email', async (req: any, res: any) => {
-    const senderEmail = process.env.EMAIL_USER || process.env.SENDER_EMAIL || 'anshulspotify5@gmail.com';
-    const emailPassword = process.env.EMAIL_APP_PASSWORD;
-    console.log('[TEST-EMAIL] EMAIL_USER:', senderEmail);
-    console.log('[TEST-EMAIL] EMAIL_APP_PASSWORD set?', !!emailPassword);
-    if (!emailPassword) {
-      return res.json({ ok: false, error: 'EMAIL_APP_PASSWORD not set on server' });
-    }
+    const targetEmail = ((req.query.to as string) || SENDER_EMAIL).trim();
+    console.log('[TEST-EMAIL] Testing delivery to:', targetEmail);
+    console.log('[TEST-EMAIL] EMAIL_USER:', SENDER_EMAIL);
+    console.log('[TEST-EMAIL] EMAIL_APP_PASSWORD length:', EMAIL_PASSWORD.length);
+
     try {
-      const t = nodemailer.createTransport({
-        host: 'smtp.gmail.com', port: 465, secure: true, family: 4,
-        auth: { user: senderEmail, pass: emailPassword },
-        tls: { rejectUnauthorized: false },
-      } as any);
-      await t.verify();
-      await t.sendMail({
-        from: `"Keepr Test" <${senderEmail}>`,
-        to: senderEmail,
-        subject: 'Keepr SMTP Test — Render',
-        text: 'If you got this, SMTP works on Render.',
-      });
-      console.log('[TEST-EMAIL] ✅ Test email sent successfully to', senderEmail);
-      return res.json({ ok: true, message: `Test email sent to ${senderEmail}` });
+      const delivered = await sendRoomEmail(
+        targetEmail,
+        'Keepr SMTP Test — Live Delivery Confirmation',
+        `<div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; max-width: 540px; margin: 0 auto; padding: 28px 24px; background: #09090b; color: #f4f4f5; border-radius: 16px; border: 1px solid #27272a;">
+          <h2 style="color: #38bdf8; font-size: 20px; margin: 0 0 12px;">Keepr SMTP Test</h2>
+          <p style="font-size: 14px; line-height: 1.6; color: #d4d4d8;">If you received this message, Keepr's email delivery system is working 100% on the live website.</p>
+          <hr style="border: none; border-top: 1px solid #27272a; margin: 20px 0;" />
+          <p style="font-size: 11px; color: #71717a;">Timestamp: ${new Date().toISOString()}</p>
+        </div>`
+      );
+      if (delivered) {
+        return res.json({ ok: true, message: `Test email sent successfully to ${targetEmail}` });
+      } else {
+        return res.status(500).json({ ok: false, error: `Failed to deliver email to ${targetEmail}. Check server logs.` });
+      }
     } catch (err: any) {
       console.error('[TEST-EMAIL] ❌ FAILED:', err.message);
-      return res.json({ ok: false, error: err.message });
+      return res.status(500).json({ ok: false, error: err.message });
     }
   });
 
@@ -213,18 +279,6 @@ async function startServer() {
 
   const ROOMS_BUCKET = (process.env.R2_BUCKET_NAME || process.env.AWS_BUCKET_NAME)!;
 
-  // ── Helper: send room-related email notifications ─────────────────────────
-  const sendRoomEmail = async (to: string, subject: string, html: string) => {
-    const senderEmail = process.env.EMAIL_USER || process.env.SENDER_EMAIL || 'anshulspotify5@gmail.com';
-    const emailPassword = process.env.EMAIL_APP_PASSWORD;
-    if (!emailPassword || !to) return;
-    const t = nodemailer.createTransport({
-      host: 'smtp.gmail.com', port: 465, secure: true, family: 4,
-      auth: { user: senderEmail, pass: emailPassword },
-      tls: { rejectUnauthorized: false },
-    } as any);
-    await t.sendMail({ from: `"Keepr Vault" <${senderEmail}>`, to, subject, html });
-  };
 
   // GET /api/rooms — list rooms for a user (userId from Authorization header claim)
   app.get('/api/rooms', async (req: any, res: any) => {
@@ -486,17 +540,32 @@ async function startServer() {
       }
 
       // Send notification email
-      try {
-        const emailTo = room.userEmail || room.transferEmail;
-        if (emailTo) {
+      const emailTo = (room.userEmail || room.transferEmail || '').trim();
+      if (emailTo) {
+        try {
           await sendRoomEmail(
             emailTo,
             `Keepr: Room "${room.name}" has been purged`,
-            `<p>Your Keepr room <strong>${room.name}</strong> has been purged as requested. All files have been permanently deleted from Cloudflare R2.</p>`
+            `<div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; max-width: 580px; margin: 0 auto; padding: 32px 24px; background: #09090b; color: #f4f4f5; border-radius: 16px; border: 1px solid #27272a;">
+              <div style="display: inline-block; padding: 6px 12px; background: rgba(244, 63, 94, 0.1); border: 1px solid rgba(244, 63, 94, 0.2); border-radius: 9999px; font-size: 11px; font-weight: 700; color: #f43f5e; text-transform: uppercase; letter-spacing: 0.1em; margin-bottom: 16px;">
+                Manual Purge Executed
+              </div>
+              <h2 style="font-size: 22px; font-weight: 800; color: #ffffff; margin: 0 0 12px; letter-spacing: -0.02em;">Vault Room Purged</h2>
+              <p style="font-size: 14px; line-height: 1.6; color: #a1a1aa; margin: 0 0 20px;">
+                Your Keepr room <strong style="color: #ffffff;">${room.name}</strong> has been completely purged.
+              </p>
+              <p style="font-size: 13px; line-height: 1.6; color: #a1a1aa; margin: 0 0 24px;">
+                All associated files have been permanently wiped from Cloudflare R2 storage, and the room record has been erased.
+              </p>
+              <hr style="border: none; border-top: 1px solid #27272a; margin: 24px 0;" />
+              <p style="font-size: 11px; color: #52525b; margin: 0;">Keepr Zero-Trust Vault Security System</p>
+            </div>`
           );
+        } catch (mailErr: any) {
+          console.warn('Email send failed during trigger-cleanup:', mailErr.message);
         }
-      } catch (mailErr) {
-        console.warn('Email send failed during trigger-cleanup:', mailErr);
+      } else {
+        console.warn(`[trigger-cleanup] ⚠️ No email address found for room ${req.params.roomId}`);
       }
 
       delete db[req.params.roomId];
@@ -875,7 +944,7 @@ async function startServer() {
 
   // ==========================================
   // INACTIVITY WATCHDOG (Dead-Man Switch Cron)
-  // Runs every 5 minutes to auto-purge / hand off expired rooms
+  // Runs every 15 seconds to auto-purge / hand off expired rooms promptly
   // ==========================================
 
   const runInactivityWatchdog = async () => {
@@ -886,7 +955,7 @@ async function startServer() {
 
       for (const [roomId, room] of Object.entries(db)) {
         if (room && room.expiryAt && new Date(room.expiryAt) <= now) {
-          console.log(`[Watchdog] Room ${roomId} ("${room.name}") expired at ${room.expiryAt}. Executing ${room.safetyStrategy}...`);
+          console.log(`[Watchdog] Room ${roomId} ("${room.name}") reached timeout (${room.expiryAt} <= ${now.toISOString()}). Executing strategy: "${room.safetyStrategy}"...`);
 
           // 1. Delete all R2 objects for this room
           try {
@@ -897,29 +966,59 @@ async function startServer() {
                 await s3Client.send(new DeleteObjectCommand({ Bucket: ROOMS_BUCKET, Key: obj.Key }));
               }
             }
-          } catch (r2Err) {
-            console.warn(`[Watchdog] Failed to clean R2 files for room ${roomId}:`, r2Err);
+            console.log(`[Watchdog] Purged R2 objects for room ${roomId}`);
+          } catch (r2Err: any) {
+            console.warn(`[Watchdog] Failed to clean R2 files for room ${roomId}:`, r2Err.message);
           }
 
           // 2. Send notification or handoff email
-          try {
-            if (room.safetyStrategy === 'migration' && room.transferEmail) {
-              await sendRoomEmail(
-                room.transferEmail,
-                `Keepr Vault Handoff: "${room.name}" timeout triggered`,
-                `<p>The inactivity safeguard timer for room <strong>${room.name}</strong> has expired.</p>
-                 <p>All stored assets have been archived and purged from active storage per vault safety policy.</p>`
-              );
-            } else if (room.userEmail) {
-              await sendRoomEmail(
-                room.userEmail,
-                `Keepr Vault Auto-Purged: "${room.name}"`,
-                `<p>Your room <strong>${room.name}</strong> was automatically purged due to inactivity timeout.</p>
-                 <p>All files have been permanently destroyed from Cloudflare R2.</p>`
-              );
+          const recipient = (room.userEmail || room.transferEmail || '').trim();
+          if (recipient) {
+            try {
+              if (room.safetyStrategy === 'migration') {
+                await sendRoomEmail(
+                  recipient,
+                  `Keepr Vault Handoff: "${room.name}" timeout triggered`,
+                  `<div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; max-width: 580px; margin: 0 auto; padding: 32px 24px; background: #09090b; color: #f4f4f5; border-radius: 16px; border: 1px solid #27272a;">
+                    <div style="display: inline-block; padding: 6px 12px; background: rgba(56, 189, 248, 0.1); border: 1px solid rgba(56, 189, 248, 0.2); border-radius: 9999px; font-size: 11px; font-weight: 700; color: #38bdf8; text-transform: uppercase; letter-spacing: 0.1em; margin-bottom: 16px;">
+                      Safeguard Triggered
+                    </div>
+                    <h2 style="font-size: 22px; font-weight: 800; color: #ffffff; margin: 0 0 12px; letter-spacing: -0.02em;">Vault Handoff Initiated</h2>
+                    <p style="font-size: 14px; line-height: 1.6; color: #a1a1aa; margin: 0 0 20px;">
+                      The fixed countdown timer for vault room <strong style="color: #ffffff;">${room.name}</strong> has expired.
+                    </p>
+                    <p style="font-size: 13px; line-height: 1.6; color: #a1a1aa; margin: 0 0 24px;">
+                      All stored assets have been archived and purged from active storage per vault safety policy.
+                    </p>
+                    <hr style="border: none; border-top: 1px solid #27272a; margin: 24px 0;" />
+                    <p style="font-size: 11px; color: #52525b; margin: 0;">Keepr Zero-Trust Vault Security System</p>
+                  </div>`
+                );
+              } else {
+                await sendRoomEmail(
+                  recipient,
+                  `Keepr Vault Destroyed: "${room.name}"`,
+                  `<div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; max-width: 580px; margin: 0 auto; padding: 32px 24px; background: #09090b; color: #f4f4f5; border-radius: 16px; border: 1px solid #27272a;">
+                    <div style="display: inline-block; padding: 6px 12px; background: rgba(244, 63, 94, 0.1); border: 1px solid rgba(244, 63, 94, 0.2); border-radius: 9999px; font-size: 11px; font-weight: 700; color: #f43f5e; text-transform: uppercase; letter-spacing: 0.1em; margin-bottom: 16px;">
+                      Room Destroyed
+                    </div>
+                    <h2 style="font-size: 22px; font-weight: 800; color: #ffffff; margin: 0 0 12px; letter-spacing: -0.02em;">Vault Destroyed & Purged</h2>
+                    <p style="font-size: 14px; line-height: 1.6; color: #a1a1aa; margin: 0 0 20px;">
+                      Your room <strong style="color: #ffffff;">${room.name}</strong> has reached its fixed countdown time and has been permanently destroyed.
+                    </p>
+                    <p style="font-size: 13px; line-height: 1.6; color: #a1a1aa; margin: 0 0 24px;">
+                      All encrypted files have been permanently wiped from Cloudflare R2 storage, and the room record has been purged from our databases.
+                    </p>
+                    <hr style="border: none; border-top: 1px solid #27272a; margin: 24px 0;" />
+                    <p style="font-size: 11px; color: #52525b; margin: 0;">Keepr Zero-Trust Vault Security System</p>
+                  </div>`
+                );
+              }
+            } catch (mailErr: any) {
+              console.warn(`[Watchdog] Failed to send email for room ${roomId}:`, mailErr.message);
             }
-          } catch (mailErr) {
-            console.warn(`[Watchdog] Failed to send email for room ${roomId}:`, mailErr);
+          } else {
+            console.warn(`[Watchdog] ⚠️ No recipient email address found for expired room ${roomId} ("${room.name}"). Skipping email.`);
           }
 
           delete db[roomId];
@@ -936,9 +1035,9 @@ async function startServer() {
     }
   };
 
-  // Run watchdog after 10s startup delay, then every 5 minutes
-  setTimeout(runInactivityWatchdog, 10000);
-  setInterval(runInactivityWatchdog, 5 * 60 * 1000);
+  // Run watchdog after 5s startup delay, then sweep every 15 seconds
+  setTimeout(runInactivityWatchdog, 5000);
+  setInterval(runInactivityWatchdog, 15 * 1000);
 
 
   // ==========================================
