@@ -1543,7 +1543,7 @@ function AppContent() {
       return 'receive';
     }
     const saved = sessionStorage.getItem('keepr_active_view') as ViewType | null;
-    if (saved && ['home', 'send', 'receive', 'detonator', 'chat', 'storage', 'pricing'].includes(saved)) {
+    if (saved && ['home', 'send', 'receive', 'scan', 'whyus', 'detonator', 'chat', 'storage', 'pricing'].includes(saved)) {
       return saved;
     }
     return 'home';
@@ -1571,16 +1571,6 @@ function AppContent() {
     // Check all possible subscription indicators
     const unsafeMeta = loadedUser?.unsafeMetadata || {};
     const publicMeta = loadedUser?.publicMetadata || {};
-
-    // Log the full user object structure for debugging
-    console.log('Full user object for subscription check:', {
-      unsafeMeta,
-      publicMeta,
-      subscriptions: (loadedUser as any)?.subscriptions,
-      orgMemberships: (loadedUser as any)?.organizationMemberships,
-      userId: loadedUser?.id,
-      email: loadedUser?.primaryEmailAddress?.emailAddress,
-    });
 
     // Direct plan checks
     if (unsafeMeta.plan === 'pro' || publicMeta.plan === 'pro') {
@@ -1667,28 +1657,11 @@ function AppContent() {
     syncMetadata();
   }, [user, isLoaded, isPro]);
 
-  // Watch for explicit plan changes and reload user
+  // Reload user once on mount to catch plan changes from other tabs/sessions
   useEffect(() => {
     if (!user || !isLoaded) return;
-
-    let reloadCount = 0;
-    const reloadInterval = setInterval(async () => {
-      reloadCount++;
-      try {
-        // Reload user from Clerk server every 2 seconds to catch plan changes
-        await user.reload?.();
-
-        if (reloadCount >= 15) {
-          // Stop after 30 seconds
-          clearInterval(reloadInterval);
-        }
-      } catch (error) {
-        console.error('Error reloading user:', error);
-      }
-    }, 2000);
-
-    return () => clearInterval(reloadInterval);
-  }, [user, isLoaded]);
+    user.reload?.().catch(() => {/* ignore */});
+  }, [user?.id, isLoaded]); // only re-run if user identity changes, not on every render
 
   const wait = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
 
@@ -2187,8 +2160,11 @@ function AppContent() {
       setDecryptedFileName(fileName);
       setStatus('success');
 
-      // 5. BURN IT from AWS forever
-      fetch(`/api/burn/${fileId}`, { method: 'DELETE' }).catch(console.error);
+      // 5. BURN IT from AWS forever — fire after a short delay to ensure the
+      //    browser has had time to start the download before we delete the source.
+      setTimeout(() => {
+        fetch(`/api/burn/${fileId}`, { method: 'DELETE' }).catch(console.error);
+      }, 3000);
 
     } catch (err) {
       console.error('Decryption Failed:', err);

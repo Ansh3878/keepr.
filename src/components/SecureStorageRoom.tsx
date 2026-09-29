@@ -651,11 +651,27 @@ export function SecureStorageRoom() {
   useEffect(() => {
     if (!activeRoomId || !activeRoomExpiryAt || !isUnlocked) return;
 
-    const checkActiveRoomExpiry = () => {
+    let triggered = false; // prevent double-firing
+
+    const checkActiveRoomExpiry = async () => {
       const expTime = new Date(activeRoomExpiryAt).getTime();
-      if (Number.isFinite(expTime) && Date.now() >= expTime) {
+      if (Number.isFinite(expTime) && Date.now() >= expTime && !triggered) {
+        triggered = true;
         if (activeRoomStrategy === 'purge') {
-          setFeedbackMsg('Room countdown reached 0: Vault room has expired and is being destroyed.');
+          setFeedbackMsg('Room countdown reached 0: Vault room has expired and is being destroyed...');
+          // Call trigger-cleanup so the server purges R2 AND sends the email
+          try {
+            const apiEndpoint = SECURE_ROOM_API_ENDPOINT;
+            const token = await getToken();
+            if (apiEndpoint && token) {
+              await fetch(`${apiEndpoint}/rooms/${activeRoomId}/trigger-cleanup`, {
+                method: 'POST',
+                headers: { 'Authorization': `Bearer ${token}` }
+              });
+            }
+          } catch (e) {
+            console.error('[ExpiryMonitor] trigger-cleanup failed:', e);
+          }
           setTimeout(() => {
             handleExitRoom();
             fetchRoomsFromBackend();
@@ -669,6 +685,7 @@ export function SecureStorageRoom() {
     const intervalId = setInterval(checkActiveRoomExpiry, 2000);
     return () => clearInterval(intervalId);
   }, [activeRoomId, activeRoomExpiryAt, isUnlocked, activeRoomStrategy]);
+
 
 
 

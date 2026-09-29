@@ -393,6 +393,31 @@ async function startServer() {
         console.warn('Could not delete R2 objects for room:', s3Err);
       }
 
+      // Send notification email to room owner
+      const emailTo = (room.userEmail || room.transferEmail || '').trim();
+      if (emailTo) {
+        sendRoomEmail(
+          emailTo,
+          `Keepr: Room "${room.name}" has been permanently deleted`,
+          `<div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; max-width: 580px; margin: 0 auto; padding: 32px 24px; background: #09090b; color: #f4f4f5; border-radius: 16px; border: 1px solid #27272a;">
+            <div style="display: inline-block; padding: 6px 12px; background: rgba(244, 63, 94, 0.1); border: 1px solid rgba(244, 63, 94, 0.2); border-radius: 9999px; font-size: 11px; font-weight: 700; color: #f43f5e; text-transform: uppercase; letter-spacing: 0.1em; margin-bottom: 16px;">
+              Room Deleted
+            </div>
+            <h2 style="font-size: 22px; font-weight: 800; color: #ffffff; margin: 0 0 12px; letter-spacing: -0.02em;">Vault Room Permanently Deleted</h2>
+            <p style="font-size: 14px; line-height: 1.6; color: #a1a1aa; margin: 0 0 20px;">
+              Your Keepr room <strong style="color: #ffffff;">${room.name}</strong> has been permanently deleted.
+            </p>
+            <p style="font-size: 13px; line-height: 1.6; color: #a1a1aa; margin: 0 0 24px;">
+              All associated files have been permanently wiped from Cloudflare R2 storage and the room record has been erased from our databases.
+            </p>
+            <hr style="border: none; border-top: 1px solid #27272a; margin: 24px 0;" />
+            <p style="font-size: 11px; color: #52525b; margin: 0;">Keepr Zero-Trust Vault Security System</p>
+          </div>`
+        ).catch(mailErr => console.warn('[DELETE room] Email send failed:', mailErr?.message));
+      } else {
+        console.warn(`[DELETE room] No email address for room ${req.params.roomId} — skipping notification.`);
+      }
+
       delete db[req.params.roomId];
       writeRoomsDB(db);
 
@@ -401,6 +426,7 @@ async function startServer() {
       return res.status(500).json({ error: e.message });
     }
   });
+
 
   // GET /api/rooms/:roomId/files — list files in a room from R2
   app.get('/api/rooms/:roomId/files', async (req: any, res: any) => {
